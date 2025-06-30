@@ -53,7 +53,7 @@ def handle_unfollow(event):
 
 @handler.add(PostbackEvent)
 def on_postback(event):
-    import_module("handlers.postback").handle(event)
+    import_module("handlers.postback_router").handle(event)
 
 # ========== 4) Flask webhook ==========
 @app.route("/callback", methods=["POST"])

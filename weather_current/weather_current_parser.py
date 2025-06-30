@@ -152,7 +152,7 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
         # 如果體感溫度與實際溫度差異達到 1 度或以上，則顯示體感溫度
         if abs(calculated_apparent_temp - temp_val) >= 1.0: 
             # 顯著差異，顯示具體體感溫度
-            parsed_and_formatted_info['sensation_temp_display'] = f"體感: {calculated_apparent_temp}°C"
+            parsed_and_formatted_info['sensation_temp_display'] = f"{calculated_apparent_temp}°C"
         else:
             # 差異不顯著，顯示「與實際溫度相近」
             parsed_and_formatted_info['sensation_temp_display'] = "與實際溫度相近"
@@ -207,6 +207,11 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
             logger.warning(f"無法將風向 '{raw_wind_direction_str}' 轉換為浮點數。")
     
     # 組合風速和風向
+    # 拆分儲存：風速與風向
+    parsed_and_formatted_info['wind_speed'] = f"{wind_speed_val} m/s" if wind_speed_val != 'N/A' else 'N/A'
+    parsed_and_formatted_info['wind_direction'] = wind_direction_desc if wind_direction_desc != 'N/A' else 'N/A'
+
+    '''
     if wind_speed_val != 'N/A' and wind_direction_desc != 'N/A':
         parsed_and_formatted_info['wind_display'] = f"{wind_speed_val} m/s (風向: {wind_direction_desc})"
     elif wind_speed_val != 'N/A':
@@ -215,6 +220,7 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
         parsed_and_formatted_info['wind_display'] = f"風向: {wind_direction_desc}"
     else:
         parsed_and_formatted_info['wind_display'] = "無風"
+    '''
 
     # 氣壓 (AirPressure)
     raw_pressure_str = weather_elements.get('AirPressure', '-99.0')
@@ -242,6 +248,8 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
             parsed_and_formatted_info['uv_index'] = "0" # 夜間或非常低
     else:
         parsed_and_formatted_info['uv_index'] = "無"
+
+    parsed_and_formatted_info["location_name"] = query_location_name
 
     logger.info(f"已解析並格式化 {query_location_name} 的即時觀測資料。")
     logger.debug(f"解析後的即時觀測資料: {parsed_and_formatted_info}")

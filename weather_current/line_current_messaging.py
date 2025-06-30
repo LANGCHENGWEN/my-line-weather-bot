@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from config import setup_logging
 
 # 導入 Flex Message 模板
-from .weather_flex_message import WEATHER_FLEX_MESSAGE
+from .weather_flex_message import build_weather_flex
 
 # from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexContainer
 # from line_common_messaging import send_line_reply_message, send_api_error_message
@@ -34,7 +34,7 @@ def format_current_weather_message(formatted_weather_data: dict, location_name: 
         return None # 返回 None 讓上層 (handler) 處理錯誤回覆
     
     # 複製一份原始 Flex Message 模板，避免修改原始模板
-    flex_message = WEATHER_FLEX_MESSAGE.copy()
+    flex_message = build_weather_flex().copy()
 
     try:
         # 填充 Flex Message 模板
