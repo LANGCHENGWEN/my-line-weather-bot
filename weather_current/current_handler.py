@@ -80,6 +80,32 @@ def handle_current_message(messaging_api, event: MessageEvent) -> bool:
         # line_flex_message_object 已經是一個 FlexMessage 物件，將其放入列表中
         send_line_reply_message(messaging_api, reply_token, flex_msg)
         return True # 訊息已處理
+    
+# 在 current_handler.py 最下方加一個 util
+def reply_weather_of_city(api, reply_token: str, city_name: str) -> None:
+    """
+    直接根據 city_name 抓資料、組 Flex、回覆。
+    用在「查詢其他縣市」或任何想動態查城市的地方。
+    """
+    # 1. 取資料
+    raw = get_cwa_current_data(CWA_API_KEY, city_name)
+    if not raw:
+        send_api_error_message(api, None, reply_token, city_name)
+        return
+
+    # 2. 解析
+    parsed = parse_current_weather(raw, city_name)
+    if not parsed:
+        send_api_error_message(api, None, reply_token, city_name)
+        return
+
+    # 3. build flex json → FlexMessage
+    flex_json = build_weather_flex(parsed)
+    flex_msg  = format_flex_message(f"{city_name} 即時天氣", flex_json)
+
+    # 4. 回覆
+    send_line_reply_message(api, reply_token, flex_msg)
+
 
     '''
         # 5. 發送回覆訊息 (傳入 Line Bot SDK 的 Message 物件)
