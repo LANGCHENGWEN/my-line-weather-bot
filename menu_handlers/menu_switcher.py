@@ -5,6 +5,7 @@ from linebot.v3.messaging import MessagingApi
 from linebot.v3.webhooks.models import MessageEvent
 from linebot.v3.exceptions import InvalidSignatureError
 from config import setup_logging
+from typing import Optional
 
 from utils.rich_menu_helper import get_rich_menu_id
 
@@ -74,6 +75,20 @@ def _link_rich_menu_by_alias(line_bot_api: MessagingApi, user_id: str, alias_id:
     except Exception as e:
         logger.error(f"未知錯誤：綁定 '{alias_id}' 失敗 -> {e}", exc_info=True)
         return False
+
+# 這支才是給「postback」用的
+def switch_to_alias(api, user_id: str, alias: Optional[str]) -> bool:
+    """
+    直接用 alias 幫 user 切 Rich‑menu
+    回傳 True/False 代表有沒有真的發生切換。
+    """
+    if not alias:
+        logger.warning("switch_to_alias：alias 是空的")
+        return False
+    ok = _link_rich_menu_by_alias(api, user_id, alias)
+    if ok:
+        logger.info(f"[RichMenu] user {user_id} → {alias}")
+    return ok
 
 def handle_menu_switching(event: MessageEvent, line_bot_api: MessagingApi) -> bool:
     """

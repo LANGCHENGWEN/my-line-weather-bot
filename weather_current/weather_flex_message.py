@@ -91,9 +91,9 @@ def build_weather_flex(data):
                     "height": "sm",
                     "color": "#1E90FF",
                     "action": {
-                        "type": "message",
+                        "type": "postback",
                         "label": "查詢其他縣市",
-                        "text": "查詢其他縣市"
+                        "data": "action=change_city"
                     },
                     "style": "secondary",
                     "margin": "lg"

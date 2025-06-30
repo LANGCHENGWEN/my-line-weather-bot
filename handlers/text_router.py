@@ -1,13 +1,17 @@
 # handlers/text_router.py
 # from utils.api_helper import get_api
 from importlib import import_module
+from config import setup_logging
 from utils.api_helper import get_messaging_api
 from utils.user_data_manager import get_user_state
 from menu_handlers.menu_switcher import handle_menu_switching as switch
 
+logger = setup_logging(__name__)
+
 # 狀態 → handler
 DISPATCH_STATE = {
-    "awaiting_default_city_input": "handlers.default_city_input",
+    "awaiting_default_city_input": "handlers.default_city_input", # 等待輸入預設城市
+    "awaiting_city_input":         "handlers.default_city_input", # 等待輸入查詢其他縣市
 }
 
 # 關鍵字 → handler
@@ -36,19 +40,21 @@ def _dispatch_to_module(module_path: str, event):
         return mod.handle_current_message(api, event)
     if hasattr(mod, "handle_forecast_message"):
         return mod.handle_forecast_message(api, event)
+    if hasattr(mod, "handle_awaiting_city_input"):          # ★ 新增
+        return mod.handle_awaiting_city_input(api, event)
     if hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:
         return mod.handle(api, event)
     if hasattr(mod, "handle"):
         return mod.handle(event)
-
-    # 都沒有就 raise（代表子模組寫得不對）
     raise AttributeError(f"{module_path} 沒有可用的 handle 函式")
 
 def handle(event):
     # 1) 依使用者 state 轉發
     state = get_user_state(event.source.user_id)
+    logger.debug(f"router-state = {state} (user_id={event.source.user_id})")
     if state and state in DISPATCH_STATE:
-        import_module(DISPATCH_STATE[state]).handle(event)
+        _dispatch_to_module(DISPATCH_STATE[state], event)
+        # import_module(DISPATCH_STATE[state]).handle(event)
         return
 
     # 2) Rich‑menu 切換
