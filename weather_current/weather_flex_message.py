@@ -89,13 +89,13 @@ def build_weather_flex(data):
                     "style": "primary",
                     "margin": "lg",
                     "height": "sm",
-                    "color": "#1E90FF",
+                    "color": "#1DB446",
                     "action": {
                         "type": "postback",
                         "label": "查詢其他縣市",
                         "data": "action=change_city"
                     },
-                    "style": "secondary",
+                    "style": "primary",
                     "margin": "lg"
                 }
             ]

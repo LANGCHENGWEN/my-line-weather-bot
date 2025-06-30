@@ -12,6 +12,8 @@ logger = setup_logging(__name__)
 DISPATCH_STATE = {
     "awaiting_default_city_input": "handlers.default_city_input", # 等待輸入預設城市
     "awaiting_city_input":         "handlers.default_city_input", # 等待輸入查詢其他縣市
+    "awaiting_township_input": "weather_forecast.forecast_handler",
+    "awaiting_full_location":  "weather_forecast.forecast_handler"
 }
 
 # 關鍵字 → handler
@@ -39,8 +41,14 @@ def _dispatch_to_module(module_path: str, event):
     if hasattr(mod, "handle_current_message"):
         return mod.handle_current_message(api, event)
     if hasattr(mod, "handle_forecast_message"):
-        return mod.handle_forecast_message(api, event)
-    if hasattr(mod, "handle_awaiting_city_input"):          # ★ 新增
+        result = mod.handle_forecast_message(api, event)
+        if result:
+            return result
+    if hasattr(mod, "handle_township_input"):
+        result = mod.handle_township_input(api, event)
+        if result:
+            return result
+    if hasattr(mod, "handle_awaiting_city_input"):          # 查詢其他縣市 default_city_input.py
         return mod.handle_awaiting_city_input(api, event)
     if hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:
         return mod.handle(api, event)
@@ -53,9 +61,10 @@ def handle(event):
     state = get_user_state(event.source.user_id)
     logger.debug(f"router-state = {state} (user_id={event.source.user_id})")
     if state and state in DISPATCH_STATE:
-        _dispatch_to_module(DISPATCH_STATE[state], event)
+        handled = _dispatch_to_module(DISPATCH_STATE[state], event)
         # import_module(DISPATCH_STATE[state]).handle(event)
-        return
+        if handled:
+            return
 
     # 2) Rich‑menu 切換
     line_bot_api = get_messaging_api() # 拿到 MessagingApi 實例
