@@ -1,0 +1,59 @@
+{
+  "size": {
+    "width": 2500,
+    "height": 1686
+  },
+  "selected": false,
+  "name": "生活提醒子選單",
+  "chatBarText": "生活提醒子選單",
+  "areas": [
+    {
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1250,
+        "height": 843
+      },
+      "action": {
+        "type": "message",
+        "text": "穿搭建議"
+      }
+    },
+    {
+      "bounds": {
+        "x": 1250,
+        "y": 0,
+        "width": 1250,
+        "height": 843
+      },
+      "action": {
+        "type": "message",
+        "text": "週末天氣"
+      }
+    },
+    {
+      "bounds": {
+        "x": 0,
+        "y": 843,
+        "width": 1250,
+        "height": 843
+      },
+      "action": {
+        "type": "message",
+        "text": "節氣小知識"
+      }
+    },
+    {
+      "bounds": {
+        "x": 1250,
+        "y": 843,
+        "width": 1250,
+        "height": 843
+      },
+      "action": {
+        "type": "message",
+        "text": "回上一頁"
+      }
+    }
+  ]
+}

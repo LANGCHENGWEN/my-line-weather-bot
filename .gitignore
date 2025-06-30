@@ -1,0 +1,11 @@
+.env
+ngrok.exe
+user_data.db
+__pycache__/
+handlers/__pycache__/
+logs/
+menu_handlers/__pycache__/
+my_env4/
+rich_menu_manager/__pycache__/
+utils/__pycache__/
+weather_current/__pycache__/
