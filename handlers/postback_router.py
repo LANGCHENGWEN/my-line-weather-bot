@@ -1,14 +1,15 @@
 # handlers/postback_router.py
+import logging
+from importlib import import_module
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
+
 from urllib.parse import parse_qs
 from utils.api_helper import get_messaging_api
-from utils.line_common_messaging import send_line_reply_message
 from utils.user_data_manager import set_user_state
-from menu_handlers.menu_switcher import switch_to_alias
-from handlers import postback_weather
-from importlib import import_module
-from config import setup_logging
+from utils.line_common_messaging import send_line_reply_message
 
+from handlers import postback_weather
+from menu_handlers.menu_switcher import switch_to_alias
 
 '''
 from weather_current import current_handler
@@ -17,7 +18,7 @@ from life_style import reminder_handler
 from menu_handlers import settings_menu_handler
 '''
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # -------------------- 1) Rich‑menu 別名對照 --------------------
 # alias 需與 rich_menu_configs.py 及 JSON 別名一致
@@ -31,6 +32,7 @@ ACTION_TO_ALIAS = {
 # 所有 action 與「子 handler 模組路徑」的對照
 ACTION_DISPATCH = {
     "weather_query"      : "weather_current.current_handler",
+    "get_weather"        : "weather_forecast.postback_handler",
     "typhoon_area"       : "weather_typhoon.typhoon_handler",
     "lifestyle_reminders": "life_style.reminder_handler",
     "settings"           : "menu_handlers.settings_menu_handler",
@@ -73,10 +75,12 @@ def handle(event):
             return mod.handle(event)
         if hasattr(mod, "handle_current_message"):
             return mod.handle_current_message(api, event)
+        if hasattr(mod, "handle_forecast_postback"):
+            return mod.handle_forecast_postback(api, event)
 
         raise AttributeError(f"{module_path} 沒有可用的 handle 函式")
 
     # ---------- (C) 若沒有對應 action ----------
     logger.warning(f"未知的 postback action: {action}")
     send_line_reply_message(api, event.reply_token,
-        [TextMessage(text="抱歉，我不太懂您的選擇，請再試一次。")])                  # handle(event) (舊版)
+        [TextMessage(text="抱歉，我不太懂您的選擇，請再試一次。")])             # handle(event) (舊版)

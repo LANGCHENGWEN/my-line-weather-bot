@@ -1,24 +1,79 @@
 # config.py
 # 這個檔案將負責配置你的 API 金鑰和 logging 系統
 import os # 引入 os 模組，用於操作作業系統環境變數
+import sys
 import logging
-from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv # 從 dotenv 模組引入 load_dotenv 函數，用於加載 .env 檔案中的環境變數
+from logging.handlers import RotatingFileHandler
 
-load_dotenv() # 加載 .env 檔案中的環境變數到 os.environ，這樣就可以透過 os.getenv() 取得
+# --- 載入 .env 檔案中的環境變數 ---
+# load_dotenv() 會搜尋並讀取同層或父層的 .env，將其轉為系統環境變數，之後可用 os.getenv() 取得
+load_dotenv()
 
-ENABLE_DAILY_NOTIFICATIONS = False # 設置為 False 即可暫停
+# --- 日誌等級與檔案名稱設定 ---
+# 從環境變數讀取 LOG_LEVEL 與 LOG_FILE，預設值為 "INFO" 與 "main.log"
+LOG_LEVEL_NAME = os.getenv("LOG_LEVEL", "INFO").upper()
+LOG_FILE = os.getenv("LOG_FILE",  "main.log")
 
-# --- Line Bot 設定 ---
-# 這是 LINE Bot 用來發送訊息到 LINE 平台的憑證
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-# 這是 LINE Bot 用來驗證 LINE 平台發送的 Webhook 請求是否合法的密鑰
+# 把字串轉成 logging 模組用的數字等級，找不到就退回 INFO
+LOG_LEVEL = getattr(logging, LOG_LEVEL_NAME, logging.INFO)
+
+# 本機開發請設 True，部署到雲端請改 False
+IS_DEBUG_MODE = os.getenv("IS_DEBUG_MODE", "False").lower() == "true"
+# 先關閉；部署到雲端想推播再改 True
+ENABLE_DAILY_NOTIFICATIONS = os.getenv("ENABLE_DAILY_NOTIFICATIONS", "False").lower() == "true"
+
+# --- 建立全域 Logger 設定函式 ---
+def setup_logging() -> None:
+    """
+    這段將所有日誌輸出邏輯集中到一個地方：
+    避免在多個檔案重複撰寫 handler 與 formatter。
+    只要呼叫一次即可，全專案共享相同設定。
+    """
+    """
+    設定全局的 logging 配置。
+    日誌會輸出到文件並在午夜輪換。
+    """
+    root = logging.getLogger() # 為整個應用程式配置一次根日誌器，方便集中管理日誌和全域配置
+    if root.handlers:       # 若已經設定過 Handler，則直接返回，避免重複設定
+        return
+    
+    root.setLevel(LOG_LEVEL) # 設定根日誌器的最低日誌等級
+
+    # 共用的格式：時間 - logger 名稱 - 等級 - 訊息
+    fmt = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    # console : 適合在開發或部署到雲端查看，預設 INFO
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(LOG_LEVEL)
+    ch.setFormatter(fmt)
+    root.addHandler(ch)
+
+    # rotating file：記錄更完整的 DEBUG 資訊到檔案，可追蹤歷史
+    if os.getenv("ENABLE_FILE_LOG", "False").lower() == "true":
+        fh = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=3)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(fmt)
+        root.addHandler(fh)
+
+setup_logging() # 呼叫函式以初始化 logging
+logger = logging.getLogger(__name__) # 供其他模組引用此檔案時使用的預設 logger
+
+# --- 讀取 LINE Bot 憑證 ---
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
-IS_DEBUG_MODE = True                # 本機開發請設 True，上線請改 False
-ENABLE_DAILY_NOTIFICATIONS = False  # 先關閉；上線想推播再改 True
+# --- 基本檢查：若缺少憑證則顯示錯誤 ---
+# 如果變數為 None，則發出警告並終止程式
+if LINE_CHANNEL_SECRET is None:
+    logger.error("環境變數 LINE_CHANNEL_SECRET 未設定。請確認已設定並重新啟動程式。")
 
-# --- 交通部中央氣象署 Open Data 平台 API 設定 --- # 
+if LINE_CHANNEL_ACCESS_TOKEN is None:
+    logger.error("環境變數 LINE_CHANNEL_ACCESS_TOKEN 未設定。請確認已設定並重新啟動程式。")
+
+# --- 交通部中央氣象署 Open Data 平台 API 設定 ---
 CWA_API_KEY = os.getenv('CWA_API_KEY')
 CWA_BASE_URL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/" # API 基本網址 (共同前綴)
 LOCATION_NAME = "臺中市"
@@ -58,44 +113,3 @@ CWA_WEATHER_ALERTS_API = CWA_BASE_URL + "W-C0033-001"
 # --- 颱風路徑圖連結 (非API，直接提供官方網頁連結) ---
 # 您可以引導使用者前往此網址查看最新颱風路徑圖。
 CWA_TYPHOON_MAP_URL = "https://app.cwa.gov.tw/web/obsmap/typhoon.html"
-
-# --- Logging 配置 ---
-LOG_DIR = "logs"
-LOG_FILE = os.path.join(LOG_DIR, "bot.log")
-
-
-# --- Logging Configuration ---
-def setup_logging(name='root', level=logging.DEBUG): # 預設日誌器名稱為 'root'，等級為 DEBUG
-    """
-    設定全局的 logging 配置。
-    日誌會輸出到文件並在午夜輪換。
-    """
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR)
-
-    # 避免重複添加 handler，導致日誌重複輸出
-    # 這是統一設置日誌系統的關鍵步驟
-    logger = logging.getLogger(name)
-    if not logger.handlers: # 只有在沒有 handler 的時候才添加
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-        # 檔案日誌，每天午夜輪換，保留7份備份
-        file_handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=5, encoding='utf-8')
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel(level) # 可以根據需要設定檔案日誌的等級
-
-        # 控制台日誌
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        console_handler.setLevel(level) # 可以根據需要設定控制台日誌的等級
-
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
-
-    logger.setLevel(level) # 設定日誌器的整體等級
-    logger.propagate = False # 避免日誌傳遞給父級日誌器，防止重複輸出
-
-    return logger
-
-main_logger = setup_logging(name='root', level=logging.DEBUG) # 設置 'root' logger
-main_logger.debug("Logging 系統已設定完成。")

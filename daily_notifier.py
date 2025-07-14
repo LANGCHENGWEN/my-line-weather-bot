@@ -1,22 +1,22 @@
 # daily_notifier.py
 # 處理每日自動推播
+import time # 用於測試
 import logging
+import requests # 假設你的 cwa_forecast_api 使用 requests
 import schedule
+
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import TextMessage
-
-from apscheduler.schedulers.background import BackgroundScheduler # 範例使用 BlockingScheduler
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger # 新增導入
-import time # 用於測試
-import requests # 假設你的 cwa_forecast_api 使用 requests
 
 # 從 config 載入設定
 from config import (
     CWA_API_KEY, LOCATION_NAME,
-    YOUR_LINE_USER_ID, setup_logging,
-    ENABLE_DAILY_NOTIFICATIONS
+    YOUR_LINE_USER_ID, ENABLE_DAILY_NOTIFICATIONS
 )
+
+from apscheduler.schedulers.background import BackgroundScheduler # 範例使用 BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger # 新增導入
 
 '''
 # 載入預報天氣相關功能 (因為每日推播通常是預報)
@@ -31,7 +31,8 @@ from utils.line_common_messaging import ( # 假設您新增了此檔案並同意
     send_test_notification_setup_message # 導入開發者提示函數
 )
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
+
 scheduler = BackgroundScheduler()
 
 # 全局變數用於儲存 MessagingApi 實例

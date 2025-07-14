@@ -1,8 +1,7 @@
 # line_current_messaging.py
 # 專門處理即時天氣訊息的格式化 (O-A0003-001 有人氣象站資料)
 import logging
-from datetime import datetime, timedelta, timezone
-from config import setup_logging
+from datetime import timedelta, timezone
 
 # 導入 Flex Message 模板
 from .weather_flex_message import build_weather_flex
@@ -10,7 +9,7 @@ from .weather_flex_message import build_weather_flex
 # from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexContainer
 # from line_common_messaging import send_line_reply_message, send_api_error_message
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # 台灣時區設定
 TAIPEI_TZ = timezone(timedelta(hours=8))

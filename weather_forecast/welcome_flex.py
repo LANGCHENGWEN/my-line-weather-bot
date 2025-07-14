@@ -1,19 +1,13 @@
 # welcome_flex.py
 import logging
-from config import setup_logging
 
 # 從 linebot.v3.messaging.models 導入 Flex Message 所需的類
 from linebot.v3.messaging.models import (
-    FlexMessage,
-    FlexBubble,
-    FlexBox,
-    FlexText,
-    FlexSeparator,
-    FlexButton,
-    PostbackAction
+    FlexMessage, FlexBubble, FlexBox,
+    FlexText, FlexSeparator, FlexButton, PostbackAction
 )
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def create_welcome_flex_message(default_county: str) -> FlexMessage:
     """
@@ -45,7 +39,7 @@ def create_welcome_flex_message(default_county: str) -> FlexMessage:
                     wrap=True
                 ),
                 FlexText(
-                    text="例如：\"北區\"",
+                    text="例如：北區",
                     size="sm",
                     color="#aaaaaa",
                     margin="sm"

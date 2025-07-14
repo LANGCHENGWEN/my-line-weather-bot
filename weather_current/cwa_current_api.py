@@ -1,12 +1,11 @@
 # cwa_current_api.py
 # 專門處理即時天氣的 API 呼叫 (O-A0003-001 有人氣象站資料)
-import json # 為了範例輸出
 import logging
 import requests
-from config import setup_logging, CWA_CURRENT_WEATHER_API
+from config import CWA_CURRENT_WEATHER_API
 from .major_stations import COUNTY_TO_STATION_MAP, ALL_TAIWAN_COUNTIES, normalize_location_name
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def get_cwa_current_data(api_key: str, location_name: str) -> dict | None:
     """

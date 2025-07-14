@@ -2,9 +2,8 @@
 # 專門解析即時天氣數據(天氣觀測報告-有人氣象站資料 (O-A0003-001))
 import logging
 from datetime import datetime
-from config import setup_logging
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def calculate_apparent_temperature(temp_c: float, humidity_percent: float) -> float | str:
     """

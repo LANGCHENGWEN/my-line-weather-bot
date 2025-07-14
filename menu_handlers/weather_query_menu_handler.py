@@ -1,8 +1,7 @@
 import logging
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
 from weather_current import current_handler
-# from weather_forecast import forecast_handler
-from config import setup_logging
+from weather_forecast import forecast_handler
 
 # 假設這些別名在您的主程式 (app.py) 中定義並傳遞進來，或者您可以再次定義
 # 為了避免循環引用，建議在 app.py 中定義並作為參數傳遞
@@ -10,7 +9,7 @@ from config import setup_logging
 MAIN_MENU_ALIAS = "main_menu_alias" # 從 app.py 傳入
 WEATHER_QUERY_ALIAS = "weather_query_alias" # 從 app.py 傳入
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def handle_weather_query_menu(event, line_bot_api):
     """

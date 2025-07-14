@@ -1,19 +1,20 @@
 # handlers/text_router.py
 # from utils.api_helper import get_api
+import logging
 from importlib import import_module
-from config import setup_logging
+
 from utils.api_helper import get_messaging_api
 from utils.user_data_manager import get_user_state
 from menu_handlers.menu_switcher import handle_menu_switching as switch
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # 狀態 → handler
 DISPATCH_STATE = {
     "awaiting_default_city_input": "handlers.default_city_input", # 等待輸入預設城市
     "awaiting_city_input":         "handlers.default_city_input", # 等待輸入查詢其他縣市
-    "awaiting_township_input": "weather_forecast.forecast_handler",
-    "awaiting_full_location":  "weather_forecast.forecast_handler"
+    "awaiting_township_input": "weather_forecast.forecast_handler", # 等待輸入鄉鎮市區
+    "awaiting_full_location":  "weather_forecast.forecast_handler"  # 等待輸入縣市+鄉鎮市區
 }
 
 # 關鍵字 → handler
@@ -59,7 +60,7 @@ def _dispatch_to_module(module_path: str, event):
 def handle(event):
     # 1) 依使用者 state 轉發
     state = get_user_state(event.source.user_id)
-    logger.debug(f"router-state = {state} (user_id={event.source.user_id})")
+    logger.debug(f"路由器狀態 = {state} (user_id={event.source.user_id})")
     if state and state in DISPATCH_STATE:
         handled = _dispatch_to_module(DISPATCH_STATE[state], event)
         # import_module(DISPATCH_STATE[state]).handle(event)

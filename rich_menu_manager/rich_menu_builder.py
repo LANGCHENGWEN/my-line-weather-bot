@@ -1,11 +1,12 @@
 # rich_menu_manager/rich_menu_builder.py
-
 import json
 import logging
-from linebot.v3.messaging import MessageAction, PostbackAction, RichMenuArea, RichMenuSize, RichMenuRequest, RichMenuBounds
-from config import setup_logging
+from linebot.v3.messaging import (
+    MessageAction, PostbackAction, RichMenuArea,
+    RichMenuSize, RichMenuRequest, RichMenuBounds
+)
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def build_rich_menu_request_from_json(json_path: str) -> RichMenuRequest | None:
     """

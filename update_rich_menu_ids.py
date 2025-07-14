@@ -1,5 +1,8 @@
 import json
+import logging
 from utils.api_helper import get_messaging_api
+
+logger = logging.getLogger(__name__)
 
 def update_rich_menu_ids_config(config_path="rich_menu_ids.json"):
     line_bot_api = get_messaging_api()
@@ -17,8 +20,8 @@ def update_rich_menu_ids_config(config_path="rich_menu_ids.json"):
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(alias_map, f, ensure_ascii=False, indent=2)
     
-    print(f"已更新 Rich Menu ID 設定檔到 {config_path}")
-    print(json.dumps(alias_map, indent=2, ensure_ascii=False))
+    logger.info(f"已更新 Rich Menu ID 設定檔到 {config_path}")
+    logger.debug(json.dumps(alias_map, indent=2, ensure_ascii=False))
 
 if __name__ == "__main__":
     update_rich_menu_ids_config()

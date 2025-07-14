@@ -1,13 +1,13 @@
 # handlers/follow.py
 import json
-from linebot.v3.messaging import MessagingApi
-from config import setup_logging
-from utils.line_common_messaging import send_hello_message
-from utils.api_helper import get_messaging_api          # 用來拿 MessagingApi instance
-from user_data_manager import set_user_state
-from utils.rich_menu_helper import get_rich_menu_id
+import logging
 
-logger = setup_logging(__name__)
+from user_data_manager import set_user_state
+from utils.api_helper import get_messaging_api # 用來拿 MessagingApi instance
+from utils.rich_menu_helper import get_rich_menu_id
+from utils.line_common_messaging import send_hello_message
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ALIAS = "main_menu_alias"
 
@@ -31,6 +31,6 @@ def handle(event):
         try:
             line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id)
         except Exception as e:
-            logger.error(f"Link default rich‑menu failed: {e}")
+            logger.error(f"Link default rich-menu failed: {e}")
     else:
         logger.error("Rich Menu ID 無法讀取，無法綁定")

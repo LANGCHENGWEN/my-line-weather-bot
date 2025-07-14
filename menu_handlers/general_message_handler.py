@@ -1,12 +1,10 @@
 # menu_handlers/general_message_handler.py
-
 import logging
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
-from config import setup_logging
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
-def handle_general_message(line_bot_api, event, app_config):
+def handle_general_message(line_bot_api, event):
     """
     處理通用文字訊息，包括問候語和未識別的訊息。
     """

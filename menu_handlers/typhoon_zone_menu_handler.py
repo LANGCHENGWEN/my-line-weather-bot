@@ -1,12 +1,11 @@
 import logging
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
-from config import setup_logging
 
 # 假設這些別名在您的主程式 (app.py) 中定義並傳遞進來
 MAIN_MENU_ALIAS = "main_menu_alias" # 從 app.py 傳入
 TYPHOON_ZONE_ALIAS = "typhoon_zone_alias" # 從 app.py 傳入
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def handle_typhoon_zone_menu(event, line_bot_api):
     """

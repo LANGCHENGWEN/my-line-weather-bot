@@ -1,11 +1,11 @@
 # current_handler.py
 # 主要處理即時天氣用戶輸入的回覆邏輯
-from linebot.v3.webhooks.models import MessageEvent
+import logging
 from linebot.v3.messaging.models import TextMessage
-# from linebot.v3.messaging.models import TextMessage
+from linebot.v3.webhooks.models import MessageEvent
 
 # 從 config 載入設定
-from config import CWA_API_KEY, LOCATION_NAME, setup_logging
+from config import CWA_API_KEY, LOCATION_NAME
 
 # 載入即時天氣相關功能
 from .cwa_current_api import get_cwa_current_data
@@ -13,15 +13,15 @@ from .weather_current_parser import parse_current_weather
 from .line_current_messaging import format_current_weather_message # 只導入 current 的格式化
 from .weather_flex_message import build_weather_flex
 
+# 需要導入這個來將 Flex Message 字典轉換為 FlexMessage 物件
+from utils.message_builder import format_flex_message
+
 # 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
 from utils.line_common_messaging import (
     send_line_reply_message, send_api_error_message
 )
 
-# 需要導入這個來將 Flex Message 字典轉換為 FlexMessage 物件
-from utils.message_builder import format_flex_message
-
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def handle_current_message(messaging_api, event: MessageEvent) -> bool:
     """

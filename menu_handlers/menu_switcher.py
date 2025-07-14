@@ -1,25 +1,20 @@
 # menu_handlers/menu_switcher.py
-
 import logging
+from typing import Optional
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.webhooks.models import MessageEvent
 from linebot.v3.exceptions import InvalidSignatureError
-from config import setup_logging
-from typing import Optional
 
+from .menu_reply import build_text_reply
 from utils.rich_menu_helper import get_rich_menu_id
 
 # 從 rich_menu_configs.py 匯入 Rich Menu 別名常數
 from rich_menu_manager.rich_menu_configs import ( # 確保路徑正確
-    MAIN_MENU_ALIAS,
-    WEATHER_QUERY_ALIAS,
-    TYPHOON_ZONE_ALIAS,
-    LIFE_REMINDER_ALIAS,
-    SETTINGS_ALIAS
+    MAIN_MENU_ALIAS, WEATHER_QUERY_ALIAS,
+    TYPHOON_ZONE_ALIAS, LIFE_REMINDER_ALIAS, SETTINGS_ALIAS
 )
-from .menu_reply import build_text_reply
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # ---------- 可注入的別名表 ---------- #
 _alias_map = {

@@ -2,16 +2,12 @@
 # 通用訊息
 import json
 import logging
-from config import setup_logging
-from linebot.v3.messaging import MessagingApi
-from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest, PushMessageRequest, FlexMessage, Message, FlexContainer
-from linebot.v3.webhooks.models import MessageEvent, PostbackEvent
-from typing import List, Union
-from linebot.v3.exceptions import InvalidSignatureError
+from typing import Union
+from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexContainer
 # from linebot.models.flex_message import BubbleContainer
 # FlexContainer
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # --- 訊息格式化工具函數 ---
 def format_text_message(text: str) -> TextMessage:

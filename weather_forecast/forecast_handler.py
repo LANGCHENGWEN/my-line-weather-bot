@@ -1,14 +1,9 @@
 # forecast_handler.py
 # 主要處理天氣預報用戶輸入的回覆邏輯
 import logging
-import json # <--- 新增這行，用於美觀打印 JSON
-
+from linebot.v3.messaging.models import TextMessage
 from linebot.v3.webhooks.models import MessageEvent
-from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest, FlexMessage, FlexContainer
 # from linebot.v3.models import PostbackAction # 引入 PostbackAction
-
-# 從 config 載入設定
-from config import CWA_API_KEY, DEFAULT_COUNTY, setup_logging
 
 # 載入預報天氣相關功能
 # from .welcome_flex import create_welcome_flex_message
@@ -18,22 +13,16 @@ from .forecast_options_flex import create_forecast_options_flex_message
 # from .line_forecast_messaging import format_forecast_weather_message # 只導入 forecast 的格式化
 from .welcome_flex import create_welcome_flex_message
 
-from utils.api_helper import get_messaging_api
-
 # 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
-from utils.line_common_messaging import ( # 假設您新增了此檔案並同意這樣拆分
-    send_line_reply_message,
-    send_api_error_message
-)
+from utils.line_common_messaging import send_line_reply_message
 
 # 載入使用者狀態管理器
 from utils.user_data_manager import (
     get_user_state, set_user_state,
-    get_default_city, clear_user_state,
-    is_valid_city
+    get_default_city, clear_user_state, is_valid_city
 )
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # 在 handlers.py 裡面需要有 line_bot_api 的實例來發送訊息
 # 這個應該在 initialize_handlers 裡面傳入

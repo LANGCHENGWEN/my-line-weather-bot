@@ -1,14 +1,14 @@
 # rich_menu_manager/rich_menu_deployer.py
 import os
 import json
+import logging
 from linebot.v3.messaging import MessagingApi
 
 # 導入內部模組
-from rich_menu_manager import rich_menu_api_client
 from rich_menu_manager import rich_menu_builder
-from config import setup_logging
+from rich_menu_manager import rich_menu_api_client
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 def setup_all_rich_menus(
     line_bot_api: MessagingApi,

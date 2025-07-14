@@ -1,5 +1,7 @@
 # default_city_input
+import logging
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
+
 from weather_current.current_handler import reply_weather_of_city
 from utils.api_helper import get_messaging_api
 from utils.line_common_messaging import send_line_reply_message
@@ -9,8 +11,8 @@ from utils.user_data_manager import (
     clear_user_state,       # 清空 state
     set_user_state          # 若要切回別的 state
 )
-from config import setup_logging
-logger = setup_logging(__name__)
+
+logger = logging.getLogger(__name__)
 
 def handle(line_bot_api, event):
     city = event.message.text.strip()

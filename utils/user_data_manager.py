@@ -1,11 +1,11 @@
 # user_data_manager.py
 import json
 import sqlite3
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
-from config import setup_logging
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # 建立資料庫檔案與資料表
 DB_PATH = Path("user_data.db")

@@ -1,18 +1,19 @@
 # app_initializer.py
+import logging
 from linebot.v3.messaging import MessagingApi # 需要傳入 MessagingApi 實例
 
 from rich_menu_manager import rich_menu_deployer
 from menu_handlers import menu_switcher
 from daily_notifier import start_daily_notifier # 導入 daily_notifier
-from config import setup_logging
-logger = setup_logging(__name__)
+
+logger = logging.getLogger(__name__)
 
 def initialize(global_line_bot_api_instance: MessagingApi, global_rich_menu_api_instance: MessagingApi, app_config: dict, is_debug_mode: bool, enable_daily_notifications: bool, line_channel_access_token: str):
     """
     應用程式啟動時的所有初始化服務。
     包括 Rich Menu 部署、排程器啟動等。
     """
-    logger.info("Initializing Rich Menus and other services on application startup...")
+    logger.info("在應用程式啟動時初始化 Rich Menu 和其他服務...")
     
     # 初始化 menu_switcher 中的別名
     # 從 app_config 中獲取所有別名常數
@@ -45,5 +46,5 @@ def initialize(global_line_bot_api_instance: MessagingApi, global_rich_menu_api_
     )
     app_config["RICH_MENU_ALIAS_MAP"].update(actual_ids) # 更新到 app_config 中的實際 ID 映射
 
-    logger.info("Rich Menu deployment and services initialization finished.")
+    logger.info("Rich Menu 部署和服務初始化已完成。")
     logger.info(f"實際部署的 Rich Menu ID 映射: {app_config['RICH_MENU_ALIAS_MAP']}")

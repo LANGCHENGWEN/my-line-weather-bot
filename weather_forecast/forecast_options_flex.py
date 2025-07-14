@@ -4,13 +4,8 @@
 """
 
 from linebot.v3.messaging.models import (
-    FlexMessage,
-    FlexBubble,
-    FlexBox,
-    FlexText,
-    FlexButton,
-    FlexSeparator,
-    PostbackAction,
+    FlexMessage, FlexBubble, FlexBox,
+    FlexText, FlexButton, FlexSeparator, PostbackAction
 )
 
 # ---------- 主要函式 ----------
@@ -26,8 +21,7 @@ def create_forecast_options_flex_message(county: str, township: str) -> FlexMess
         return FlexButton(
             action=PostbackAction(
                 label=f"{days} 天預報",
-                data=f"action=get_forecast&county={county}&township={township}&days={days}",
-                display_text=f"正在查詢 {county}{township} 的 {days} 天天氣預報…",
+                data=f"action=get_weather&county={county}&township={township}&days={days}"
             ),
             style="primary",
             color="#00B900",   # LINE 綠

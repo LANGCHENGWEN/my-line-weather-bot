@@ -1,17 +1,15 @@
 # rich_menu_manager/rich_menu_api_client.py
 import os
-import json
 import logging
 import requests
 
 from linebot.v3.messaging import (
-    MessagingApi, RichMenuRequest, RichMenuAliasResponse,
-    CreateRichMenuAliasRequest, UpdateRichMenuAliasRequest, ApiException
+    MessagingApi, RichMenuRequest, CreateRichMenuAliasRequest,
+    UpdateRichMenuAliasRequest, ApiException
 )
 from linebot.v3.messaging.models import RichMenuListResponse
-from config import LINE_CHANNEL_ACCESS_TOKEN, setup_logging
 
-logger = setup_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # --- LINE Rich Menu API 實際操作 ---
 
