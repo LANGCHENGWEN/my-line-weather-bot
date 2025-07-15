@@ -11,7 +11,7 @@ from .forecast_options_flex import create_forecast_options_flex_message
 # from .cwa_forecast_api import get_cwa_forecast_data
 # from .weather_forecast_parser import parse_forecast_weather
 # from .line_forecast_messaging import format_forecast_weather_message # 只導入 forecast 的格式化
-from .welcome_flex import create_welcome_flex_message
+# from .welcome_flex import create_welcome_flex_message
 
 # 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
 from utils.line_common_messaging import send_line_reply_message
@@ -39,6 +39,13 @@ def initialize_handlers(line_bot_api_instance, handler_instance):
     _handler.add(MessageEvent, message=TextMessage)(handle_message)
     logger.info("訊息事件處理器已註冊。")
 '''
+def normalize_city_name(city_name: str) -> str:
+    """
+    將常見的縣市名稱替換為標準格式，例如把「台」改成「臺」。
+    """
+    if not city_name:
+        return city_name
+    return city_name.replace("台", "臺")
 
 def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
     """
@@ -49,21 +56,24 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
     user_id = event.source.user_id # 獲取 user_id
     message_text = event.message.text
     reply_token = event.reply_token
-    user_current_state = get_user_state(user_id)
+    # user_current_state = get_user_state(user_id)
 
-    logger.info(f"從用戶 {user_id} 收到文字訊息: '{message_text}', 當前狀態: {user_current_state}")
+    # logger.info(f"從用戶 {user_id} 收到文字訊息: '{message_text}', 當前狀態: {user_current_state}")
 
     # 1. 處理啟動天氣查詢的關鍵字 (例如使用者輸入 "未來預報" 或 "天氣")
     if message_text == "未來預報":
         default_city = get_default_city(user_id) or "臺中市"
-        flex_message = create_welcome_flex_message(default_city)
+        default_city = normalize_city_name(default_city)  # 字串轉換
+        
+        flex_message = create_forecast_options_flex_message(default_city)
         # 修改這裡，傳入 user_id
         send_line_reply_message(messaging_api, reply_token, [flex_message])
-        logger.info(f"用戶 {user_id} 請求未來預報，已回覆第一個選單。")
+        logger.info(f"用戶 {user_id} 請求未來預報，已回覆天數選單。")
 
-        set_user_state(user_id, "awaiting_township_input")
+        # set_user_state(user_id, "awaiting_township_input")
         return True
     
+'''    
 def handle_township_input(messaging_api, event):
     """處理「輸入鄉鎮市區 或 縣市+鄉鎮市區」兩種情況"""
     user_id = event.source.user_id
@@ -107,7 +117,8 @@ def handle_township_input(messaging_api, event):
     
     # 其他狀況不處理
     return False
-
+'''
+'''
 # 小工具：從「臺中市北區」解析出 (縣市, 鄉鎮市區)
 def _parse_full_location(message: str) -> tuple[str | None, str | None]:
     for token in ("市", "縣"):
@@ -117,6 +128,7 @@ def _parse_full_location(message: str) -> tuple[str | None, str | None]:
             township = township.strip()
             return default_city, township or None
     return None, None
+'''
 
 '''
         # 嘗試解析 "縣市+鄉鎮市區" 格式

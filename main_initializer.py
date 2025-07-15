@@ -1,4 +1,4 @@
-# app_initializer.py
+# main_initializer.py
 import logging
 from linebot.v3.messaging import MessagingApi # 需要傳入 MessagingApi 實例
 

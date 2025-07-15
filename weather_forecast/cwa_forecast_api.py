@@ -6,7 +6,7 @@ from config import CWA_FORECAST_1WEEK_API
 
 logger = logging.getLogger(__name__)
 
-def get_cwa_forecast_data(api_key: str, township_name: str) -> dict:
+def get_cwa_forecast_data(api_key: str, location_name: str) -> dict:
     """
     從中央氣象署 API 取得臺灣各縣市鄉鎮未來一週天氣預報資料 (F-D0047-091)。
     Args:
@@ -18,7 +18,7 @@ def get_cwa_forecast_data(api_key: str, township_name: str) -> dict:
     url = CWA_FORECAST_1WEEK_API
     params = {
         "Authorization": api_key,
-        "locationName": township_name,
+        "locationName": location_name,
         # F-D0047-091 常用的氣象元素 (請根據實際資料集文件確認)
         # 這些是鄉鎮一週預報常見的元素，包含白天/晚上時段
         "elementName": "Wx,MaxT,MinT,PoP6h,T,RH,CI,WS,Wd", # 天氣現象、最高溫、最低溫、6小時降雨機率、溫度、相對濕度、舒適度指數、風速、風向
@@ -27,7 +27,7 @@ def get_cwa_forecast_data(api_key: str, township_name: str) -> dict:
         "format": "JSON"
     }
     try:
-        logger.info(f"正在從中央氣象署 API 取得 {township_name} 的天氣預報資料...")
+        logger.info(f"正在從中央氣象署 API 取得 {location_name} 的天氣預報資料...")
         response = requests.get(url, params=params)
         # 增加日誌來打印 HTTP 狀態碼
         logger.debug(f"CWA API response status code: {response.status_code}")
@@ -36,7 +36,7 @@ def get_cwa_forecast_data(api_key: str, township_name: str) -> dict:
         
         response.raise_for_status()
         data = response.json()
-        logger.info(f"成功取得 {township_name} 的天氣預報資料。")
+        logger.info(f"成功取得 {location_name} 的天氣預報資料。")
         return data
     except requests.exceptions.RequestException as e:
         logger.error(f"從中央氣象署 API 取得預報資料時發生網路錯誤: {e}")

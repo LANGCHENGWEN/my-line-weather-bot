@@ -4,7 +4,7 @@ import os # 引入 os 模組，用於操作作業系統環境變數
 import sys
 import logging
 from dotenv import load_dotenv # 從 dotenv 模組引入 load_dotenv 函數，用於加載 .env 檔案中的環境變數
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 
 # --- 載入 .env 檔案中的環境變數 ---
 # load_dotenv() 會搜尋並讀取同層或父層的 .env，將其轉為系統環境變數，之後可用 os.getenv() 取得
@@ -35,25 +35,36 @@ def setup_logging() -> None:
     日誌會輸出到文件並在午夜輪換。
     """
     root = logging.getLogger() # 為整個應用程式配置一次根日誌器，方便集中管理日誌和全域配置
-    if root.handlers:       # 若已經設定過 Handler，則直接返回，避免重複設定
-        return
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+        handler.close()
     
     root.setLevel(LOG_LEVEL) # 設定根日誌器的最低日誌等級
 
     # 共用的格式：時間 - logger 名稱 - 等級 - 訊息
     fmt = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
     )
 
     # console : 適合在開發或部署到雲端查看，預設 INFO
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(LOG_LEVEL)
     ch.setFormatter(fmt)
+
+    """
+    # 重新用 UTF-8 編碼打開 sys.stdout 的檔案描述符，避免編碼錯誤
+    if sys.platform.startswith("win"):
+        try:
+            ch.stream = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
+        except Exception as e:
+            root.error(f"重設 Console Handler 編碼失敗: {e}")
+    """
+
     root.addHandler(ch)
 
     # rotating file：記錄更完整的 DEBUG 資訊到檔案，可追蹤歷史
     if os.getenv("ENABLE_FILE_LOG", "False").lower() == "true":
-        fh = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=3)
+        fh = TimedRotatingFileHandler(LOG_FILE, when="midnight", interval=1, backupCount=7, encoding="utf-8")
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(fmt)
         root.addHandler(fh)

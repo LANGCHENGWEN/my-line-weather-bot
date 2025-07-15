@@ -7,5 +7,10 @@ utils/__pycache__/
 weather_current/__pycache__/
 weather_forecast/__pycache__/
 .env
+main.log
+main.log.1
+main.log.2
+main.log.3
+main.log.2025-07-15
 ngrok.exe
 user_data.db

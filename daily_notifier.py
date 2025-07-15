@@ -57,7 +57,7 @@ def send_daily_weather_notification_to_user(user_id: str, line_bot_api_instance:
 
     try:
         # 獲取天氣預報數據 (仍使用 F-D0047-091)
-        weather_data = get_cwa_forecast_data(api_key=CWA_API_KEY, township_name=default_township)
+        weather_data = get_cwa_forecast_data(api_key=CWA_API_KEY)
 
         if not weather_data:
             logger.error(f"無法取得 {default_township} 的預報資料，無法發送每日通知。")

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# forecast_options_flex.py
 """
 建立「請選擇要查幾天預報」Flex Message
 """
@@ -9,7 +9,7 @@ from linebot.v3.messaging.models import (
 )
 
 # ---------- 主要函式 ----------
-def create_forecast_options_flex_message(county: str, township: str) -> FlexMessage:
+def create_forecast_options_flex_message(default_county: str) -> FlexMessage:
     """
     回傳一張 FlexMessage，裡面有 3 / 5 / 7 天預報的按鈕。
 
@@ -21,12 +21,25 @@ def create_forecast_options_flex_message(county: str, township: str) -> FlexMess
         return FlexButton(
             action=PostbackAction(
                 label=f"{days} 天預報",
-                data=f"action=get_weather&county={county}&township={township}&days={days}"
+                data=f"action=get_weather&county={default_county}&days={days}"
             ),
             style="primary",
             color="#00B900",   # LINE 綠
             height="sm",
-            margin="md",
+            margin="md"
+        )
+    
+    def _other_location_btn() -> FlexButton:
+        return FlexButton(
+            action=PostbackAction(
+                label="查詢其他縣市",
+                data="action=select_county_and_township_input",
+                displayText="請輸入完整的縣市+鄉鎮市區名稱"
+            ),
+            style="secondary",
+            color="#AAAAAA",
+            height="sm",
+            margin="lg"
         )
 
     bubble = FlexBubble(
@@ -35,20 +48,27 @@ def create_forecast_options_flex_message(county: str, township: str) -> FlexMess
             spacing="md",
             contents=[
                 FlexText(
-                    text="請選擇想查詢的天數：",
+                    text=f"您目前的預設城市是 {default_county}。",
                     weight="bold",
                     size="md",
+                    wrap=True
+                ),
+                FlexText(
+                    text="請選擇想查詢的天數：",
+                    size="md",
                     wrap=True,
+                    margin="md"
                 ),
                 FlexSeparator(margin="md"),
                 _day_btn(3),
                 _day_btn(5),
                 _day_btn(7),
+                _other_location_btn()
             ],
         )
     )
 
     return FlexMessage(
-        alt_text=f"{county}{township} 天氣預報：請選擇天數",
-        contents=bubble,
+        alt_text=f"{default_county} 天氣預報：請選擇天數",
+        contents=bubble
     )

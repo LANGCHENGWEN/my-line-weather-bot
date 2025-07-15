@@ -1,4 +1,5 @@
 # welcome_flex.py
+# 目前未使用
 import logging
 
 # 從 linebot.v3.messaging.models 導入 Flex Message 所需的類
