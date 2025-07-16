@@ -1,7 +1,11 @@
 # forecast_builder_flex.py
+import json
+import logging
 from linebot.v3.messaging.models import (
     FlexBubble, FlexBox, FlexText, FlexSeparator
 )
+
+logger = logging.getLogger(__name__)
 
 # ———— 小工具：快速做兩欄 Key‑Value row ————
 def make_kv_row(label: str, value: str) -> FlexBox:
@@ -13,13 +17,13 @@ def make_kv_row(label: str, value: str) -> FlexBox:
         spacing="sm",
         contents=[
             FlexText(
-                text=label,
+                text=str(label),
                 color="#4169E1",
                 size="md",
                 flex=4
             ),
             FlexText(
-                text=value,
+                text=str(value) if value is not None else "N/A",
                 wrap=True,
                 color="#8A2BE2",
                 size="md",
@@ -43,6 +47,8 @@ def build_observe_weather_flex(data) -> FlexBubble:
     Returns:
         FlexBubble: LINE Flex Message 的 Bubble 元件。
     """
+    logger.debug(f"🧪 傳入 Flex 的資料: {json.dumps(data, ensure_ascii=False, indent=2)}")
+
     day_index = data.get('day_index', None)
     if day_index:
         title_text = f"📍 {data['county_name']} 未來第 {day_index} 天預報"

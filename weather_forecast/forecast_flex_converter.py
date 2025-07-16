@@ -1,8 +1,18 @@
 # forecast_flex_converter.py
+import json
+import logging
 from typing import List, Dict
 from collections import Counter, OrderedDict, defaultdict
 from linebot.v3.messaging.models import FlexMessage, FlexCarousel
 from .forecast_builder_flex import build_observe_weather_flex  # 已在同檔定義
+
+logger = logging.getLogger(__name__)
+
+def safe_float(val):
+    try:
+        return float(val)
+    except:
+        return None
 
 # --------- 將 parser 的結果 => Bubble 清單 ---------
 def convert_forecast_to_bubbles(parsed_weather: Dict, max_days: int) -> List[Dict]:
@@ -11,21 +21,14 @@ def convert_forecast_to_bubbles(parsed_weather: Dict, max_days: int) -> List[Dic
     max_days: 3 / 5 / 7
     回傳: [bubble1, bubble2, ...]
     """
+    logger.info(f"第一筆 forecast_period 資料: {parsed_weather.get('forecast_periods', [])[0] if parsed_weather.get('forecast_periods') else '無資料'}")
     bubbles: List[Dict] = []
 
     # 先把同一天的多個時段彙整成「日資料」
     day_bucket = OrderedDict()                 # key = YYYY-MM-DD
     for p in parsed_weather.get("forecast_periods", []):
         date_key = p.get("date")  # 你在 parser 裡自己決定要不要帶這欄
-        # 這裡去除「今天」「明天」前綴，只保留日期方便分組
-        if date_key in ("今天", "明天"):
-            # 用 start_time 取日期，如果有的話
-            # 如果沒日期就用"今天"或"明天"本身當key
-            # 但parser應該有start_time欄位可用，假設有就用它
-            # 以下示範用date_key直接分組，視實際可調整
-            day_key = date_key
-        else:
-            day_key = date_key  # mm/dd格式直接當key
+        day_key = date_key
 
         if date_key not in day_bucket:
             # 初始化每日資料儲存用
@@ -49,62 +52,42 @@ def convert_forecast_to_bubbles(parsed_weather: Dict, max_days: int) -> List[Dic
             }
         # 可在這裡做「取極值」或「覆蓋」… 視需求而定
 
+        logger.debug(f"✅ 每日預報整理結果: {json.dumps(day_bucket, ensure_ascii=False, indent=2)}")
+
         # 累積每個時段資料
         day_data = day_bucket[day_key]
         day_data["weather_descs"].append(p.get("weather_desc", "N/A"))
-        # 最高溫轉換成float(失敗就跳過)
-        try:
-            day_data["max_temps"].append(float(p.get("max_temp", "-")))
-        except:
-            pass
-        try:
-            day_data["max_feels"].append(float(p.get("max_feel", "-")))
-        except:
-            pass
-        try:
-            day_data["min_temps"].append(float(p.get("min_temp", "-")))
-        except:
-            pass
-        try:
-            day_data["min_feels"].append(float(p.get("min_feel", "-")))
-        except:
-            pass
-        try:
-            day_data["humidities"].append(float(p.get("humidity", "-")))
-        except:
-            pass
-        try:
-            day_data["pops"].append(float(p.get("pop", "-")))
-        except:
-            pass
-        try:
-            day_data["wind_speeds"].append(float(p.get("wind_speed", "-")))
-        except:
-            pass
-        # 風向文字用列表，先累積起來
+
+        for key, bucket in [
+            ("max_temp", "max_temps"),
+            ("max_feel", "max_feels"),
+            ("min_temp", "min_temps"),
+            ("min_feel", "min_feels"),
+            ("humidity", "humidities"),
+            ("pop", "pops"),
+            ("wind_speed", "wind_speeds")
+        ]:
+            val = safe_float(p.get(key))
+            if val is not None:
+                day_data[bucket].append(val)
+
         wind_dir = p.get("wind_dir", "-")
         if wind_dir != "-" and wind_dir != "N/A":
             day_data["wind_dirs"].append(wind_dir)
-        # 舒適度與紫外線指數文字也累積
-        comfort_max = p.get("comfort_max", "-")
-        if comfort_max != "-" and comfort_max != "N/A":
-            day_data["comfort_maxs"].append(comfort_max)
-        comfort_min = p.get("comfort_min", "-")
-        if comfort_min != "-" and comfort_min != "N/A":
-            day_data["comfort_mins"].append(comfort_min)
-        uv_index = p.get("uv_index", "-")
-        if uv_index != "-" and uv_index != "N/A":
-            day_data["uv_indices"].append(uv_index)
+
+        for key, bucket in [
+            ("comfort_max", "comfort_maxs"),
+            ("comfort_min", "comfort_mins"),
+            ("uv_index", "uv_indices")
+        ]:
+            val = p.get(key, "-")
+            if val != "-" and val != "N/A":
+                day_data[bucket].append(val)
 
     # 整理成最終每日資料 (取極值與主要描述)
     final_days = []
     for day_key, day_data in day_bucket.items():
-        # 天氣描述取出現頻率最高的
-        if day_data["weather_descs"]:
-            weather_desc = Counter(day_data["weather_descs"]).most_common(1)[0][0]
-        else:
-            weather_desc = "N/A"
-
+        weather_desc = Counter(day_data["weather_descs"]).most_common(1)[0][0] if day_data["weather_descs"] else "N/A"
         # 取最大或最小，若空則用"-"
         max_temp = max(day_data["max_temps"]) if day_data["max_temps"] else "-"
         max_feel = max(day_data["max_feels"]) if day_data["max_feels"] else "-"
