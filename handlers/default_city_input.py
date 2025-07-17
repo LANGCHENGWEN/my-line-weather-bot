@@ -3,6 +3,8 @@ import logging
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
 
 from weather_current.current_handler import reply_weather_of_city
+from weather_forecast.forecast_handler import normalize_city_name, handle_forecast_message
+# from weather_forecast.forecast_options_flex import create_forecast_options_flex_message
 from utils.api_helper import get_messaging_api
 from utils.line_common_messaging import send_line_reply_message
 from utils.user_data_manager import (
@@ -33,7 +35,7 @@ def handle(line_bot_api, event):
         ))
         logger.info(f"用戶 {event.source.user_id} 輸入無效城市：{city}")
 
-# ---------- 「查詢其他縣市」 ----------
+# ---------- 「查詢即時天氣其他縣市」 ----------
 def handle_awaiting_city_input(api, event):
     """
     state = awaiting_city_input 時呼叫
@@ -56,3 +58,28 @@ def handle_awaiting_city_input(api, event):
         send_line_reply_message(api, reply_token,
             [TextMessage(text="請輸入有效城市，例如：台中市 或 台北市")])
         logger.info(f"[OtherCity] 無效輸入: {city}")
+
+# ---------- 「查詢未來預報其他縣市」 ----------
+def handle_awaiting_forecast_city_input(api, event):
+    """
+    state = awaiting_forecast_city_input 時呼叫
+    """
+    city        = event.message.text.strip()
+    user_id     = event.source.user_id
+    reply_token = event.reply_token
+
+    if is_valid_city(city):
+        # 呼叫未來預報天數選單函式，使用 city 傳入
+        city = normalize_city_name(city)
+        handle_forecast_message(api, event, target_city=city)
+        # flex_msg = handle_forecast_message(city)
+        # send_line_reply_message(api, reply_token, [flex_msg])
+
+        # clear_user_state(user_id)
+        logger.info(f"[ForecastOtherCity] {user_id} 查詢 {city}")
+        return True
+    else:
+        send_line_reply_message(api, reply_token,
+            [TextMessage(text="請輸入有效城市，例如：台中市 或 台北市")])
+        logger.info(f"[ForecastOtherCity] 無效輸入: {city}")
+        return True

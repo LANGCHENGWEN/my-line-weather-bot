@@ -1,8 +1,10 @@
 # forecast_handler.py
 # 主要處理天氣預報用戶輸入的回覆邏輯
 import logging
-from linebot.v3.messaging.models import TextMessage
-from linebot.v3.webhooks.models import MessageEvent
+from datetime import datetime
+from linebot.v3.messaging import ApiClient
+from linebot.v3.messaging.models import TextMessage, FlexMessage
+from linebot.v3.webhooks.models import MessageEvent, PostbackEvent
 # from linebot.v3.models import PostbackAction # 引入 PostbackAction
 
 # 載入預報天氣相關功能
@@ -11,7 +13,6 @@ from .forecast_options_flex import create_forecast_options_flex_message
 # from .cwa_forecast_api import get_cwa_forecast_data
 # from .weather_forecast_parser import parse_forecast_weather
 # from .line_forecast_messaging import format_forecast_weather_message # 只導入 forecast 的格式化
-# from .welcome_flex import create_welcome_flex_message
 
 # 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
 from utils.line_common_messaging import send_line_reply_message
@@ -68,8 +69,30 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
         send_line_reply_message(messaging_api, reply_token, [flex_message])
         logger.info(f"用戶 {user_id} 請求未來預報，已回覆天數選單。")
 
-        # set_user_state(user_id, "awaiting_township_input")
+        # set_user_state(user_id, "awaiting_city_input")
         return True
+    
+# **修改這裡：處理情境二：使用者輸入縣市名稱後，回覆該縣市的天數選單**
+def handle_forecast_city_input(api: ApiClient, event, city: str) -> bool:
+    user_id = event.source.user_id
+    reply_token = event.reply_token
+
+    logger.info(f"[ForecastHandler] {user_id} 收到指定縣市 {city}，準備回覆該城市的天數選單。")
+    city_normalized = normalize_city_name(city) 
+    
+    # 這裡不再直接發送天氣預報，而是再次發送天數選單，但以用戶輸入的城市為主
+    flex_message = create_forecast_options_flex_message(city_normalized) 
+    
+    if flex_message:
+        send_line_reply_message(api, reply_token, [flex_message])
+        logger.info(f"[ForecastHandler] 成功回覆天數選單（針對指定城市 {city_normalized}）給 {user_id}。")
+        # 清空等待輸入城市的狀態，並設定為等待天數選擇
+        set_user_state(user_id, "awaiting_forecast_selection") 
+        return True
+    else:
+        logger.error(f"[ForecastHandler] create_forecast_options_flex_message 返回 None 或空。Flex Message 可能有問題。")
+        send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法載入該城市的天數選單，請稍後再試。")])
+        return True 
     
 '''    
 def handle_township_input(messaging_api, event):

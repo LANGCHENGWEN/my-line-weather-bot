@@ -32,9 +32,9 @@ def create_forecast_options_flex_message(default_county: str) -> FlexMessage:
     def _other_location_btn() -> FlexButton:
         return FlexButton(
             action=PostbackAction(
+                type="postback",
                 label="查詢其他縣市",
-                data="action=select_county_and_township_input",
-                displayText="請輸入完整的縣市+鄉鎮市區名稱"
+                data="action=forecast_other_city",
             ),
             style="secondary",
             color="#AAAAAA",

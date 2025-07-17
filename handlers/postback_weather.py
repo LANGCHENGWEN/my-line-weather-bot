@@ -50,6 +50,16 @@ def handle(event):
         )
         logger.info(f"使用者 {event.source.user_id} → awaiting_city_input")
 
+    elif action == "forecast_other_city":
+        set_user_state(event.source.user_id, "awaiting_forecast_city_input")
+        logger.info(f"設定使用者 {event.source.user_id} 狀態為: awaiting_forecast_city_input")
+
+        api = get_messaging_api()
+        send_line_reply_message(api,
+            reply_token=event.reply_token,
+            messages=[TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")]
+        )
+
 '''
 def handle(event):
     line_bot_api = get_messaging_api()

@@ -55,6 +55,10 @@ def handle(event):
     # 先判斷 change_city
     if action == "change_city":
         return postback_weather.handle(event)
+    
+    # 判斷 forecast_other_city
+    if action == "forecast_other_city":
+        return postback_weather.handle(event)
 
     # ---------- (A) 切換 Rich‑menu ----------
     alias = ACTION_TO_ALIAS.get(action)
