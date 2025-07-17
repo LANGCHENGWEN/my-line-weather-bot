@@ -2,6 +2,7 @@
 import json
 import logging
 from typing import List, Dict
+from datetime import datetime
 from collections import Counter, OrderedDict, defaultdict
 from linebot.v3.messaging.models import FlexMessage, FlexCarousel
 from .forecast_builder_flex import build_observe_weather_flex  # 已在同檔定義
@@ -13,6 +14,15 @@ def safe_float(val):
         return float(val)
     except:
         return None
+"""    
+def format_start_time(start_time_str: str) -> str:
+    try:
+        dt = datetime.fromisoformat(start_time_str)
+        return dt.strftime("%Y年%-m月%-d日")  # Unix/MacOS
+        # return dt.strftime("%Y年%m月%d日")  # Windows
+    except Exception:
+        return "N/A"
+"""
 
 # --------- 將 parser 的結果 => Bubble 清單 ---------
 def convert_forecast_to_bubbles(parsed_weather: Dict, max_days: int) -> List[Dict]:
@@ -31,11 +41,12 @@ def convert_forecast_to_bubbles(parsed_weather: Dict, max_days: int) -> List[Dic
         day_key = date_key
 
         if date_key not in day_bucket:
+
             # 初始化每日資料儲存用
             day_bucket[day_key] = {
                 "county_name": parsed_weather.get("county_name", "N/A"),
                 "num_days": parsed_weather.get("num_days", 1),
-                "obs_time": parsed_weather.get("obs_time", "N/A"),
+                "obs_time": p.get("date_str", "N/A"),
                 # 儲存多個欄位的累積值
                 "weather_descs": [],
                 "max_temps": [],

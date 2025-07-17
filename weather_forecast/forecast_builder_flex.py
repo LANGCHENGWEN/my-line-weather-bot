@@ -80,25 +80,25 @@ def build_observe_weather_flex(data) -> FlexBubble:
                             layout="vertical",
                             spacing="sm",
                             contents=[
-                                make_kv_row("🌡️ 最高溫度:", data["max_temp"]),
-                                make_kv_row("    (體感最高:", f"{data['max_feel']})")
+                                make_kv_row("🌡️ 最高溫度:", f"{data['max_temp']}°C"),
+                                make_kv_row("    (體感最高:", f"{data['max_feel']}°C)")
                             ]
                         ),
                         FlexBox(
                             layout="vertical",
                             spacing="sm",
                             contents=[
-                                make_kv_row("❄️ 最低溫度:", data["min_temp"]),
-                                make_kv_row("    (體感最低:", f"{data['min_feel']})")
+                                make_kv_row("❄️ 最低溫度:", f"{data['min_temp']}°C"),
+                                make_kv_row("    (體感最低:", f"{data['min_feel']}°C)")
                             ]
                         ),
-                        make_kv_row("💧 濕度:", data["humidity"]),
-                        make_kv_row("🌧️ 降雨機率:", data["pop"]),
+                        make_kv_row("💧 濕度:", f"{data['humidity']}%" if data["humidity"] not in ("-", "N/A", None) else str(data["humidity"])),
+                        make_kv_row("🌧️ 降雨機率:", f"{data['pop']}%" if data["pop"] not in ("-", "N/A", None) else str(data["pop"])),
                         FlexBox(
                             layout="vertical",
                             spacing="sm",
                             contents=[
-                                make_kv_row("🌬️ 風速:", data["wind_speed"]),
+                                make_kv_row("🌬️ 風速:", f"{data['wind_speed']}m/s" if data["wind_speed"] not in ("-", "N/A", None) else str(data["wind_speed"])),
                                 make_kv_row("      (風向:", f"{data['wind_dir']})")
                             ]
                         ),

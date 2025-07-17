@@ -184,10 +184,19 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
             period['date'] = date_prefix # 加入日期前綴
             period['period_name'] = period_name
 
+            # 格式化完整日期字串
+            # 如果你用的是 Linux / MacOS：
+            try:
+                period['date_str'] = start_dt.strftime("%Y年%-m月%-d日")
+            except ValueError:
+                # Windows 環境下可用以下格式（不保證所有 Windows Python 版本都支援）
+                period['date_str'] = start_dt.strftime("%Y年%m月%d日")
+
         except (ValueError, TypeError) as ve:
             logger.error(f"時間格式解析錯誤: {ve}。原始時間字串: {period.get('start_time')}, {period.get('end_time')}")
             period['date'] = "N/A"
             period['period_name'] = "N/A"
+            period['date_str'] = "N/A"
 
         forecast_periods.append(period)
         
