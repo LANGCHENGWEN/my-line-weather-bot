@@ -18,7 +18,7 @@ from .line_forecast_messaging import build_forecast_weather_flex
 # 載入使用者狀態管理器
 from utils.user_data_manager import set_user_state, clear_user_state
 
-from utils.debug_tools import debug_parsed_weather
+# from utils.debug_tools import debug_parsed_weather
 
 # 載入通用訊息發送功能
 from utils.line_common_messaging import (
@@ -86,7 +86,7 @@ def handle_forecast_postback(messaging_api, event: PostbackEvent) -> bool:
         parsed_weather = parse_forecast_weather(weather_data, county)
 
         # 呼叫 debug helper 印出log
-        debug_parsed_weather(parsed_weather, weather_data)
+        # debug_parsed_weather(parsed_weather, weather_data)
 
         if parsed_weather:
             # 格式化為 LINE 訊息

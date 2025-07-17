@@ -98,7 +98,7 @@ def build_observe_weather_flex(data) -> FlexBubble:
                             layout="vertical",
                             spacing="sm",
                             contents=[
-                                make_kv_row("🌬️ 風速:", f"{data['wind_speed']}m/s" if data["wind_speed"] not in ("-", "N/A", None) else str(data["wind_speed"])),
+                                make_kv_row("🌬️ 風速:", f"{data['wind_speed']} m/s" if data["wind_speed"] not in ("-", "N/A", None) else str(data["wind_speed"])),
                                 make_kv_row("      (風向:", f"{data['wind_dir']})")
                             ]
                         ),

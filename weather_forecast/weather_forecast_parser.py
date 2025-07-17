@@ -60,7 +60,7 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
 
     # 列出所有 LocationName，方便 debug
     location_names = [loc.get("LocationName") for loc in all_locations]
-    logger.info(f"可用 LocationName 清單: {location_names}")
+    logger.debug(f"可用 LocationName 清單: {location_names}")
 
     target_location = None
     for loc in all_locations:
@@ -80,15 +80,17 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
     # ✅ 在這裡加上這一行，檢查這個地點下所有欄位
     logger.debug(f"📦 target_location: {json.dumps(target_location, ensure_ascii=False, indent=2)}")
     
+    """
     for element in target_location.get("WeatherElement", []):
-        logger.info(f"➡️ 目前 ElementName：{element.get('ElementName')}")
-    
+        logger.debug(f"➡️ 目前 ElementName：{element.get('ElementName')}")
+    """
+
     # 聚合時間段資料
-    aggregated_forecast = {}
+    daily_aggregated = {}
 
     for element in target_location.get("WeatherElement", []):
         element_name = element.get("ElementName")
-        logger.info(f"➡️ 目前 ElementName：{element_name}")
+        logger.debug(f"➡️ 目前 ElementName：{element_name}")
         logger.debug(f"{element_name} 的 Time 資料: {json.dumps(element.get('Time', []), ensure_ascii=False, indent=2)}")
         if element_name not in element_field_map:
             continue
@@ -103,106 +105,88 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
                 logger.warning(f"時間資訊不完整: {start_time}, {end_time}")
                 continue
 
-            # ✅ 改用時間段當 key，避免欄位資料無法聚合
-            time_key = f"{start_time}_{end_time}"
+            start_dt = datetime.datetime.fromisoformat(start_time)
+            end_dt = datetime.datetime.fromisoformat(end_time)
+
+            # 依照結束時間 (end_dt) 的日期來決定歸屬哪一天
+            date_key = (end_dt - datetime.timedelta(hours=6)).date().isoformat()
+
+            # 判斷 day 或 night
+            if start_dt.hour == 6:
+                period = "day"
+            elif start_dt.hour == 18:
+                period = "night"
+            else:
+                # 萬一遇到特例
+                period = "unknown"
 
             # 初始化該時間段的數據
-            if time_key not in aggregated_forecast:
-                aggregated_forecast[time_key] = {
-                    "start_time": start_time,
-                    "end_time": end_time
+            if date_key not in daily_aggregated:
+                daily_aggregated[date_key] = {
+                    "date": date_key,
+                    "start_time_day": None,
+                    "end_time_day": None,
+                    "start_time_night": None,
+                    "end_time_night": None
                 }
 
             # 提取 ElementValue 中的實際值
             # 這裡需要根據 ElementName 來決定提取哪個鍵
             value_dict = time_entry.get("ElementValue", [{}])[0] # 通常 ElementValue 只有一個字典
             val = safe_val(value_dict.get(inner_field))
-            aggregated_forecast[time_key][target_key] = val
-            logger.debug(f"🧪 [{element_name}] 解析元素: start={start_time}, end={end_time}, key={inner_field}, val={val}, 原始 value_dict={value_dict}")
-            logger.debug(f"時間 {start_time} 元素 {element_name} 的 value_dict keys: {list(value_dict.keys())} / value_dict content: {value_dict}")
 
-            """
-            # 根據 elementName 和 parameter.parameterName/Value 提取數據
-            if element_name == "天氣現象": # 天氣現象描述
-                aggregated_forecast[start_time]["weather_desc"] = safe_val(value_dict.get("Weather", "N/A"))
-            elif element_name == "最高溫度": # 最高溫度
-                aggregated_forecast[start_time]["max_temp"] = safe_val(value_dict.get("MaxTemperature", "N/A"))
-            elif element_name == "最高體感溫度": # 最高體感溫度
-                aggregated_forecast[start_time]["max_feel"] = safe_val(value_dict.get("MaxApparentTemperature", "N/A"))
-            elif element_name == "最低溫度": # 最低溫度
-                aggregated_forecast[start_time]["min_temp"] = safe_val(value_dict.get("MinTemperature", "N/A"))
-            elif element_name == "最低體感溫度": # 最低體感溫度
-                aggregated_forecast[start_time]["min_feel"] = safe_val(value_dict.get("MinApparentTemperature", "N/A"))
-            elif element_name == "平均相對濕度": # 濕度
-                aggregated_forecast[start_time]["humidity"] = safe_val(value_dict.get("RelativeHumidity", "N/A"))
-            elif element_name == "12小時降雨機率": # 降雨機率
-                aggregated_forecast[start_time]["pop"] = safe_val(value_dict.get("ProbabilityOfPrecipitation", "N/A"))
-            elif element_name == "風速": # 風速
-                aggregated_forecast[start_time]["wind_speed"] = safe_val(value_dict.get("WindSpeed", "N/A"))
-            elif element_name == "風向": # 風向
-                aggregated_forecast[start_time]["wind_dir"] = safe_val(value_dict.get("WindDirection", "N/A"))
-            elif element_name == "最大舒適度指數": # 最大舒適度指數描述
-                aggregated_forecast[start_time]["comfort_max"] = safe_val(value_dict.get("MaxComfortIndexDescription", "N/A"))
-            elif element_name == "最小舒適度指數": # 最小舒適度指數描述
-                aggregated_forecast[start_time]["comfort_min"] = safe_val(value_dict.get("MinComfortIndexDescription", "N/A"))
-            elif element_name == "紫外線指數": # 紫外線指數
-                aggregated_forecast[start_time]["uv_index"] = safe_val(value_dict.get("UVIndex", "N/A"))
-            # 您可以根據實際資料集，繼續添加其他元素
-            """
+            # 存入正確的 period
+            key_name = f"{target_key}_{period}"
+            daily_aggregated[date_key][key_name] = val
+            logger.debug(f"📅 處理元素: {element_name} / Start: {start_time} / Period: {period} / date_key: {date_key} / inner_field: {inner_field}")
+            logger.debug(f"ElementValue: {value_dict} / 取值結果: {val}")
+
+            # 記錄原始時間
+            if period == "day":
+                daily_aggregated[date_key]["start_time_day"] = start_time
+                daily_aggregated[date_key]["end_time_day"] = end_time
+            else:
+                daily_aggregated[date_key]["start_time_night"] = start_time
+                daily_aggregated[date_key]["end_time_night"] = end_time
 
     # 將聚合的數據轉換為排序的列表
     forecast_periods = []
-    for time_key in sorted(aggregated_forecast.keys()):
-        period = aggregated_forecast[time_key]
+    for date_key in sorted(daily_aggregated.keys()):
+        daily = daily_aggregated[date_key]
 
         # 格式化日期和時段
         try:
-            start_dt = datetime.datetime.fromisoformat(period["start_time"])
-            end_dt = datetime.datetime.fromisoformat(period["end_time"])
+            date_obj = datetime.date.fromisoformat(daily["date"])
+            current_date = datetime.datetime.now().date() # 確保時區一致
 
             # 判斷時段是「今天」、「明天」或其他日期
-            current_date = datetime.datetime.now(start_dt.tzinfo).date() # 確保時區一致
-            forecast_date = start_dt.date()
-
-            if forecast_date == current_date:
+            if date_obj == current_date:
                 date_prefix = "今天"
-            elif forecast_date == current_date + datetime.timedelta(days=1):
+            elif date_obj == current_date + datetime.timedelta(days=1):
                 date_prefix = "明天"
             else:
-                date_prefix = forecast_date.strftime("%m/%d") # 例如 07/03
+                date_prefix = date_obj.strftime("%m/%d") # 例如 07/03
 
-            # 判斷時段是白天 (06-18) 還是夜晚 (18-06)
-            if 6 <= start_dt.hour < 18 and 6 <= end_dt.hour <= 18:
-                period_name = "白天"
-            elif (18 <= start_dt.hour <= 23 or 0 <= start_dt.hour < 6) and \
-                    (18 <= end_dt.hour <= 23 or 0 <= end_dt.hour < 6):
-                period_name = "晚上"
-            else:
-                # 如果時段橫跨日夜，或者是非標準的12小時制，就顯示時間範圍
-                period_name = f"{start_dt.strftime('%H:%M')} ~ {end_dt.strftime('%H:%M')}"
-
-            period['date'] = date_prefix # 加入日期前綴
-            period['period_name'] = period_name
+            daily["date_prefix"] = date_prefix # 加入日期前綴
 
             # 格式化完整日期字串
             # 如果你用的是 Linux / MacOS：
             try:
-                period['date_str'] = start_dt.strftime("%Y年%-m月%-d日")
+                daily["date_str"] = date_obj.strftime("%Y年%-m月%-d日")
             except ValueError:
                 # Windows 環境下可用以下格式（不保證所有 Windows Python 版本都支援）
-                period['date_str'] = start_dt.strftime("%Y年%m月%d日")
+                daily["date_str"] = date_obj.strftime("%Y年%m月%d日")
 
         except (ValueError, TypeError) as ve:
-            logger.error(f"時間格式解析錯誤: {ve}。原始時間字串: {period.get('start_time')}, {period.get('end_time')}")
-            period['date'] = "N/A"
-            period['period_name'] = "N/A"
-            period['date_str'] = "N/A"
+            logger.error(f"時間格式解析錯誤: {ve}。原始時間字串: {daily.get('start_time_day')}, {daily.get('end_time_day')}")
+            daily["date_prefix"] = "N/A"
+            daily["date_str"] = "N/A"
 
-        forecast_periods.append(period)
+        forecast_periods.append(daily)
         
-    parsed_weather['location_name'] = county_name
-    parsed_weather['county_name'] = county_name
-    parsed_weather['forecast_periods'] = forecast_periods
+    parsed_weather["location_name"] = county_name
+    parsed_weather["county_name"] = county_name
+    parsed_weather["forecast_periods"] = forecast_periods
     
     logger.debug(f"✅ 預報解析結果: {json.dumps(parsed_weather, ensure_ascii=False, indent=2)}")
     logger.info(f"解析完成: {county_name} 共 {len(forecast_periods)} 個時段天氣資料。")

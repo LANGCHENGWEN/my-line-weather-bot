@@ -58,8 +58,6 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
     reply_token = event.reply_token
     # user_current_state = get_user_state(user_id)
 
-    # logger.info(f"從用戶 {user_id} 收到文字訊息: '{message_text}', 當前狀態: {user_current_state}")
-
     # 1. 處理啟動天氣查詢的關鍵字 (例如使用者輸入 "未來預報" 或 "天氣")
     if message_text == "未來預報":
         default_city = get_default_city(user_id) or "臺中市"
