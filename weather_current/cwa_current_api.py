@@ -3,7 +3,8 @@
 import logging
 import requests
 from config import CWA_CURRENT_WEATHER_API
-from .major_stations import COUNTY_TO_STATION_MAP, ALL_TAIWAN_COUNTIES, normalize_location_name
+from utils.text_processing import normalize_city_name
+from .major_stations import COUNTY_TO_STATION_MAP, ALL_TAIWAN_COUNTIES
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def get_cwa_current_data(api_key: str, location_name: str) -> dict | None:
     url = CWA_CURRENT_WEATHER_API
 
     # 在進行映射前，先將用戶輸入的 location_name 進行標準化
-    normalized_location_name = normalize_location_name(location_name)
+    normalized_location_name = normalize_city_name(location_name)
     logger.debug(f"標準化後的 location_name: '{normalized_location_name}'")
 
     logger.debug(f"進入 get_cwa_current_data，收到的 location_name: '{location_name}'")

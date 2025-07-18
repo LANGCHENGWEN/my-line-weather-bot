@@ -5,11 +5,12 @@ from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
 
 from urllib.parse import parse_qs
 from utils.api_helper import get_messaging_api
-from utils.user_data_manager import set_user_state
+from utils.user_data_manager import set_user_state, get_user_state
 from utils.line_common_messaging import send_line_reply_message
 
 from handlers import postback_weather
 from menu_handlers.menu_switcher import switch_to_alias
+from weather_forecast.postback_handler import handle_forecast_postback
 
 '''
 from weather_current import current_handler
@@ -33,9 +34,10 @@ ACTION_TO_ALIAS = {
 ACTION_DISPATCH = {
     "weather_query"      : "weather_current.current_handler",
     "get_weather"        : "weather_forecast.postback_handler",
+    "forecast_days"      : "weather_forecast.postback_handler",
     "typhoon_area"       : "weather_typhoon.typhoon_handler",
     "lifestyle_reminders": "life_style.reminder_handler",
-    "settings"           : "menu_handlers.settings_menu_handler",
+    "settings"           : "menu_handlers.settings_menu_handler"
 }
 
 # -------------------- 3) 入口 --------------------
@@ -51,21 +53,39 @@ def handle(event):
     data = parse_qs(event.postback.data)
     action = data.get("action", [""])[0]
     user_id = event.source.user_id
+    reply_token = event.reply_token
 
-    # 先判斷 change_city
+    logger.debug(f"[PostbackRouter] 收到 Postback 事件. Action: {action}, 用戶: {user_id}")
+
+    # 🚀 優化點 1: 直接處理 change_city 和 forecast_other_city 的狀態設定
     if action == "change_city":
-        return postback_weather.handle(event)
+        set_user_state(user_id, "awaiting_city_input")
+        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇變更城市，狀態設為 awaiting_city_input。")
+        return True # 已處理
     
     # 判斷 forecast_other_city
     if action == "forecast_other_city":
-        return postback_weather.handle(event)
+        set_user_state(user_id, "awaiting_forecast_city_input")
+        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢其他縣市，狀態設為 awaiting_forecast_city_input。")
+        return True # 已處理
+    
+    # 🚀 優化點 2: 處理 forecast_days
+    # 因為這個 action 是特定且需要解析參數的，所以單獨處理
+    if action == "forecast_days":
+        # 直接呼叫專門處理 forecast_days 的函數
+        # 這個函數 (handle_postback_forecast_query) 需要從 event 中自行解析 days 和 city
+        logger.debug(f"[PostbackRouter] 導向 handle_postback_forecast_query 處理 forecast_days。")
+        return handle_forecast_postback(api, event) # 這會回傳 True/False
 
     # ---------- (A) 切換 Rich‑menu ----------
     alias = ACTION_TO_ALIAS.get(action)
     if alias:
         # switch_to_alias 需在 menu_switcher 裡面封裝 link_rich_menu_id_to_user(...)
         switch_to_alias(api, user_id, alias)
-        return
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 切換 Rich Menu 別名至 {alias}。")
+        return True # 已處理
 
     # ---------- (B) 呼叫對應的 handler ----------
     module_path = ACTION_DISPATCH.get(action)
@@ -74,17 +94,27 @@ def handle(event):
 
         # 支援多種命名：handle(api,event) / handle(event) / handle_XYZ(api,event)
         if hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:
+            logger.debug(f"[PostbackRouter] 導向 {module_path}.handle(api, event)")
             return mod.handle(api, event)
-        if hasattr(mod, "handle"):
+        elif hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 1:
+            logger.debug(f"[PostbackRouter] 導向 {module_path}.handle(event)")
             return mod.handle(event)
-        if hasattr(mod, "handle_current_message"):
+        elif hasattr(mod, "handle_current_message"):
+            logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_current_message(api, event)")
             return mod.handle_current_message(api, event)
-        if hasattr(mod, "handle_forecast_postback"):
+        elif hasattr(mod, "handle_forecast_postback"):
+            logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_forecast_postback(api, event)")
             return mod.handle_forecast_postback(api, event)
+        elif hasattr(mod, "handle_postback_forecast_query"): # 🚀 確保這裡能導向你新增的函數
+            logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_postback_forecast_query(api, event)")
+            return mod.handle_postback_forecast_query(api, event)
 
+        # 如果找到模組但沒有匹配的處理函數
+        logger.error(f"[PostbackRouter] {module_path} 沒有可用的 handle 函式 (或簽名不符)。")
         raise AttributeError(f"{module_path} 沒有可用的 handle 函式")
 
     # ---------- (C) 若沒有對應 action ----------
-    logger.warning(f"未知的 postback action: {action}")
-    send_line_reply_message(api, event.reply_token,
-        [TextMessage(text="抱歉，我不太懂您的選擇，請再試一次。")])             # handle(event) (舊版)
+    logger.warning(f"[PostbackRouter] 未知的 postback action: {action}")
+    send_line_reply_message(api, reply_token,
+        [TextMessage(text="抱歉，我不太懂您的選擇，請再試一次。")])
+    return True # 已回覆，所以返回 True

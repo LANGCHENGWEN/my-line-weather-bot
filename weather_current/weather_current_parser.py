@@ -234,17 +234,21 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
     # parsed_and_formatted_info['uv_index'] = str(uv_val) if uv_val != 'N/A' else 'N/A'
 
     # *** 修改這裡：如果為 'N/A'，則顯示 '無' 或 '-' ***
-    if uv_val != 'N/A':
+    if uv_val != '-' and uv_val != 'N/A': # 確保 uv_val 是有效數字或可轉換為數字
         # 根據 UV 值判斷等級，或者直接顯示數值
         # 這裡為了簡單，直接顯示數值。如果您有等級判斷，可以加上。
-        if uv_val > 7:
+        if uv_val >= 11:
+            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (危險級)"
+        elif uv_val >= 8:
+            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (過量級)"
+        elif uv_val >= 6:
             parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (高)"
         elif uv_val >= 3:
             parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (中)"
-        elif uv_val >= 1: # 低到中等
+        elif uv_val >= 0: # 包含 0-2 的低級
             parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (低)"
-        else: # 0
-            parsed_and_formatted_info['uv_index'] = "0" # 夜間或非常低
+        else: # 考慮負值或其他異常情況
+            parsed_and_formatted_info['uv_index'] = "-" # 或其他適當的默認值
     else:
         parsed_and_formatted_info['uv_index'] = "無"
 

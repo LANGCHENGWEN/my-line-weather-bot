@@ -4,7 +4,7 @@ import logging
 from typing import List
 
 from linebot.v3.messaging.models import (
-    FlexMessage, FlexBubble, FlexBox, FlexText
+    FlexMessage, FlexBubble, FlexBox, FlexText, FlexCarousel
 )
 
 from .forecast_flex_converter import (
@@ -18,37 +18,55 @@ from .forecast_flex_converter import (
 logger = logging.getLogger(__name__)
 
 # --- 格式化預報天氣訊息 ---
-def build_forecast_weather_flex(parsed_weather_data, num_days) -> FlexMessage:
+def build_forecast_weather_flex(parsed_data: dict, days: int, city_name: str) -> FlexMessage:
     """
     將解析後的天氣字典轉成 FlexMessage Carousel。
     Args:
-        parsed_weather_data (dict): {
-            'location_name': '西屯區',
-            'county_name': '臺中市',
-            'forecast_periods': [ {...}, {...}, ... ]
-        }
-        num_days (int): 3 / 5 / 7
+        parsed_data (dict): 包含解析後天氣數據的字典，結構範例：
+            {
+                'location_name': '西屯區', # 鄉鎮市區名稱
+                'county_name': '臺中市',   # 縣市名稱
+                'forecast_periods': [ {...}, {...}, ... ] # 實際的預報數據
+            }
+        days (int): 預報的天數 (3 / 5 / 7)。
+        city_name (str): 外部傳入的查詢縣市名稱，用於 Flex Message 的標題等。
     Returns:
-        FlexMessage
+        FlexMessage: 包含未來天氣預報的 Flex Message 輪播。
     """
-    if not parsed_weather_data or not parsed_weather_data.get("forecast_periods"):
-        logger.warning("沒有提供預報天氣數據或數據不完整供格式化。")
-        location = parsed_weather_data.get("location_name", "該地區") if parsed_weather_data else "該地區"
+    if not parsed_data or not parsed_data.get("forecast_periods"):
+        logger.warning(f"沒有提供預報天氣數據或數據不完整供格式化。查詢城市: {city_name}, 天數: {days}")
+
+        #location = parsed_data.get("location_name", "該地區") if parsed_data else "該地區"
+        alt_text = f"{city_name} 未來天氣預報"
         return FlexMessage(
-            alt_text=f"{location} 未來天氣預報",
+            alt_text=alt_text,
             contents=FlexBubble(
                 body=FlexBox(type="box", layout="vertical", contents=[
-                    FlexText(text=f"⚠️ 抱歉，暫時無法取得 {location} 的預報資料。", wrap=True)
+                    FlexText(text=f"⚠️ 抱歉，暫時無法取得 {city_name} 的預報資料。", wrap=True)
                 ])
             )
         )
     
     # ✅ 正確流程：轉換為 bubble list 並組成 Carousel
-    bubble_list = convert_forecast_to_bubbles(parsed_weather_data, num_days)
-    alt_txt = f"{parsed_weather_data['county_name']} 未來 {num_days} 天氣預報"
+    bubble_list = convert_forecast_to_bubbles(parsed_data, days)
+
+    if not bubble_list:
+        logger.error(f"無法從解析後的數據構建天氣預報 Bubble 列表。城市: {city_name}, 天數: {days}")
+        alt_text = f"{city_name} 未來天氣預報"
+        return FlexMessage(
+            alt_text=alt_text,
+            contents=FlexBubble(
+                body=FlexBox(type="box", layout="vertical", contents=[
+                    FlexText(text=f"⚠️ 抱歉，無法生成 {city_name} 的天氣預報顯示。", wrap=True)
+                ])
+            )
+        )
+
+    alt_txt = f"{city_name} 未來 {days} 天氣預報"
     # carousel = FlexCarousel(contents=build_observe_weather_flex)
     flex_msg = build_flex_carousel(bubble_list, alt_text=alt_txt)
-    logger.info("預報 FlexMessage 已建立，共 %d 張 bubble。", len(bubble_list))
+
+    logger.info(f"預報 FlexMessage 已建立，共 {len(bubble_list)} 張 bubble，alt_text: {alt_txt}")
     return flex_msg
     
     """

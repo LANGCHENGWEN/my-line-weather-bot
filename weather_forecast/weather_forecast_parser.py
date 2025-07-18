@@ -25,7 +25,7 @@ element_field_map = {
     "紫外線指數": ("uv_index", "UVIndex")
 }
 
-def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
+def parse_forecast_weather(cwa_raw_data: dict, city_name: str) -> dict:
     """
     解析中央氣象署「F-D0047-091」資料 (未來一週逐12小時天氣預報)。
     
@@ -36,12 +36,12 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
     Returns:
         dict: 解析後的天氣資料結構，含多個時間段的預報。
     """
-    logger.debug(f"實際取得的 CWA JSON 結構: {json.dumps(cwa_data, indent=2, ensure_ascii=False)}")
+    logger.debug(f"實際取得的 CWA JSON 結構: {json.dumps(cwa_raw_data, indent=2, ensure_ascii=False)}")
     
     parsed_weather = {}
 
     # 先取到 records 列表
-    records = cwa_data.get("records", {})
+    records = cwa_raw_data.get("records", {})
     if not records:
         logger.error("CWA API 資料中缺少 'records' 或其為空。")
         return {}
@@ -64,15 +64,15 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
 
     target_location = None
     for loc in all_locations:
-        if loc.get("LocationName") == county_name:
+        if loc.get("LocationName") == city_name:
             target_location = loc
             break
 
     if not target_location:
-        logger.warning(f"找不到指定縣市 '{county_name}' 的資料。")
+        logger.warning(f"找不到指定縣市 '{city_name}' 的資料。")
         return {}
     
-    logger.info(f"✅ 成功找到縣市 {county_name} 的資料")
+    logger.info(f"✅ 成功找到縣市 {city_name} 的資料")
     logger.info(f"共取得 {len(target_location['WeatherElement'])} 個氣象元素")
     for el in target_location["WeatherElement"]:
         logger.info(f"元素 {el['ElementName']} 有 {len(el['Time'])} 筆時間段")
@@ -184,10 +184,10 @@ def parse_forecast_weather(cwa_data: dict, county_name: str) -> dict:
 
         forecast_periods.append(daily)
         
-    parsed_weather["location_name"] = county_name
-    parsed_weather["county_name"] = county_name
+    parsed_weather["location_name"] = city_name
+    parsed_weather["county_name"] = city_name
     parsed_weather["forecast_periods"] = forecast_periods
     
     logger.debug(f"✅ 預報解析結果: {json.dumps(parsed_weather, ensure_ascii=False, indent=2)}")
-    logger.info(f"解析完成: {county_name} 共 {len(forecast_periods)} 個時段天氣資料。")
+    logger.info(f"解析完成: {city_name} 共 {len(forecast_periods)} 個時段天氣資料。")
     return parsed_weather

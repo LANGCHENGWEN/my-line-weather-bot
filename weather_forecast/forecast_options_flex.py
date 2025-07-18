@@ -9,7 +9,10 @@ from linebot.v3.messaging.models import (
 )
 
 # ---------- 主要函式 ----------
-def create_forecast_options_flex_message(default_county: str) -> FlexMessage:
+def create_forecast_options_flex_message(
+        default_county: str, # 用於天數選單頂部顯示的預設城市
+        target_query_city: str # 用於 Postback action 中實際查詢的目標城市
+) -> FlexMessage:
     """
     回傳一張 FlexMessage，裡面有 3 / 5 / 7 天預報的按鈕。
 
@@ -21,7 +24,7 @@ def create_forecast_options_flex_message(default_county: str) -> FlexMessage:
         return FlexButton(
             action=PostbackAction(
                 label=f"{days} 天預報",
-                data=f"action=get_weather&county={default_county}&days={days}"
+                data=f"action=forecast_days&days={days}&city={target_query_city}"
             ),
             style="primary",
             color="#00B900",   # LINE 綠

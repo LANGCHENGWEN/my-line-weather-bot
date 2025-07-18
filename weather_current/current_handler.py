@@ -16,6 +16,8 @@ from .weather_flex_message import build_weather_flex
 # 需要導入這個來將 Flex Message 字典轉換為 FlexMessage 物件
 from utils.message_builder import format_flex_message
 
+from utils.text_processing import normalize_city_name
+
 # 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
 from utils.line_common_messaging import (
     send_line_reply_message, send_api_error_message
@@ -39,20 +41,23 @@ def handle_current_message(messaging_api, event: MessageEvent) -> bool:
         # 處理即時天氣查詢
         logger.info(f"用戶 {user_id} 查詢即時天氣。")
 
+        # 🚀 在這裡將 LOCATION_NAME 正規化
+        normalized_location_name = normalize_city_name(LOCATION_NAME)
+
         # 1. 取得原始天氣數據
-        current_data = get_cwa_current_data(CWA_API_KEY, LOCATION_NAME)
+        current_data = get_cwa_current_data(CWA_API_KEY, normalized_location_name)
 
         if not current_data:
             logger.error("無法取得中央氣象署即時觀測資料。")
-            send_api_error_message(messaging_api, user_id, reply_token, LOCATION_NAME)
+            send_api_error_message(messaging_api, user_id, reply_token, normalized_location_name)
             return True # 即使出錯也表示這個 handler 嘗試處理了
 
         # 2. 解析並格式化天氣數據 (得到可以直接用於 Flex Message 模板的字典)
-        weather_dict = parse_current_weather(current_data, LOCATION_NAME)
+        weather_dict = parse_current_weather(current_data, normalized_location_name)
 
         if not weather_dict:
-            logger.error(f"無法從取得的即時觀測資料中解析或格式化出 {LOCATION_NAME} 的天氣資訊。")
-            send_api_error_message(messaging_api, user_id, reply_token, LOCATION_NAME)
+            logger.error(f"無法從取得的即時觀測資料中解析或格式化出 {normalized_location_name} 的天氣資訊。")
+            send_api_error_message(messaging_api, user_id, reply_token, normalized_location_name)
             return True # 即使出錯也表示這個 handler 嘗試處理了
         
         # 3. 將格式化後的數據填充到 Flex Message 模板中 (得到 Flex Message 的字典結構)
@@ -63,13 +68,13 @@ def handle_current_message(messaging_api, event: MessageEvent) -> bool:
         if not flex_json: # 如果 format_current_weather_message 返回空字典或 None
             logger.error(f"格式化即時天氣 Flex Message 失敗，返回錯誤訊息給用戶。")
             # 這裡可以選擇發送一個通用的錯誤文字訊息
-            error_message_obj = TextMessage(text=f"抱歉，無法顯示 {LOCATION_NAME} 的天氣資訊卡片。請稍後再試。")
+            error_message_obj = TextMessage(text=f"抱歉，無法顯示 {normalized_location_name} 的天氣資訊卡片。請稍後再試。")
             send_line_reply_message(messaging_api, reply_token, [error_message_obj])
             return True
         
         # 4. 將 Flex Message 字典轉換為 Line Bot SDK 的 FlexMessage 物件
         # 使用 line_common_messaging 中的 format_flex_message 函數
-        flex_msg = format_flex_message(f"{LOCATION_NAME} 即時天氣", flex_json)
+        flex_msg = format_flex_message(f"{normalized_location_name} 即時天氣", flex_json)
 
         # 額外檢查：format_flex_message 也可能返回 TextMessage (降級處理)
         if isinstance(flex_msg, TextMessage): # 如果 format_flex_message 發生錯誤並返回 TextMessage
@@ -81,27 +86,32 @@ def handle_current_message(messaging_api, event: MessageEvent) -> bool:
         send_line_reply_message(messaging_api, reply_token, flex_msg)
         return True # 訊息已處理
     
+    return False # 這個 handler 沒有處理這個訊息
+    
 # 在 current_handler.py 最下方加一個 util
 def reply_weather_of_city(api, reply_token: str, city_name: str) -> None:
     """
     直接根據 city_name 抓資料、組 Flex、回覆。
     用在「查詢其他縣市」或任何想動態查城市的地方。
     """
+    # 🚀 在這裡正規化傳入的 city_name
+    normalized_city_name = normalize_city_name(city_name)
+
     # 1. 取資料
-    raw = get_cwa_current_data(CWA_API_KEY, city_name)
+    raw = get_cwa_current_data(CWA_API_KEY, normalized_city_name)
     if not raw:
-        send_api_error_message(api, None, reply_token, city_name)
+        send_api_error_message(api, None, reply_token, normalized_city_name)
         return
 
     # 2. 解析
-    parsed = parse_current_weather(raw, city_name)
+    parsed = parse_current_weather(raw, normalized_city_name)
     if not parsed:
-        send_api_error_message(api, None, reply_token, city_name)
+        send_api_error_message(api, None, reply_token, normalized_city_name)
         return
 
     # 3. build flex json → FlexMessage
     flex_json = build_weather_flex(parsed)
-    flex_msg  = format_flex_message(f"{city_name} 即時天氣", flex_json)
+    flex_msg  = format_flex_message(f"{normalized_city_name} 即時天氣", flex_json)
 
     # 4. 回覆
     send_line_reply_message(api, reply_token, flex_msg)

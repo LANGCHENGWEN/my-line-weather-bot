@@ -14,13 +14,14 @@ from .forecast_options_flex import create_forecast_options_flex_message
 # from .weather_forecast_parser import parse_forecast_weather
 # from .line_forecast_messaging import format_forecast_weather_message # 只導入 forecast 的格式化
 
+from utils.text_processing import normalize_city_name
 # 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
 from utils.line_common_messaging import send_line_reply_message
 
 # 載入使用者狀態管理器
 from utils.user_data_manager import (
-    get_user_state, set_user_state,
-    get_default_city, clear_user_state, is_valid_city
+    set_user_state, get_user_state,
+    is_valid_city, get_default_city, clear_user_state
 )
 
 logger = logging.getLogger(__name__)
@@ -40,13 +41,6 @@ def initialize_handlers(line_bot_api_instance, handler_instance):
     _handler.add(MessageEvent, message=TextMessage)(handle_message)
     logger.info("訊息事件處理器已註冊。")
 '''
-def normalize_city_name(city_name: str) -> str:
-    """
-    將常見的縣市名稱替換為標準格式，例如把「台」改成「臺」。
-    """
-    if not city_name:
-        return city_name
-    return city_name.replace("台", "臺")
 
 def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
     """
@@ -63,36 +57,63 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
     if message_text == "未來預報":
         default_city = get_default_city(user_id) or "臺中市"
         default_city = normalize_city_name(default_city)  # 字串轉換
+
+        default_user_city = get_default_city(user_id)
+        if default_user_city is None:
+            default_user_city = "請輸入您想要設定的預設城市" # 或者你希望的預設顯示文字
         
-        flex_message = create_forecast_options_flex_message(default_city)
+        flex_message = create_forecast_options_flex_message(
+            default_county=default_city,   # 用於顯示的預設城市
+            target_query_city=default_city # 用於實際查詢的目標城市
+        )
         # 修改這裡，傳入 user_id
         send_line_reply_message(messaging_api, reply_token, [flex_message])
         logger.info(f"用戶 {user_id} 請求未來預報，已回覆天數選單。")
 
-        # set_user_state(user_id, "awaiting_city_input")
+        set_user_state(user_id, "awaiting_forecast_selection", data={"city": default_city})
         return True
     
 # **修改這裡：處理情境二：使用者輸入縣市名稱後，回覆該縣市的天數選單**
-def handle_forecast_city_input(api: ApiClient, event, city: str) -> bool:
+def handle_forecast_city_input(api: ApiClient, event, target_city: str = None) -> bool:
     user_id = event.source.user_id
     reply_token = event.reply_token
 
+    city = target_city 
+    if city is None:
+        if event.message and event.message.type == "text":
+            city = event.message.text.strip()
+        else:
+            logger.error(f"[ForecastHandler] 無法從 event 或 target_city 獲取城市名稱。Event 類型: {event.message.type if event.message else 'N/A'}")
+            send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法識別您查詢的城市名稱。")])
+            return False # 無法獲取城市，返回 False
+
     logger.info(f"[ForecastHandler] {user_id} 收到指定縣市 {city}，準備回覆該城市的天數選單。")
-    city_normalized = normalize_city_name(city) 
+    city_normalized = normalize_city_name(city)
+
+    default_user_city = get_default_city(user_id)
+
+    if default_user_city is not None:
+        default_user_city_normalized = normalize_city_name(default_user_city)
+    else:
+        # 如果沒有預設城市，則使用這個預設顯示文字
+        default_user_city_normalized = "請輸入您想要設定的預設城市" # 或者你希望的預設顯示文字
+
+    # 🚀 新增這一行日誌來檢查 default_user_city_normalized 的值
+    logger.debug(f"[ForecastHandler] 用戶 {user_id} 的預設城市 (from DB): {default_user_city_normalized}")
     
     # 這裡不再直接發送天氣預報，而是再次發送天數選單，但以用戶輸入的城市為主
-    flex_message = create_forecast_options_flex_message(city_normalized) 
+    flex_message = create_forecast_options_flex_message(default_user_city_normalized, city_normalized) 
     
     if flex_message:
         send_line_reply_message(api, reply_token, [flex_message])
         logger.info(f"[ForecastHandler] 成功回覆天數選單（針對指定城市 {city_normalized}）給 {user_id}。")
         # 清空等待輸入城市的狀態，並設定為等待天數選擇
-        set_user_state(user_id, "awaiting_forecast_selection") 
+        set_user_state(user_id, "awaiting_forecast_selection", data={"city": city_normalized}) 
         return True
     else:
         logger.error(f"[ForecastHandler] create_forecast_options_flex_message 返回 None 或空。Flex Message 可能有問題。")
-        send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法載入該城市的天數選單，請稍後再試。")])
-        return True 
+        send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法載入該城市的天數選單，請稍候再試。")])
+        return True # Flex Message 建立失敗，返回 False
     
 '''    
 def handle_township_input(messaging_api, event):
