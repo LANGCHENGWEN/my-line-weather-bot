@@ -1,4 +1,6 @@
 # postback_handler.py
+# 負責協調 API 呼叫、數據解析、訊息格式化 (Postback 事件邏輯)
+# 負責在用戶做出選擇後執行查詢並給出最終結果
 import json
 import logging
 from urllib.parse import parse_qsl

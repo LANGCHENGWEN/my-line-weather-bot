@@ -1,5 +1,5 @@
-# line_common_messaging.py
-# 通用訊息
+# message_builder.py
+# 負責格式化通用訊息
 import json
 import logging
 from typing import Union

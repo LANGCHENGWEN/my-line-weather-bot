@@ -1,4 +1,5 @@
 # handlers/text_router.py
+# 主要文字訊息分發器，負責接收所有來自使用者的文字訊息
 # from utils.api_helper import get_api
 import logging
 from importlib import import_module
@@ -22,7 +23,7 @@ DISPATCH_STATE = {
 DISPATCH_KEYWORD = {
     "即時天氣":  "weather_current.current_handler",
     "未來預報":  "weather_forecast.forecast_handler",
-    "颱風":      "weather_typhoon.typhoon_handler",
+    "颱風":      "typhoon.typhoon_handler",
     "穿搭":      "life_style.outfit_handler"
     # …
 }
@@ -76,6 +77,9 @@ def _dispatch_to_module(module_path: str, event):
     if hasattr(mod, "handle_forecast_message"):
         logger.debug(f"導向至 handle_forecast_message")
         return mod.handle_forecast_message(api, event)
+    if hasattr(mod, "handle_typhoon_message"):
+        logger.debug(f"導向至 handle_typhoon_message")
+        return mod.handle_typhoon_message(api, event)
     
     # fallback: 一般訊息處理
     if hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:

@@ -1,4 +1,5 @@
 # forecast_flex_converter.py
+# 處理從「原始解析數據」到「可填充到 LINE Flex Message 模板的格式」之間的複雜數據和聚合邏輯，並協調 forecast_builder_flex.py 來實際生成多個天氣預報卡片
 import json
 import logging
 from typing import Any, List, Dict

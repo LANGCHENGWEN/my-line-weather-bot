@@ -80,8 +80,9 @@
         "height": 843
       },
       "action": {
-        "type": "message",
-        "text": "回上一頁"
+        "type": "postback",
+        "text": "回上一頁",
+        "data": "action=return_to_main_menu"
       }
     }
   ]

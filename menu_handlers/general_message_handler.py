@@ -18,7 +18,20 @@ def handle_general_message(line_bot_api, event):
         line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=reply_token,
-                messages=[TextMessage(text="哈囉！歡迎使用天氣查詢機器人！")]
+                messages=[
+                    TextMessage(text="哈囉！您好～我是暖心天氣語"),
+                    TextMessage(text="您可以先設定預設城市，然後點擊選單，我會告訴您天氣資訊和穿搭建議喔！")
+                ]
+            )
+        )
+    if "哈囉" in text:
+        line_bot_api.reply_message(
+            ReplyMessageRequest(
+                reply_token=reply_token,
+                messages=[
+                    TextMessage(text="哈囉！您好～我是暖心天氣語"),
+                    TextMessage(text="您可以先設定預設城市，然後點擊選單，我會告訴您天氣資訊和穿搭建議喔！")
+                ]
             )
         )
     elif "謝謝" in text:

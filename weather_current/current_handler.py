@@ -9,9 +9,8 @@ from config import CWA_API_KEY, LOCATION_NAME
 
 # 載入即時天氣相關功能
 from .cwa_current_api import get_cwa_current_data
-from .weather_current_parser import parse_current_weather
-from .line_current_messaging import format_current_weather_message # 只導入 current 的格式化
 from .weather_flex_message import build_weather_flex
+from .weather_current_parser import parse_current_weather
 
 # 需要導入這個來將 Flex Message 字典轉換為 FlexMessage 物件
 from utils.message_builder import format_flex_message

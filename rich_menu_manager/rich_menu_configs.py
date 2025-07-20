@@ -1,7 +1,8 @@
 # rich_menu_configs.py
-
+# 所有 Rich Menu 設定的中央配置中心
 # Rich Menu 別名定義
 # 這些別名是您的程式碼中用來識別不同 Rich Menu 的字串 ID
+# 定義 Rich Menu 的名稱，所有 Rich Menu 別名常數的中央儲存庫
 MAIN_MENU_ALIAS = "main_menu_alias"
 WEATHER_QUERY_ALIAS = "weather_query_alias"
 TYPHOON_ZONE_ALIAS = "typhoon_zone_alias"

@@ -1,4 +1,5 @@
 # handlers/postback_router.py
+# 中央控制台，接收所有來自使用者點擊按鈕的 PostbackEvent
 import logging
 from importlib import import_module
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
@@ -8,8 +9,9 @@ from utils.api_helper import get_messaging_api
 from utils.user_data_manager import set_user_state, get_user_state
 from utils.line_common_messaging import send_line_reply_message
 
-from handlers import postback_weather
 from menu_handlers.menu_switcher import switch_to_alias
+# 引入主選單別名，用於回上一頁
+from rich_menu_manager.rich_menu_configs import MAIN_MENU_ALIAS
 from weather_forecast.postback_handler import handle_forecast_postback
 
 '''
@@ -23,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # -------------------- 1) Rich‑menu 別名對照 --------------------
 # alias 需與 rich_menu_configs.py 及 JSON 別名一致
+# 定義特定使用者行為（按鈕行動）如何導致切換到這些已命名的 Rich Menu
 ACTION_TO_ALIAS = {
     "weather_query"       : "weather_query_alias",
     "typhoon_area"        : "typhoon_zone_alias",
@@ -61,23 +64,31 @@ def handle(event):
     if action == "change_city":
         set_user_state(user_id, "awaiting_city_input")
         send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇變更城市，狀態設為 awaiting_city_input。")
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢即時天氣其他縣市，狀態設為 awaiting_city_input。")
         return True # 已處理
     
     # 判斷 forecast_other_city
     if action == "forecast_other_city":
         set_user_state(user_id, "awaiting_forecast_city_input")
         send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢其他縣市，狀態設為 awaiting_forecast_city_input。")
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢未來預報其他縣市，狀態設為 awaiting_forecast_city_input。")
         return True # 已處理
     
     # 🚀 優化點 2: 處理 forecast_days
     # 因為這個 action 是特定且需要解析參數的，所以單獨處理
-    if action == "forecast_days":
+    if action == "forecast_days": # 處理未來預報的天數選單
         # 直接呼叫專門處理 forecast_days 的函數
         # 這個函數 (handle_postback_forecast_query) 需要從 event 中自行解析 days 和 city
         logger.debug(f"[PostbackRouter] 導向 handle_postback_forecast_query 處理 forecast_days。")
         return handle_forecast_postback(api, event) # 這會回傳 True/False
+    
+    # --- 新增: 處理返回主選單的 postback action ---
+    if action == "return_to_main_menu":
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 點擊「回上一頁」Postback，切換回主選單。")
+        # 直接呼叫 switch_to_alias，它會執行 Rich Menu 切換且不發送回覆訊息
+        # 不需要 send_line_reply_message
+        return switch_to_alias(api, user_id, MAIN_MENU_ALIAS) 
+        # switch_to_alias 會返回 True/False 表示是否成功，這裡直接返回它的結果
 
     # ---------- (A) 切換 Rich‑menu ----------
     alias = ACTION_TO_ALIAS.get(action)

@@ -4,7 +4,7 @@ import logging
 import requests
 from config import CWA_CURRENT_WEATHER_API
 from utils.text_processing import normalize_city_name
-from .major_stations import COUNTY_TO_STATION_MAP, ALL_TAIWAN_COUNTIES
+from utils.major_stations import COUNTY_TO_STATION_MAP, ALL_TAIWAN_COUNTIES
 
 logger = logging.getLogger(__name__)
 

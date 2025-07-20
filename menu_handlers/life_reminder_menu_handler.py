@@ -1,6 +1,6 @@
+# life_reminder_menu_handler.py
 import logging
 from linebot.v3.messaging.models import TextMessage, ReplyMessageRequest
-
 # 假設這些別名在您的主程式 (app.py) 中定義並傳遞進來
 MAIN_MENU_ALIAS = "main_menu_alias" # 從 app.py 傳入
 LIFE_REMINDER_ALIAS = "life_reminder_alias" # 從 app.py 傳入

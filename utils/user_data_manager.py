@@ -1,33 +1,39 @@
 # user_data_manager.py
 import json
-import sqlite3
 import logging
+import sqlite3
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+from .major_stations import ALL_TAIWAN_COUNTIES
 
 logger = logging.getLogger(__name__)
 
 # 建立資料庫檔案與資料表
 DB_PATH = Path("user_data.db")
-conn = sqlite3.connect(DB_PATH)
-cursor = conn.cursor()
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY,
-    default_city TEXT,
-    state TEXT,
-    meta_json TEXT
-)
-""")
-conn.commit()
+# 這裡使用 with 語句確保連線被正確關閉，即使發生錯誤
+with sqlite3.connect(DB_PATH) as conn:
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        user_id TEXT PRIMARY KEY,
+        default_city TEXT,
+        state TEXT,
+        meta_json TEXT
+    )
+    """)
+    conn.commit()
 
 # ---------- 工具 ----------
 def _get(conn: sqlite3.Connection, col: str, user_id: str) -> Any:
     """從資料庫中獲取指定用戶的指定欄位值。"""
-    cur = conn.execute(f"SELECT {col} FROM users WHERE user_id=?", (user_id,))
-    row = cur.fetchone()
-    return row[0] if row else None
+    try:
+        cur = conn.execute(f"SELECT {col} FROM users WHERE user_id=?", (user_id,))
+        row = cur.fetchone()
+        return row[0] if row else None
+    except sqlite3.Error as e:
+        logger.error(f"查詢用戶 {user_id} 的欄位 {col} 時發生資料庫錯誤: {e}", exc_info=True)
+        return None
 
 def _upsert_cols(user_id: str, **cols: Any):
     """
@@ -44,16 +50,19 @@ def _upsert_cols(user_id: str, **cols: Any):
     # 構建 VALUES 的佔位符
     placeholders = ", ".join(["?"] * len(keys))
 
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            f"""
-            INSERT INTO users (user_id,{','.join(keys)})
-            VALUES (?,{placeholders})
-            ON CONFLICT(user_id) DO UPDATE SET {sets}
-            """,
-            (user_id, *vals), # user_id 和其他值
-        )
-        conn.commit()
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(
+                f"""
+                INSERT INTO users (user_id,{','.join(keys)})
+                VALUES (?,{placeholders})
+                ON CONFLICT(user_id) DO UPDATE SET {sets}
+                """,
+                (user_id, *vals), # user_id 和其他值
+            )
+            conn.commit()
+    except sqlite3.Error as e:
+        logger.error(f"更新或插入用戶 {user_id} 資料時發生資料庫錯誤: {e}", exc_info=True)
 
 # ---- 狀態管理 ----
 def set_user_state(user_id: str, state: str, data: Dict[str, Any] = None):
@@ -92,23 +101,23 @@ def get_user_state(user_id: str) -> Dict[str, Any]:
         cur = conn.execute("SELECT state, meta_json FROM users WHERE user_id=?", (user_id,))
         row = cur.fetchone()
 
-        if row:
-            state = row[0]
-            meta_json_str = row[1]
-            
-            data_from_meta = {}
-            if meta_json_str:
-                try:
-                    full_meta = json.loads(meta_json_str)
-                    data_from_meta = full_meta.get('state_data', {}) # 從 'state_data' 鍵中獲取數據
-                except json.JSONDecodeError:
-                    logger.warning(f"用戶 {user_id} 的 meta_json 解析失敗，已重置。")
-                    _upsert_cols(user_id, meta_json=None) # 清除錯誤的 JSON
-            
-            return {"state": state if state is not None else "idle", "data": data_from_meta}
-        else:
-            # 如果用戶不存在，返回預設狀態
-            return {"state": "idle", "data": {}}
+    if row:
+        state = row[0]
+        meta_json_str = row[1]
+        
+        data_from_meta = {}
+        if meta_json_str:
+            try:
+                full_meta = json.loads(meta_json_str)
+                data_from_meta = full_meta.get('state_data', {}) # 從 'state_data' 鍵中獲取數據
+            except json.JSONDecodeError:
+                logger.warning(f"用戶 {user_id} 的 meta_json 解析失敗，已重置。", exc_info=True)
+                _upsert_cols(user_id, meta_json=None) # 清除錯誤的 JSON
+        
+        return {"state": state if state is not None else "idle", "data": data_from_meta}
+    else:
+        # 如果用戶不存在，返回預設狀態
+        return {"state": "idle", "data": {}}
 
 def clear_user_state(user_id: str) -> None:
     """清除指定使用者的狀態和相關數據。"""
@@ -135,7 +144,12 @@ def set_user_metadata(user_id: str, **kwargs: Any) -> None:
     """
     with sqlite3.connect(DB_PATH) as conn:
         cur_json = _get(conn, "meta_json", user_id)
-        meta: Dict[str, Any] = json.loads(cur_json) if cur_json else {}
+        # 確保如果 cur_json 是 None 或無效，能正確初始化為空字典
+        try:
+            meta: Dict[str, Any] = json.loads(cur_json) if cur_json else {}
+        except json.JSONDecodeError:
+            logger.warning(f"用戶 {user_id} 的現有 meta_json 無效，將重新初始化。", exc_info=True)
+            meta = {}
         meta.update(kwargs)
 
     _upsert_cols(user_id, meta_json=json.dumps(meta, ensure_ascii=False))
@@ -155,17 +169,14 @@ def get_user_metadata(user_id: str, key: str, default: Any = None) -> Any:
             return full_meta
         return full_meta.get(key, default)
     except json.JSONDecodeError:
-        logger.warning(f"用戶 {user_id} 的 meta_json 解析失敗，已重置。")
+        logger.warning(f"用戶 {user_id} 的 meta_json 解析失敗，已重置。", exc_info=True)
         _upsert_cols(user_id, meta_json=None)
         return {} if key == "all_meta" else default
 
 # ---- 驗證城市名稱 ----
 def is_valid_city(city_name: str) -> bool:
-    # 可改成讀取實際縣市資料庫或 API 驗證
-    valid_cities = [
-        "台北市", "新北市", "桃園市", "台中市", "台南市",
-        "高雄市", "基隆市", "新竹市", "新竹縣", "苗栗縣",
-        "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣",
-        "屏東縣", "宜蘭縣", "花蓮縣", "台東縣", "澎湖縣", "金門縣", "連江縣"
-    ]
-    return city_name in valid_cities
+    """
+    驗證給定的城市名稱是否在有效城市列表中。
+    城市列表從 major_stations.py 中的 ALL_TAIWAN_COUNTIES 載入。
+    """
+    return city_name in ALL_TAIWAN_COUNTIES

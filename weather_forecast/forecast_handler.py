@@ -1,5 +1,6 @@
 # forecast_handler.py
-# 主要處理天氣預報用戶輸入的回覆邏輯
+# 主要處理天氣預報用戶輸入的回覆邏輯 (文字訊息邏輯)
+# 負責開啟和引導天氣預報的對話
 import logging
 from datetime import datetime
 from linebot.v3.messaging import ApiClient

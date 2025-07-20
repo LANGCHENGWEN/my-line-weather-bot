@@ -1,5 +1,5 @@
 # line_common_messaging.py
-# 通用訊息
+# 負責發送通用訊息
 import json
 import logging
 from typing import List, Union
@@ -150,7 +150,7 @@ def send_unrecognized_message(line_bot_api_instance: MessagingApi, event: Messag
         line_bot_api_instance.reply_message(
             ReplyMessageRequest(
                 reply_token=reply_token,
-                messages=[TextMessage(text="抱歉，我不明白您的意思。請嘗試使用菜單或其他指令。")]
+                messages=[TextMessage(text="抱歉，我不明白您的意思。請嘗試使用其他指令。")]
             )
         )
         logger.info(f"成功發送不明白訊息給用戶 ID: {user_id}")

@@ -6,7 +6,7 @@ from linebot.v3.webhooks.models import MessageEvent
 from linebot.v3.exceptions import InvalidSignatureError
 
 from .menu_reply import build_text_reply
-from utils.rich_menu_helper import get_rich_menu_id
+from rich_menu_manager.rich_menu_helper import get_rich_menu_id
 
 # 從 rich_menu_configs.py 匯入 Rich Menu 別名常數
 from rich_menu_manager.rich_menu_configs import ( # 確保路徑正確
@@ -47,11 +47,6 @@ def _link_rich_menu_by_alias(line_bot_api: MessagingApi, user_id: str, alias_id:
     輔助函式：先用 JSON (get_rich_menu_id) 取 ID；若取不到再呼叫 LINE API。
     """
     try:
-        # 1. 透過別名獲取 Rich Menu 詳細資訊
-        rich_menu_alias_info = line_bot_api.get_rich_menu_alias(alias_id)
-        # 從資訊中提取實際的 Rich Menu ID
-        rich_menu_id = rich_menu_alias_info.rich_menu_id
-
         # 1. 先嘗試從本地 JSON 取得 ID
         rich_menu_id = get_rich_menu_id(alias_id)
 
@@ -59,8 +54,9 @@ def _link_rich_menu_by_alias(line_bot_api: MessagingApi, user_id: str, alias_id:
         if not rich_menu_id:
             alias_info = line_bot_api.get_rich_menu_alias(alias_id)
             rich_menu_id = alias_info.rich_menu_id
+            logger.warning(f"從 LINE API 取得 Rich Menu ID '{rich_menu_id}' (別名 '{alias_id}')，請確保 rich_menu_ids.json 已更新。")
 
-        # 2. 使用獲取到的 Rich Menu ID 綁定給用戶
+        # 3. 使用獲取到的 Rich Menu ID 綁定給用戶
         line_bot_api.link_rich_menu_id_to_user(user_id, rich_menu_id)
         logger.info(f"成功將 Rich Menu ID '{rich_menu_id}' (來自別名 '{alias_id}') 綁定給用戶 '{user_id}'。")
         return True
@@ -76,6 +72,7 @@ def switch_to_alias(api, user_id: str, alias: Optional[str]) -> bool:
     """
     直接用 alias 幫 user 切 Rich‑menu
     回傳 True/False 代表有沒有真的發生切換。
+    這個函式本身就不會發送回覆訊息。
     """
     if not alias:
         logger.warning("switch_to_alias：alias 是空的")
@@ -105,7 +102,7 @@ def handle_menu_switching(event: MessageEvent, line_bot_api: MessagingApi) -> bo
         "颱風專區": _alias_map.get("typhoon"),
         "生活提醒": _alias_map.get("life"),
         "設定": _alias_map.get("settings"),
-        "回上一頁": _alias_map.get("main")  # 假設「回上一頁」就是回到主選單
+        # "回上一頁": _alias_map.get("main")  # 假設「回上一頁」就是回到主選單
     }
 
     if text in menu_switch_map:
@@ -114,7 +111,7 @@ def handle_menu_switching(event: MessageEvent, line_bot_api: MessagingApi) -> bo
 
         if _link_rich_menu_by_alias(line_bot_api, user_id, target_alias):
             # 可選：回覆用戶確認切換
-            reply_text = "已返回主選單。" if text == "回上一頁" else f"已切換至 {text} 選單。"
+            reply_text =f"已切換至 {text} 選單。"
             try:
                 reply_req = build_text_reply(reply_text, reply_token)
                 line_bot_api.reply_message(reply_req)
