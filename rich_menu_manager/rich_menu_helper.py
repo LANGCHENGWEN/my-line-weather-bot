@@ -4,7 +4,7 @@
 import json
 from pathlib import Path
 
-_JSON_PATH = Path("rich_menu_ids.json")
+_JSON_PATH = Path(__file__).parent / "rich_menu_ids.json"
 
 def load_alias_map() -> dict: # 載入別名與 ID 的對應關係
     """

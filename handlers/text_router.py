@@ -21,10 +21,11 @@ DISPATCH_STATE = {
 
 # 關鍵字 → handler
 DISPATCH_KEYWORD = {
-    "即時天氣":  "weather_current.current_handler",
-    "未來預報":  "weather_forecast.forecast_handler",
-    "颱風現況":      "typhoon.typhoon_handler",
-    "穿搭":      "life_style.outfit_handler"
+    "即時天氣":"weather_current.current_handler",
+    "未來預報":"weather_forecast.forecast_handler",
+    "颱風現況":"typhoon.typhoon_handler",
+    "地區影響預警":"typhoon.area_hazard_handler",
+    "穿搭":"life_style.outfit_handler"
     # …
 }
 
@@ -86,6 +87,9 @@ def _dispatch_to_module(module_path: str, event, user_state_info: dict):
     if hasattr(mod, "handle_typhoon_message"):
         logger.debug(f"導向至 handle_typhoon_message")
         return mod.handle_typhoon_message(api, event)
+    if hasattr(mod, "handle_area_hazard_message"):
+        logger.debug(f"導向至 handle_area_hazard_message")
+        return mod.handle_area_hazard_message(api, event)
     
     # 3. Fallback 到通用的 handle 函式
     if hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:

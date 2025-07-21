@@ -94,10 +94,11 @@ def setup_all_rich_menus(
 
     # === NEW: 把 alias→ID 存成 JSON，供應用程式讀取 ===
     try:
-        with open("rich_menu_ids.json", "w", encoding="utf-8") as fp:
+        file_path = os.path.join("rich_menu_manager", "rich_menu_ids.json")
+        with open(file_path, "w", encoding="utf-8") as fp:
             json.dump(created_rich_menu_ids, fp, ensure_ascii=False, indent=2)
-        logger.info("Alias→ID 對照表已寫入 rich_menu_ids.json")
+        logger.info("Alias→ID 對照表已寫入 {file_path}")
     except Exception as e:
-        logger.error(f"寫入 rich_menu_ids.json 失敗: {e}")
+        logger.error(f"寫入 {file_path} 失敗: {e}")
 
     return created_rich_menu_ids # <-- 返回這個字典
