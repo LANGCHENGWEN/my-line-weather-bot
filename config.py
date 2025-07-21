@@ -121,6 +121,11 @@ CWA_TYPHOON_PROBABILITY_API = CWA_BASE_URL + "W-C0033-002"
 # 提供豪大雨、強風、低溫等警特報資訊。
 CWA_WEATHER_ALERTS_API = CWA_BASE_URL + "W-C0033-001"
 
+NCDR_TYPHOON_PATH_URL = "https://watch.ncdr.nat.gov.tw/watch_page_typhoon_v2"
+
+# 中央氣象署颱風專區主頁（用於「颱風現況」功能）
+CWA_TYPHOON_PORTAL_URL = "https://www.cwa.gov.tw/V8/C/P/Typhoon/TY_NEWS.html"
+
 # --- 颱風路徑圖連結 (非API，直接提供官方網頁連結) ---
 # 您可以引導使用者前往此網址查看最新颱風路徑圖。
-CWA_TYPHOON_MAP_URL = "https://app.cwa.gov.tw/web/obsmap/typhoon.html"
+# CWA_TYPHOON_MAP_URL = "https://app.cwa.gov.tw/web/obsmap/typhoon.html"

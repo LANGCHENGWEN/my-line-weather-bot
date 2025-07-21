@@ -7,6 +7,7 @@ from linebot.v3.messaging.models import (
 )
 
 from .typhoon_constants import DIRECTION_MAP
+from config import CWA_TYPHOON_PORTAL_URL
 
 logger = logging.getLogger(__name__)
 
@@ -284,7 +285,7 @@ def create_typhoon_flex_message(
                     height="sm",
                     action=URIAction(
                         label="查看更多 (中央氣象署)",
-                        uri="https://www.cwa.gov.tw/V8/C/P/Typhoon/TY_NEWS.html"
+                        uri=CWA_TYPHOON_PORTAL_URL
                     )
                 )
             ],

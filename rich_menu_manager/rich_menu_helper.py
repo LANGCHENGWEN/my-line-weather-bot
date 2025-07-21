@@ -1,4 +1,4 @@
-# rich_menu_helper.py
+# rich_menu_manager/rich_menu_helper.py
 # 記錄了所有的「Rich Menu 別名」和「Rich Menu ID」
 # 當其他部分需要使用某個 Rich Menu 時，只要告訴這個模組 Rich Menu 別名，它就能查到對應的 Rich Menu ID，然後 Line Bot 就可以用這個 Rich Menu ID 去對 Line 平台發出指令
 import json

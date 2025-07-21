@@ -13,10 +13,9 @@ from linebot.v3.webhooks.models import (
 )
 
 # --- 專案共用設定 ---
-from utils.api_helper import get_api, get_messaging_api
+from utils.api_helper import get_line_bot_apis
 from config import (
-    LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN,
-    IS_DEBUG_MODE, ENABLE_DAILY_NOTIFICATIONS
+    LINE_CHANNEL_SECRET, IS_DEBUG_MODE, ENABLE_DAILY_NOTIFICATIONS
 )
 
 # Rich‑menu 別名常數
@@ -66,9 +65,7 @@ def callback():
 
 # --- 準備初始化用的共用物件 ---
 # 供 Rich‑menu 部署、排程等啟動邏輯使用
-api_client      = get_api()
-line_bot_api    = get_messaging_api()
-rich_menu_api   = line_bot_api
+line_bot_api_instance, line_blob_api_instance = get_line_bot_apis()
 
 # app_config 供 initialize() 用（可依實際專案再加欄位）
 APP_CONFIG = {
@@ -83,12 +80,11 @@ APP_CONFIG = {
 
 # --- 執行專案啟動初始化 ---
 initialize(
-    global_line_bot_api_instance=line_bot_api,
-    global_rich_menu_api_instance=rich_menu_api,
+    line_bot_api=line_bot_api_instance,
+    line_blob_api=line_blob_api_instance,
     app_config=APP_CONFIG,
     is_debug_mode=IS_DEBUG_MODE,
-    enable_daily_notifications=ENABLE_DAILY_NOTIFICATIONS,
-    line_channel_access_token=LINE_CHANNEL_ACCESS_TOKEN
+    enable_daily_notifications=ENABLE_DAILY_NOTIFICATIONS
 )
 
 # --- 啟動 Flask ---

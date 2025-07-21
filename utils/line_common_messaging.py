@@ -5,7 +5,6 @@ import logging
 from typing import List, Union
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import Message, TextMessage, ReplyMessageRequest, PushMessageRequest
-from linebot.v3.webhooks.models import MessageEvent
 from linebot.v3.exceptions import InvalidSignatureError
 
 from utils.flex_templates import build_hello_flex
@@ -136,31 +135,6 @@ def send_hello_message(line_bot_api_instance, user_id: str, reply_token: str):
             reply_token,
             format_text_message(fallback_text)
         )
-
-def send_unrecognized_message(line_bot_api_instance: MessagingApi, event: MessageEvent):
-    """
-    發送一個表示訊息未被識別的通用回覆訊息。
-    接收 Line event 物件以獲取 reply_token 和 user_id。
-    """
-    user_id = event.source.user_id
-    reply_token = event.reply_token
-
-    logger.info(f"已發送不明白訊息給用戶 ID: {user_id}")
-    try:
-        line_bot_api_instance.reply_message(
-            ReplyMessageRequest(
-                reply_token=reply_token,
-                messages=[TextMessage(text="抱歉，我不明白您的意思。請嘗試使用其他指令。")]
-            )
-        )
-        logger.info(f"成功發送不明白訊息給用戶 ID: {user_id}")
-        return True # 表示成功發送
-    except Exception as e:
-        logger.error(f"回覆未識別訊息失敗 (user_id={user_id}): {e}", exc_info=True)
-        # 如果需要，可以記錄 HTTP response headers/body
-        # logger.error(f"HTTP response headers: {e.http_resp.headers}")
-        # logger.error(f"HTTP response body: {e.http_resp.data}")
-        return False # 表示發送失敗
 
 def send_api_error_message(line_bot_api_instance, user_id: str, reply_token: str, location_name: str = ""):
     """發送 API 錯誤訊息，用於回覆用戶。"""
