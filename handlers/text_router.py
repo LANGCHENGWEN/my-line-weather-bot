@@ -58,6 +58,7 @@ def _dispatch_to_module(module_path: str, event, user_state_info: dict):
     """
 
     # 1. 優先匹配狀態相關的處理函式 (通常用於接收用戶輸入特定數據，如城市名)
+    # 這些狀態處理函數通常在 default_city_input.py 中
     if state == "awaiting_forecast_city_input" and hasattr(mod, "handle_awaiting_forecast_city_input"):          # 查詢其他縣市 default_city_input.py
         logger.debug(f"導向至 handle_awaiting_forecast_city_input for state: {state}")
         # 假設 handle_awaiting_forecast_city_input 會發送訊息並返回 True/False 或直接 None
@@ -118,16 +119,17 @@ def handle(event):
     
     # 2. 處理用戶處於特定「狀態」下的輸入 (例如：正在等待用戶輸入城市名稱)
     elif state and state in DISPATCH_STATE:
+        module_path = DISPATCH_STATE[state]
         logger.info(f"[TextRouter] 依照用戶狀態 '{state}' 導向處理模組: {DISPATCH_STATE[state]}。")
-        handled = _dispatch_to_module(DISPATCH_STATE[state], event, user_state_info)
+        handled = _dispatch_to_module(module_path, event, user_state_info)
         if handled: # 如果狀態處理器已處理並回覆，就結束
             return
         
     # 3. 處理精確匹配的「全局關鍵字」 (例如：Rich Menu 按鈕的文本，或用戶直接輸入的指令)
     elif message_text in DISPATCH_KEYWORD:
-        module = DISPATCH_KEYWORD[message_text]
-        logger.info(f"[TextRouter] 偵測到精確匹配關鍵字 '{message_text}'，導向至 {module}。")
-        _dispatch_to_module(module, event, user_state_info)
+        module_path = DISPATCH_KEYWORD[message_text]
+        logger.info(f"[TextRouter] 偵測到精確匹配關鍵字 '{message_text}'，導向至 {module_path}。")
+        _dispatch_to_module(module_path, event, user_state_info)
         return
     
     logger.info(f"[TextRouter] 未匹配任何特定規則，導向至最終處理模組: handlers.default。")

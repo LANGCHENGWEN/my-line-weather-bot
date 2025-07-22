@@ -121,11 +121,11 @@ def get_lifestyle_reminders_rich_menu() -> RichMenuRequest:
             ),
             RichMenuArea(
                 bounds=RichMenuBounds(x=1250, y=0, width=1250, height=843),
-                action=PostbackAction(label="週末天氣")
+                action=PostbackAction(label="週末天氣", data="action=weekend_weather")
             ),
             RichMenuArea(
                 bounds=RichMenuBounds(x=0, y=843, width=1250, height=843),
-                action=PostbackAction(label="節氣小知識")
+                action=PostbackAction(label="節氣小知識", data="action=solar_term_info")
             ),
             RichMenuArea(
                 bounds=RichMenuBounds(x=1250, y=843, width=1250, height=843),

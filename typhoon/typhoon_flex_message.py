@@ -123,13 +123,13 @@ def create_typhoon_flex_message(
                     flex=1 # 讓它佔據一小部分空間來推動後面的文字
                 ),
                 FlexText(
-                    text=radius_detail_parts[0] if len(radius_detail_parts) > 0 else "",
+                    text=radius_detail_parts[0] if len(radius_detail_parts) > 0 else " ",
                     size="md",
                     wrap=True,
                     flex=8 # 佔據大部分空間
                 ),
                 FlexText(
-                    text=radius_detail_parts[1] if len(radius_detail_parts) > 1 else "",
+                    text=radius_detail_parts[1] if len(radius_detail_parts) > 1 else " ",
                     size="md",
                     wrap=True,
                     flex=8 # 佔據大部分空間
@@ -147,13 +147,13 @@ def create_typhoon_flex_message(
                     flex=1
                 ),
                 FlexText(
-                    text=radius_detail_parts[2] if len(radius_detail_parts) > 2 else "",
+                    text=radius_detail_parts[2] if len(radius_detail_parts) > 2 else " ",
                     size="md",
                     wrap=True,
                     flex=8
                 ),
                 FlexText(
-                    text=radius_detail_parts[3] if len(radius_detail_parts) > 3 else "",
+                    text=radius_detail_parts[3] if len(radius_detail_parts) > 3 else " ",
                     size="md",
                     wrap=True,
                     flex=8

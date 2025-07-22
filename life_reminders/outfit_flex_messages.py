@@ -1,87 +1,244 @@
-# outfit_flex_messages.py
-from linebot.v3.messaging import PostbackAction
+# life_reminders/outfit_flex_messages.py
 from linebot.v3.messaging.models import (
-    FlexBox, FlexText, FlexMessage, FlexBubble,
-    FlexButton, FlexSeparator, ImageComponent
+    FlexBox, FlexText, FlexBubble,
+    FlexButton, FlexSeparator, FlexImage
 )
 
-def get_single_outfit_suggestion_menu_flex_message():
+def build_today_outfit_flex(outfit_info: dict, location_name: str = "該地區") -> dict:
     """
-    生成一個單一 Flex Message 卡片選單，包含今日、即時、未來穿搭建議選項。
+    生成未來穿搭建議的 Flex Message 字典，只包含穿搭圖片和建議文字。
+    Args:
+        outfit_info (dict): 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
+        location_name (str): 查詢的城市名稱，用於標題。
+    Returns:
+        dict: Flex Message 的內容字典。
     """
-    flex_message_content = FlexBubble(
-        direction='ltr', # 內容排列方向，ltr是從左到右
-        hero=FlexBox( # 頂部圖片區塊 (可選，如果不需要可以移除)
-            layout='vertical',
-            contents=[
-                ImageComponent(
-                    url="https://i.imgur.com/your_outfit_menu_banner.png", # 請替換成你菜單的橫幅圖片 URL
-                    size='full',
-                    aspect_ratio='20:9', # 圖片比例
-                    aspect_mode='cover'
-                )
+    # 獲取建議文字列表，如果沒有則使用預設單句建議
+    suggestions_list = outfit_info.get("suggestion_text", ["目前無法提供即時穿搭建議。"])
+
+    # 創建一個列表，用於存放每個 FlexText 元件
+    suggestion_text_contents = []
+    for suggestion in suggestions_list:
+        suggestion_text_contents.append({
+            "type": "text",
+            "text": suggestion,
+            "size": "md",
+            "color": "#333333",
+            "wrap": True,
+            "margin": "sm", # 將 margin 設為 sm 或 none，讓行距不會太大
+            "align": "center"
+            # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"
+        })
+
+    return {
+        "type": "bubble",
+        "direction": "ltr",
+        "hero": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "image",
+                    "url": outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png"), # 預設圖
+                    "size": "full",
+                    "aspectRatio": "20:9",
+                    "aspectMode": "cover"
+                }
             ]
-        ),
-        body=FlexBox(
-            layout='vertical',
-            contents=[
-                FlexText(
-                    text="👗 穿搭建議 👔",
-                    weight='bold',
-                    size='xl',
-                    align='center',
-                    margin='md'
-                ),
-                FlexText(
-                    text="請選擇您想查詢的穿搭類型：",
-                    size='sm',
-                    color='#999999',
-                    align='center',
-                    margin='md'
-                ),
-                FlexSeparator(margin='lg'), # 分隔線
-                FlexButton(
-                    style='link', # 連結樣式按鈕
-                    height='sm',
-                    action=PostbackAction(label="☀️ 今日穿搭建議", data="action=outfit_today")
-                ),
-                FlexSeparator(margin='md'),
-                FlexButton(
-                    style='link',
-                    height='sm',
-                    action=PostbackAction(label="⏰ 即時穿搭建議", data="action=outfit_current")
-                ),
-                FlexSeparator(margin='md'),
-                FlexButton(
-                    style='link',
-                    height='sm',
-                    action=PostbackAction(label="📅 未來穿搭建議 (3-7天)", data="action=outfit_forecast")
-                )
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": f"☀️ {location_name} 今日穿搭建議",
+                    "weight": "bold",
+                    "size": "xl",
+                    "align": "center",
+                    "margin": "md",
+                    "color": "#000000"
+                },
+                {
+                    "type": "box", # 用一個 Box 包裹多個 Text 元件
+                    "layout": "vertical",
+                    "spacing": "sm", # 設定 Box 內元件間距
+                    "margin": "md",
+                    "contents": suggestion_text_contents
+                },
+                {
+                    "type": "separator",
+                    "margin": "lg"
+                },
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {
+                        "type": "postback",
+                        "label": "返回穿搭選單",
+                        "data": "action=outfit_advisor"
+                    }
+                }
             ]
-        ),
-        footer=FlexBox( # 底部資訊區塊 (可選，如果不需要可以移除)
-            layout='vertical',
-            contents=[
-                FlexText(
-                    text="點擊選項即可查詢",
-                    size='xs',
-                    color='#aaaaaa',
-                    align='center'
-                )
+        }
+    }
+
+def build_current_outfit_flex(outfit_info: dict, location_name: str = "該地區") -> dict:
+    """
+    生成即時穿搭建議的 Flex Message 字典，包含穿搭圖片和建議文字（多行顯示）。
+    Args:
+        outfit_info (dict): 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
+        location_name (str): 查詢的城市名稱，用於標題。
+    Returns:
+        dict: Flex Message 的內容字典。
+    """
+    # 獲取建議文字列表，如果沒有則使用預設單句建議
+    suggestions_list = outfit_info.get("suggestion_text", ["目前無法提供即時穿搭建議。"])
+
+    # 創建一個列表，用於存放每個 FlexText 元件
+    suggestion_text_contents = []
+    for suggestion in suggestions_list:
+        suggestion_text_contents.append({
+            "type": "text",
+            "text": suggestion,
+            "size": "md",
+            "color": "#333333",
+            "wrap": True,
+            "margin": "sm", # 將 margin 設為 sm 或 none，讓行距不會太大
+            "align": "center"
+            # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"
+        })
+
+    return {
+        "type": "bubble",
+        "direction": "ltr",
+        "hero": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "image",
+                    "url": outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_outfit.png"), # 預設圖
+                    "size": "full",
+                    "aspectRatio": "20:9",
+                    "aspectMode": "cover"
+                }
             ]
-        )
-    )
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": f"⏰ {location_name} 即時穿搭建議",
+                    "weight": "bold",
+                    "size": "xl",
+                    "align": "center",
+                    "margin": "md",
+                    "color": "#000000"
+                },
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "sm",
+                    "margin": "md",
+                    "contents": suggestion_text_contents
+                },
+                {
+                    "type": "separator",
+                    "margin": "lg"
+                },
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {
+                        "type": "postback",
+                        "label": "返回穿搭選單",
+                        "data": "action=outfit_advisor"
+                    }
+                }
+            ]
+        }
+    }
 
-    flex_message = FlexMessage(alt_text="請選擇穿搭建議類型", contents=flex_message_content)
-    return flex_message
+def build_forecast_outfit_flex(outfit_info: dict, location_name: str = "該地區") -> dict:
+    """
+    生成未來穿搭建議的 Flex Message 字典，只包含穿搭圖片和建議文字。
+    Args:
+        outfit_info (dict): 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
+        location_name (str): 查詢的城市名稱，用於標題。
+    Returns:
+        dict: Flex Message 的內容字典。
+    """
+    # 獲取建議文字列表，如果沒有則使用預設單句建議
+    suggestions_list = outfit_info.get("suggestion_text", ["目前無法提供即時穿搭建議。"])
 
-# --- 範例使用方式 (假設在你的 Line Bot Webhook 處理函數中) ---
+    # 創建一個列表，用於存放每個 FlexText 元件
+    suggestion_text_contents = []
+    for suggestion in suggestions_list:
+        suggestion_text_contents.append({
+            "type": "text",
+            "text": suggestion,
+            "size": "md",
+            "color": "#333333",
+            "wrap": True,
+            "margin": "sm", # 將 margin 設為 sm 或 none，讓行距不會太大
+            "align": "center"
+            # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"
+        })
 
-# from linebot.models import MessageEvent, TextMessage
-
-# @handler.add(MessageEvent, message=TextMessage)
-# def handle_message(event):
-#     if event.message.text == "穿搭建議":
-#         flex_message = get_single_outfit_suggestion_menu_flex_message()
-#         line_bot_api.reply_message(event.reply_token, flex_message)
-#     # ... 其他訊息處理邏輯
+    return {
+        "type": "bubble",
+        "direction": "ltr",
+        "hero": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "image",
+                    "url": outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png"), # 預設圖
+                    "size": "full",
+                    "aspectRatio": "20:9",
+                    "aspectMode": "cover"
+                }
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": f"📅 {location_name} 未來穿搭建議 (3-7天)",
+                    "weight": "bold",
+                    "size": "xl",
+                    "align": "center",
+                    "margin": "md",
+                    "color": "#000000"
+                },
+                {"type": "box", # 用一個 Box 包裹多個 Text 元件
+                    "layout": "vertical",
+                    "spacing": "sm", # 設定 Box 內元件間距
+                    "margin": "md",
+                    "contents": suggestion_text_contents
+                },
+                {
+                    "type": "separator",
+                    "margin": "lg"
+                },
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": { # <--- 修改點: 將 PostbackAction 物件替換為字典
+                        "type": "postback",
+                        "label": "返回穿搭選單",
+                        "data": "action=outfit_advisor"
+                    }
+                }
+            ]
+        }
+    }

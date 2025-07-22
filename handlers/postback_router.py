@@ -38,6 +38,8 @@ ACTION_DISPATCH = {
     "forecast_days"       : "weather_forecast.postback_handler", # 未來預報的天數選單
     "outfit_advisor"      : "life_reminders.outfit_handler",     # 穿搭建議子選單
     "outfit_query"        : "life_reminders.outfit_handler",     # 穿搭建議類型的flex message選單
+    "weekend_weather"     : "life_reminders.",
+    "solar_term_info"     : "life_reminders.",
     "settings"            : "menu_handlers.settings_menu_handler"
 }
 
