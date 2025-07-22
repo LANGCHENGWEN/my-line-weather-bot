@@ -24,22 +24,14 @@ DISPATCH_KEYWORD = {
     "即時天氣":"weather_current.current_handler",
     "未來預報":"weather_forecast.forecast_handler",
     "颱風現況":"typhoon.typhoon_handler",
-    "地區影響預警":"typhoon.area_hazard_handler",
-    "穿搭":"life_style.outfit_handler"
+    "地區影響預警":"typhoon.area_hazard_handler"
     # …
 }
 
 POSTBACK_RELATED_TEXTS_TO_IGNORE = [
-    "天氣查詢",
-    "颱風專區",        # 如果有這個子選單入口
-    "生活提醒",        # 如果有這個子選單入口
-    "設定",
-    "回上一頁",
-    "颱風路徑圖",      # 如果是 Postback 按鈕的顯示文字
-    "每日提醒推播",
-    "颱風通知推播",
-    "週末天氣推播",
-    "節氣小知識推播",
+    "天氣查詢", "颱風專區", "生活提醒", "設定", "回上一頁",
+    "颱風路徑圖", "穿搭建議", "週末天氣", "節氣小知識",
+    "每日提醒推播", "颱風通知推播", "週末天氣推播", "節氣小知識推播",
     "切換預設城市"    # 如果是 Postback 按鈕的顯示文字
     # ... 請根據你的所有 Rich Menu Postback 按鈕的 'label' (顯示文字) 來補充這個列表
 ]
@@ -81,21 +73,21 @@ def _dispatch_to_module(module_path: str, event, user_state_info: dict):
     if hasattr(mod, "handle_current_message"):
         logger.debug(f"導向至 handle_current_message")
         return mod.handle_current_message(api, event)
-    if hasattr(mod, "handle_forecast_message"):
+    elif hasattr(mod, "handle_forecast_message"):
         logger.debug(f"導向至 handle_forecast_message")
         return mod.handle_forecast_message(api, event)
-    if hasattr(mod, "handle_typhoon_message"):
+    elif hasattr(mod, "handle_typhoon_message"):
         logger.debug(f"導向至 handle_typhoon_message")
         return mod.handle_typhoon_message(api, event)
-    if hasattr(mod, "handle_area_hazard_message"):
+    elif hasattr(mod, "handle_area_hazard_message"):
         logger.debug(f"導向至 handle_area_hazard_message")
         return mod.handle_area_hazard_message(api, event)
     
     # 3. Fallback 到通用的 handle 函式
-    if hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:
+    elif hasattr(mod, "handle") and mod.handle.__code__.co_argcount == 2:
         logger.debug(f"導向至 handle(api, event)")
         return mod.handle(api, event)
-    if hasattr(mod, "handle"):
+    elif hasattr(mod, "handle"):
         logger.debug(f"導向至 handle(event)")
         return mod.handle(event)
     
@@ -125,14 +117,14 @@ def handle(event):
         return # 直接返回，不進行後續處理
     
     # 2. 處理用戶處於特定「狀態」下的輸入 (例如：正在等待用戶輸入城市名稱)
-    if state and state in DISPATCH_STATE:
+    elif state and state in DISPATCH_STATE:
         logger.info(f"[TextRouter] 依照用戶狀態 '{state}' 導向處理模組: {DISPATCH_STATE[state]}。")
         handled = _dispatch_to_module(DISPATCH_STATE[state], event, user_state_info)
         if handled: # 如果狀態處理器已處理並回覆，就結束
             return
         
     # 3. 處理精確匹配的「全局關鍵字」 (例如：Rich Menu 按鈕的文本，或用戶直接輸入的指令)
-    if message_text in DISPATCH_KEYWORD:
+    elif message_text in DISPATCH_KEYWORD:
         module = DISPATCH_KEYWORD[message_text]
         logger.info(f"[TextRouter] 偵測到精確匹配關鍵字 '{message_text}'，導向至 {module}。")
         _dispatch_to_module(module, event, user_state_info)
