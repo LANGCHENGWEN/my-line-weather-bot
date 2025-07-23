@@ -10,7 +10,7 @@ from linebot.v3.messaging.models import TextMessage
 
 # 從 config 載入設定
 from config import (
-    CWA_API_KEY, LOCATION_NAME,
+    CWA_API_KEY,
     YOUR_LINE_USER_ID, ENABLE_DAILY_NOTIFICATIONS
 )
 

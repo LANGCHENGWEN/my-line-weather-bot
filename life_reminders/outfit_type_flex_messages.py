@@ -84,7 +84,7 @@ def build_outfit_suggestions_flex() -> dict:
                     "height": "sm",
                     "action": {
                         "type": "postback",
-                        "label": "📅 未來穿搭建議 (3-7天)",
+                        "label": "📅 未來穿搭建議 (1-7天)",
                         "data": "action=outfit_query&type=forecast"
                     }
                 }

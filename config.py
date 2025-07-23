@@ -87,8 +87,6 @@ if LINE_CHANNEL_ACCESS_TOKEN is None:
 # --- 交通部中央氣象署 Open Data 平台 API 設定 ---
 CWA_API_KEY = os.getenv('CWA_API_KEY')
 CWA_BASE_URL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/" # API 基本網址 (共同前綴)
-LOCATION_NAME = "臺中市"
-DEFAULT_COUNTY = "臺中市"  # 查詢資料的城市名稱
 
 YOUR_LINE_USER_ID = os.getenv("YOUR_LINE_USER_ID")
 

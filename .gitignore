@@ -7,6 +7,7 @@ rich_menu_manager/rich_menu_ids.json
 utils/__pycache__/
 weather_current/__pycache__/
 weather_forecast/__pycache__/
+weather_today/__pycache__/
 .env
 main.log
 main.log.1
@@ -20,5 +21,6 @@ main.log.2025-07-19
 main.log.2025-07-20
 main.log.2025-07-21
 main.log.2025-07-22
+main.log.2025-07-23
 ngrok.exe
 user_data.db

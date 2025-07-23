@@ -75,7 +75,7 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
         return True
     
 # **修改這裡：處理情境二：使用者輸入縣市名稱後，回覆該縣市的天數選單**
-def handle_forecast_city_input(api: ApiClient, event, target_city: str = None) -> bool:
+def reply_forecast_weather_of_city(api: ApiClient, event, target_city: str = None) -> bool:
     user_id = event.source.user_id
     reply_token = event.reply_token
 
