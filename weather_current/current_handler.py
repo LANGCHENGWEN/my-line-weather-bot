@@ -1,7 +1,7 @@
 # current_handler.py
 # 主要處理即時天氣用戶輸入的回覆邏輯
 import logging
-from linebot.v3.messaging.models import TextMessage
+from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexBubble
 from linebot.v3.webhooks.models import MessageEvent
 
 # 從 config 載入設定
@@ -71,28 +71,26 @@ def handle_current_message(messaging_api, event: MessageEvent) -> bool:
         
         # 3. 將格式化後的數據填充到 Flex Message 模板中 (得到 Flex Message 的字典結構)
         # 用你的 builder 產生 Flex JSON
-        flex_json = build_weather_flex(parsed_current_weather)
+        weather_flex_bubble = build_weather_flex(parsed_current_weather)
 
         # 檢查 format_current_weather_message 是否返回有效的字典 (而不是錯誤字串)
-        if not flex_json: # 如果 format_current_weather_message 返回空字典或 None
-            logger.error(f"格式化即時天氣 Flex Message 失敗，返回錯誤訊息給用戶。")
-            # 這裡可以選擇發送一個通用的錯誤文字訊息
-            error_message_obj = TextMessage(text=f"抱歉，無法顯示 {normalized_location_name} 的天氣資訊卡片。請稍後再試。")
+        if not isinstance(weather_flex_bubble, FlexBubble): # 檢查回傳的類型
+            logger.error(f"build_weather_flex 返回了無效的 FlexBubble 物件: {type(weather_flex_bubble)}")
+            # 這裡可以選擇發送一個通用的錯誤文字訊息，而不是嘗試再構建一次 FlexMessage
+            error_message_obj = TextMessage(text=f"抱歉，無法顯示 {normalized_location_name} 的天氣資訊卡片。請稍候再試。")
             send_line_reply_message(messaging_api, reply_token, [error_message_obj])
             return True
         
         # 4. 將 Flex Message 字典轉換為 Line Bot SDK 的 FlexMessage 物件
         # 使用 line_common_messaging 中的 format_flex_message 函數
-        flex_msg = format_flex_message(f"{normalized_location_name} 即時天氣", flex_json)
-
-        # 額外檢查：format_flex_message 也可能返回 TextMessage (降級處理)
-        if isinstance(flex_msg, TextMessage): # 如果 format_flex_message 發生錯誤並返回 TextMessage
-            send_line_reply_message(messaging_api, reply_token, [flex_msg])
-            return True
+        flex_msg_to_send = FlexMessage(
+            alt_text=f"{normalized_location_name} 即時天氣",
+            contents=weather_flex_bubble # 直接傳入 FlexBubble 物件
+        )
 
         # 5. 發送回覆訊息 (傳入 Line Bot SDK 的 Message 物件列表)
         # line_flex_message_object 已經是一個 FlexMessage 物件，將其放入列表中
-        send_line_reply_message(messaging_api, reply_token, [flex_msg])
+        send_line_reply_message(messaging_api, reply_token, [flex_msg_to_send])
         return True # 訊息已處理
     
     return False # 這個 handler 沒有處理這個訊息
@@ -119,11 +117,22 @@ def reply_current_weather_of_city(api, reply_token: str, city_name: str) -> None
         return
 
     # 3. build flex json → FlexMessage
-    flex_json = build_weather_flex(parsed)
-    flex_msg  = format_flex_message(f"{normalized_city_name} 即時天氣", flex_json)
+    weather_flex_bubble = build_weather_flex(parsed)
+
+    if not isinstance(weather_flex_bubble, FlexBubble): # 檢查回傳的類型
+            logger.error(f"reply_current_weather_of_city 中 build_weather_flex 返回了無效的 FlexBubble 物件: {type(weather_flex_bubble)}")
+            # 這裡可以選擇發送一個通用的錯誤文字訊息，而不是嘗試再構建一次 FlexMessage
+            error_message_obj = TextMessage(text=f"抱歉，無法顯示 {normalized_city_name} 的天氣資訊卡片。請稍候再試。")
+            send_line_reply_message(api, reply_token, [error_message_obj])
+            return True
+
+    flex_msg_to_send = FlexMessage(
+            alt_text=f"{normalized_city_name} 即時天氣",
+            contents=weather_flex_bubble # 直接傳入 FlexBubble 物件
+        )
 
     # 4. 回覆
-    send_line_reply_message(api, reply_token, flex_msg)
+    send_line_reply_message(api, reply_token, [flex_msg_to_send])
 
 
     '''

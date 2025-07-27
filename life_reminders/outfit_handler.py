@@ -1,10 +1,10 @@
 # life_reminders/outfit_handler.py
 import json
 import logging
-import datetime
-from linebot.v3.messaging.models import TextMessage, FlexMessage
-from linebot.v3.webhooks.models import PostbackEvent
+from typing import List, Dict
 from urllib.parse import parse_qs # 用於解析 Postback data
+from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexBubble, FlexCarousel
+from linebot.v3.webhooks.models import PostbackEvent
 
 from config import CWA_API_KEY
 
@@ -22,6 +22,12 @@ from utils.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weath
 from weather_today.cwa_today_api import get_cwa_today_data
 from weather_today.weather_today_parser import parse_today_weather
 
+from weather_today.cwa_3days_api import get_cwa_3days_data
+from weather_today.weather_3days_parser import parse_3days_weather
+
+from weather_today.uv_station_mapping import get_uv_station_id
+from weather_today.today_uvindex_handler import get_uv_index_for_location
+
 # 從新的路徑導入即時天氣 API 呼叫和解析器
 from weather_current.cwa_current_api import get_cwa_current_data
 from weather_current.weather_current_parser import parse_current_weather
@@ -33,7 +39,9 @@ from weather_forecast.weather_forecast_parser import parse_forecast_weather
 # 它會返回你想要作為「穿搭建議」入口選單的 Flex Message JSON 結構
 from life_reminders.outfit_type_flex_messages import build_outfit_suggestions_flex
 from life_reminders.outfit_flex_messages import build_today_outfit_flex, build_current_outfit_flex
-from life_reminders.forecast_outfit_flex_messages import build_forecast_outfit_carousel
+# from life_reminders.forecast_outfit_flex_messages import build_forecast_outfit_carousel
+
+from weather_forecast.forecast_flex_converter import convert_forecast_to_bubbles, build_flex_carousel
 
 logger = logging.getLogger(__name__)
 
@@ -93,45 +101,110 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
     
     logger.info(f"[OutfitHandler] 用戶 {user_id} 請求穿搭查詢: 類型={query_type}。")
 
-    try:
-        flex_json_content = None
-        alt_text = "穿搭建議"
+    if CWA_API_KEY == "YOUR_CWB_API_KEY" or not CWA_API_KEY: # 檢查 API 金鑰是否有效
+        send_line_reply_message(api, reply_token, [TextMessage(text="錯誤：未設定中央氣象署 API 金鑰。")])
+        return True
 
+    try:
         user_city = get_default_city(user_id)
 
         if query_type == "today":
-            # "今日穿搭建議"可以視為即時穿搭的一種
-            today_weather = get_cwa_today_data(api_key=CWA_API_KEY, location_name=user_city) # 假設用戶在台中市
-            
-            if not today_weather:
-                logger.error(f"無法取得 {user_city} 的今日天氣資料。")
-                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法取得今日天氣數據，請稍候再試。")])
+            # --- 1. 獲取 F-C0032-001 數據 (整體天氣概況) ---
+            raw_general_data = get_cwa_today_data(api_key=CWA_API_KEY, location_name=user_city) # 假設用戶在台中市
+            logger.debug(f"DEBUG: raw_general_data content: {raw_general_data}")
+            logger.debug(f"DEBUG: raw_general_data type: {type(raw_general_data)}")
+            if not raw_general_data:
+                logger.error(f"無法取得 {user_city} 的整體天氣概況資料 (F-C0032-001)。")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法取得 {user_city} 的今日天氣概況數據，請稍候再試。")])
                 return True
             
             # 2. 解析原始即時天氣數據 (使用 weather_current_parser)
             # 這裡的 parsed_from_current_api 現在會直接傳給 outfit_logic
-            parsed_from_today_api = parse_today_weather(today_weather, user_city)
+            general_forecast_parsed = parse_today_weather(raw_general_data, location_name=user_city)
+            
+            # --- 在這裡新增日誌 ---
+            logger.debug(f"DEBUG: general_forecast_parsed content: {general_forecast_parsed}")
 
-            if not parsed_from_today_api:
-                logger.error(f"無法從今日天氣資料中解析或格式化 {user_city} 的天氣資訊。")
-                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法解析今日天氣數據以提供穿搭建議。")])
+            if not general_forecast_parsed:
+                logger.error(f"無法解析或格式化 {user_city} 的今日天氣概況資訊 (F-C0032-001)。")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法解析 {user_city} 的今日天氣概況數據以提供建議。")])
                 return True
             
-            # 3. 直接將解析後的即時數據傳給 outfit_logic 函數
-            outfit_info = get_outfit_suggestion_for_today_weather(parsed_from_today_api)
+            # --- 2. 獲取 F-D0047-089 數據 (逐時詳細預報) ---
+            raw_hourly_data = get_cwa_3days_data(api_key=CWA_API_KEY, location_name=user_city)
+            if not raw_hourly_data:
+                logger.error(f"無法取得 {user_city} 的逐時天氣資料 (F-D0047-089)。")
+                send_line_reply_message(api, reply_token, [TextMessage(text=f"抱歉，無法取得 {user_city} 的詳細天氣數據，請稍候再試。")])
+                return True
+            
+            # 2. 解析原始即時天氣數據
+            hourly_forecast_parsed = parse_3days_weather(raw_hourly_data, location_name=user_city)
+            if not hourly_forecast_parsed:
+                logger.error(f"無法從逐時天氣資料中解析或格式化 {user_city} 的天氣資訊 (F-D0047-089)。")
+                send_line_reply_message(api, reply_token, [TextMessage(text=f"抱歉，無法解析 {user_city} 的詳細天氣數據以提供建議。")])
+                return True
+            
+            # --- 新增: 獲取紫外線指數 (O-A0005-001) ---
+            # 使用 get_uv_station_id 函式來動態獲取測站 ID
+            uv_station_id = get_uv_station_id(user_city)
+            uv_data_parsed = None # 初始化為 None
+    
+            if uv_station_id:
+                logger.info(f"為城市 '{user_city}' 找到對應的紫外線測站 ID: {uv_station_id}")
+                uv_data_parsed = get_uv_index_for_location(CWA_API_KEY, uv_station_id)
+                if not uv_data_parsed:
+                    logger.warning(f"雖然找到了測站 ID '{uv_station_id}'，但無法取得 {user_city} 的紫外線指數資料 (O-A0005-001)。建議將不會包含紫外線資訊。")
+            else:
+                logger.warning(f"未能為城市 '{user_city}' 找到對應的紫外線測站 ID。將不查詢紫外線資訊。")
+                # uv_data_parsed 保持為 None
+            
+            # --- 3. 調用核心邏輯生成天氣推播和穿搭建議 ---
+            # 這裡將所有解析後的數據 (包括紫外線指數) 傳遞給 get_outfit_suggestion_for_today_weather
+            outfit_info_for_today_flex = get_outfit_suggestion_for_today_weather(
+                location=user_city,
+                hourly_forecast=hourly_forecast_parsed,
+                general_forecast=general_forecast_parsed,
+                uv_data=uv_data_parsed  # 傳入紫外線指數數據
+            )
+
+            if not outfit_info_for_today_flex:
+                logger.error(f"無法從 today_outfit_logic 生成 {user_city} 的今日穿搭建議。")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法生成今日穿搭建議。")])
+                return True
+
+            # 4. 生成 Flex Bubble
+            flex_bubble_content_today = build_today_outfit_flex(
+                outfit_info=outfit_info_for_today_flex, location_name=user_city
+            )
+            
+            if not isinstance(flex_bubble_content_today, FlexBubble):
+                logger.error(f"build_today_outfit_flex 返回了無效的 FlexBubble 物件，類型: {type(flex_bubble_content_today)}")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，今日穿搭建議卡片生成失敗 (內部錯誤)。")])
+                return True
+            
+            # 5. 包裝成 FlexMessage 並發送
             alt_text = f"{user_city} 今日穿搭建議"
+            flex_message_to_send = FlexMessage(
+                alt_text=alt_text, contents=flex_bubble_content_today
+            )
 
-            flex_json_to_format = build_today_outfit_flex(outfit_info, location_name=user_city)
+            send_line_reply_message(api, reply_token, [flex_message_to_send])
+            logger.info(f"成功為 {user_id} 發送 {user_city} 的今日穿搭建議 (Flex Message)。")
+            return True
 
+            """
             #✅ 直接使用 FlexMessage 建構（不是 FlexSendMessage，也不需要 format_flex_message）
             flex_message_to_send = format_flex_message(alt_text, flex_json_to_format)
+            send_line_reply_message(api, reply_token, [flex_message_to_send])
+            logger.info(f"成功為 {user_id} 發送 {user_city} 的今日穿搭建議 (Flex Message)。")
+            return True
+            """
 
         # 這裡根據 query_type 來獲取數據並構建 Flex Message
         elif query_type == "current":
             # 獲取即時天氣數據 (假設你需要用戶的城市，這裡暫時寫死或從用戶設定中獲取)
             # 你需要自行實作 get_current_weather_data
             current_weather = get_cwa_current_data(api_key=CWA_API_KEY, location_name=user_city) # 假設用戶在台中市
-            
             if not current_weather:
                 logger.error(f"無法取得 {user_city} 的即時觀測資料。")
                 send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法取得即時天氣數據，請稍候再試。")])
@@ -140,7 +213,6 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
             # 2. 解析原始即時天氣數據 (使用 weather_current_parser)
             # 這裡的 parsed_from_current_api 現在會直接傳給 outfit_logic
             parsed_from_current_api = parse_current_weather(current_weather, user_city)
-
             if not parsed_from_current_api:
                 logger.error(f"無法從即時觀測資料中解析或格式化 {user_city} 的天氣資訊。")
                 send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法解析即時天氣數據以提供穿搭建議。")])
@@ -148,18 +220,42 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
             
             # 3. 直接將解析後的即時數據傳給 outfit_logic 函數
             outfit_info = get_outfit_suggestion_for_current_weather(parsed_from_current_api)
+            if not outfit_info: # 檢查 get_outfit_suggestion_for_current_weather 是否成功返回數據
+                logger.error(f"無法生成 {user_city} 的即時穿搭建議。")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法生成即時穿搭建議。")])
+                return True
+            
+            # 4. 生成 Flex Bubble
+            flex_bubble_content = build_current_outfit_flex(outfit_info, location_name=user_city)
+            # 檢查 build_current_outfit_flex 是否返回了有效的 FlexBubble
+            if not isinstance(flex_bubble_content, FlexBubble):
+                logger.error(f"build_current_outfit_flex 返回了無效的 FlexBubble 物件，類型: {type(flex_bubble_content)}")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，穿搭建議卡片生成失敗 (內部錯誤)。")])
+                return True
+
+            # 5. 包裝成 FlexMessage
             alt_text = f"{user_city} 即時穿搭建議"
+            flex_message_to_send = FlexMessage(
+                alt_text=alt_text, contents=flex_bubble_content
+            )
 
-            flex_json_to_format = build_current_outfit_flex(outfit_info, location_name=user_city)
+            send_line_reply_message(api, reply_token, [flex_message_to_send])
+            logger.info(f"成功為 {user_id} 發送 {user_city} 的即時穿搭建議 (Flex Message)。")
+            return True
 
+            """
             #✅ 直接使用 FlexMessage 建構（不是 FlexSendMessage，也不需要 format_flex_message）
             flex_message_to_send = format_flex_message(alt_text, flex_json_to_format)
-
+            """
+            
         elif query_type == "forecast":
             # 獲取未來天氣預報數據 (假設你需要用戶的城市，這裡暫時寫死)
             # 你需要自行實作 get_forecast_weather_data
+            days = 7  # 預設為查詢未來 7 天的預報
+
+            logger.info(f"用戶 {user_id} 請求未來 {days} 天的預報和穿搭建議。")
+
             forecast_weather = get_cwa_forecast_data(api_key=CWA_API_KEY, location_name=user_city) # 假設用戶在台中市
-            
             if not forecast_weather:
                 logger.error(f"無法取得 {user_city} 的未來預報資料。")
                 send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法取得未來預報數據，請稍候再試。")])
@@ -168,16 +264,44 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
             # 2. 解析原始未來天氣數據，得到一個包含多天數據的列表
             # 每個元素應該是單一天的詳細天氣數據字典
             parsed_full_forecast = parse_forecast_weather(forecast_weather, user_city)
-
-            if not parsed_full_forecast or 'forecast_periods' not in parsed_full_forecast:
+            if not parsed_full_forecast or not parsed_full_forecast.get('forecast_periods'):
                 logger.error(f"無法從未來預報資料中解析或格式化 {user_city} 的天氣資訊，或缺少 'forecast_periods' 鍵。")
                 send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法解析未來預報數據以提供穿搭建議。")])
+                return True
+            
+            try:
+                # 這裡調用 convert_forecast_to_bubbles，它會返回兩個 FlexBubble 列表
+                # 第一個是天氣預報的 Bubble 列表
+                # 第二個是穿搭建議的 Bubble 列表 (這已在 forecast_flex_converter 中生成好)
+                _, outfit_bubbles = \
+                    convert_forecast_to_bubbles(parsed_full_forecast, days, include_outfit_suggestions=True)
+
+                messages_to_send: List[FlexMessage | TextMessage] = []
+
+                if outfit_bubbles:
+                    outfit_flex_message = build_flex_carousel(outfit_bubbles, alt_text=f"{user_city} 未來 {days} 天穿搭建議")
+                    messages_to_send.append(outfit_flex_message)
+                else:
+                    logger.warning(f"未能生成 {user_city} 的穿搭建議卡片。")
+                    messages_to_send.append(TextMessage(text=f"抱歉，未能為 {user_city} 生成穿搭建議。"))
+
+                if not messages_to_send:
+                    logger.error(f"為 {user_city} 生成訊息失敗，無任何訊息可發送。")
+                    send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法提供預報資訊。")])
+                    return True
+
+                send_line_reply_message(api, reply_token, messages_to_send)
+                logger.info(f"成功發送 {user_city} 未來 {days} 天的穿搭建議。")
+                return True
+
+            except Exception as e:
+                logger.exception(f"處理未來穿搭建議時發生錯誤: {e}")
+                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，處理未來預報時發生系統錯誤，請稍候再試。")])
                 return True
             
             # 從完整的解析結果中取出 daily_forecast_data 列表
             # 這是實際包含每天數據的列表
             daily_forecast_data = parsed_full_forecast.get('forecast_periods', [])
-
             if not daily_forecast_data:
                 logger.error(f"解析後 {user_city} 的未來預報資料中 'forecast_periods' 為空。")
                 send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，未來幾天沒有可用的預報數據。")])
@@ -201,25 +325,29 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
 
             # 4. 使用 build_forecast_outfit_carousel 構建可滑動的 Flex Message
             # daily_outfit_suggestions 是一個列表，其中包含了每一天的 outfit_info 字典
-            logger.debug(f"[OutfitHandler] daily_outfit_suggestions = {daily_outfit_suggestions}")
-            flex_json_to_format = build_forecast_outfit_carousel(daily_outfit_suggestions, location_name=user_city)
+            # logger.debug(f"[OutfitHandler] daily_outfit_suggestions = {daily_outfit_suggestions}")
+            flex_json_content = build_forecast_outfit_carousel(daily_outfit_suggestions, location_name=user_city)
             
             # 在這裡添加一個臨時的 debug log，確認 flex_json_content 的類型和內容
-            logger.debug(f"DEBUG: build_forecast_outfit_carousel 返回的原始 flex_json_content 類型: {type(flex_json_content)}")
-            logger.debug(f"DEBUG: build_forecast_outfit_carousel 返回的原始 flex_json_content 內容: {json.dumps(flex_json_content, indent=2, ensure_ascii=False)}")
+            # logger.debug(f"DEBUG: build_forecast_outfit_carousel 返回的原始 flex_json_content 類型: {type(flex_json_content)}")
+            # logger.debug(f"DEBUG: build_forecast_outfit_carousel 返回的原始 flex_json_content 內容: {json.dumps(flex_json_content, indent=2, ensure_ascii=False)}")
             
             alt_text = f"{user_city} 未來穿搭建議 (1-7天)"
 
+            """
             #✅ 直接使用 FlexMessage 建構（不是 FlexSendMessage，也不需要 format_flex_message）
             flex_message_to_send = format_flex_message(alt_text, flex_json_to_format)
-        
+            """
+            
+        # 未知的查詢類型
         else:
             logger.warning(f"[OutfitHandler] 未知的穿搭查詢類型: {query_type}")
             send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法識別的穿搭建議類型。")])
             return True
         
         # 統一檢查並發送 Flex Message
-        if flex_message_to_send:
+        if flex_json_content:
+            flex_message_to_send = format_flex_message(alt_text, flex_json_content)
             if not isinstance(flex_message_to_send, FlexMessage):
                 logger.error(f"[OutfitHandler] 錯誤！flex_message_to_send 的類型不是 FlexMessage，而是 {type(flex_message_to_send)}")
                 send_line_reply_message(api, reply_token, [TextMessage(text="內部錯誤：訊息類型不符。")])

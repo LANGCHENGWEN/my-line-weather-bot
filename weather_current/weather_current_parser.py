@@ -104,10 +104,32 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
         try:
             # 處理 ISO 8601 格式，確保時區資訊被正確處理
             # .replace('Z', '+00:00') 處理 UTC 時間的 'Z'
-            obs_time = datetime.fromisoformat(obs_time_str.replace('Z', '+00:00')) 
-            parsed_and_formatted_info['observation_time'] = obs_time.strftime('%Y-%m-%d %H:%M')
+            obs_datetime_obj = datetime.fromisoformat(obs_time_str.replace('Z', '+00:00'))
+
+            weekday_map = {
+            0: "一", 1: "二", 2: "三", 3: "四",
+            4: "五", 5: "六", 6: "日"
+            }
+
+            chinese_weekday = weekday_map.get(obs_datetime_obj.weekday(), "")
+
+            # 格式化日期字串 (兼容不同系統的 strftime 格式)
+            try:
+                # 嘗試使用 %-m 和 %-d (無前導零，Linux/macOS 兼容)
+                formatted_date_part = obs_datetime_obj.strftime("%Y年%-m月%-d日") 
+            except ValueError:
+                # 如果失敗 (如在 Windows 上)，使用 %m 和 %d (有前導零)
+                formatted_date_part = obs_datetime_obj.strftime("%Y年%m月%d日")
+
+            # 格式化時間部分
+            formatted_time_part = obs_datetime_obj.strftime('%H:%M')
+
+            # 組合成目標的日期和星期幾顯示格式
+            parsed_and_formatted_info['observation_time'] = \
+                f"日期：{formatted_date_part} ({chinese_weekday}) {formatted_time_part}"
+
         except ValueError:
-            logger.warning(f"無法解析觀測時間: {obs_time_str}")
+            logger.warning(f"無法解析或格式化日期: {obs_time_str}")
             parsed_and_formatted_info['observation_time'] = "N/A" # 解析失敗，設定為 N/A
     else:
         parsed_and_formatted_info['observation_time'] = "N/A"
@@ -238,9 +260,9 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
         # 根據 UV 值判斷等級，或者直接顯示數值
         # 這裡為了簡單，直接顯示數值。如果您有等級判斷，可以加上。
         if uv_val >= 11:
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (危險級)"
+            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (危險)"
         elif uv_val >= 8:
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (過量級)"
+            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (過量)"
         elif uv_val >= 6:
             parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (高)"
         elif uv_val >= 3:

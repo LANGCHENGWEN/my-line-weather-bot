@@ -1,24 +1,37 @@
 # life_reminders/forecast_outfit_flex_messages.py
-import datetime
+import logging
+from linebot.v3.messaging.models import FlexBubble, FlexBox, FlexText, FlexImage, FlexSeparator
+from utils.flex_message_elements import make_kv_row
 
-def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset: int) -> dict:
+logger = logging.getLogger(__name__)
+
+def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset: int) -> FlexBubble:
     """
-    生成單一未來穿搭建議的 Flex Message bubble (卡片)，包含穿搭圖片、建議文字和日期。
+    根據提供的穿搭資訊和已經格式化好的天氣數據構建一個單天的 Flex Message 卡片（FlexBubble 物件）。
+
     Args:
-        outfit_info (dict): 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
-                            這個字典應該針對特定一天。
-        location_name (str): 查詢的城市名稱，用於標題。
-        day_offset (int): 相對於今天的日期偏移量 (0 代表今天, 1 代表明天, 以此類推)。
+        outfit_info (dict): 包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
+                            預期包含 'display_weather_desc', 'display_feels_like_temp', 
+                            'display_pop', 'display_humidity', 'display_uv_index', 
+                            以及 'suggestion_text', 'suggestion_image_url' 等。
+        location_name (str): 城市名稱。
+        day_offset (int): 從今天開始的天數偏移 (0=今天, 1=明天, etc.)。
+
     Returns:
-        dict: Flex Message 的單一 bubble 內容字典。
+        FlexBubble: LINE Flex Message 的 Bubble 元件物件。
     """
     # 獲取建議文字列表，如果沒有則使用預設單句建議
-    suggestions_list = outfit_info.get("suggestion_text", ["目前無法提供未來穿搭建議。"])
-    if not isinstance(suggestions_list, list):
-        suggestions_list = [str(suggestions_list)] # 強制轉換為列表中的字串
+    suggestion_text = outfit_info.get("suggestion_text", ["目前無法提供未來穿搭建議。"])
+    suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
+    # outfit_tags = outfit_info.get("outfit_tags", []) # 穿搭標籤列表
+
+    date_full_formatted = outfit_info.get("obs_time", "日期 N/A") # 例如 "2025年07月23日 (三)"
+
+    # 從 outfit_info 獲取 day_index，這個值在 forecast_flex_converter 中被設定為 i + 1
+    display_day_index = outfit_info.get("day_index", day_offset + 1) # 預設使用 day_offset + 1
 
     # --- 計算並格式化日期和星期幾（用於副標題） ---
-    forecast_date = datetime.date.today() + datetime.timedelta(days=day_offset)
+    # forecast_date = datetime.date.today() + datetime.timedelta(days=day_offset)
 
     # 計算並格式化日期
     # 注意：這裡使用 fromisoformat() 或其他方式確保日期對象正確
@@ -34,7 +47,7 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
         # 如果 outfit_info 沒有提供，則根據 day_offset 計算
         forecast_date = datetime.date.today() + datetime.timedelta(days=day_offset)
     """
-
+    """
     # 格式化完整日期字串，處理 Windows/Linux 差異
     try:
         specific_date_full = forecast_date.strftime("%Y年%-m月%-d日")
@@ -48,12 +61,17 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
         "4": "四", "5": "五", "6": "六"
     }
     weekday_chinese = weekday_map.get(weekday_str, "")
+    """
 
-    # 組合副標題
-    subtitle_text = f"日期 : {specific_date_full} (星期{weekday_chinese})"
+    # 組合副標題 (日期和星期)
+    subtitle_text = date_full_formatted
+    # subtitle_text = f"日期：{specific_date_full} (星期{weekday_chinese})"
 
     # 組合標題日期
     # title_date_text = f"📅 {location_name} {display_date_str}"
+
+    # 主標題：使用 day_index 動態顯示「未來第 X 天」
+    title_text = f"📍 {location_name} 未來第 {display_day_index} 天穿搭建議"
 
     """
     # 計算並格式化日期
@@ -61,102 +79,91 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
     # 這裡會根據執行時的當前日期動態生成，例如今天是 7/23，day_offset=1 就是 7/24
     date_str = forecast_date.strftime("%m/%d (%a)") # 例如: 07/24 (三)
     """
+    """
+    display_date_only = "N/A"
+    if date_full_formatted.startswith("日期："):
+        display_date_only = date_full_formatted.replace("日期：", "")
+    else:
+        display_date_only = date_full_formatted # 如果不符合預期格式，就用原始的
+
+    subtitle_text = display_date_only
+    """
 
     # 創建一個列表，用於存放每個 FlexText 元件
     suggestion_text_contents = []
-    for suggestion in suggestions_list:
-        suggestion_text_contents.append({
-            "type": "text",
-            "text": suggestion,
-            "size": "md",
-            "color": "#333333",
-            "wrap": True,
-            "margin": "sm", # 將 margin 設為 sm 或 none，讓行距不會太大
-            "align": "center"
-            # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"
-        })
+    for suggestion in suggestion_text:
+        suggestion_text_contents.append(
+            FlexText(
+                text=suggestion,
+                size="md",
+                color="#333333",
+                wrap=True,
+                margin="sm",
+                align="start"
+                # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"
+            )
+        )
 
-    return {
-        "type": "bubble",
-        "direction": "ltr",
-        "hero": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "image",
-                    "url": outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png"), # 預設圖
-                    "size": "full",
-                    "aspectRatio": "20:9",
-                    "aspectMode": "cover"
-                }
+    # --- 新增天氣資訊區塊內容 ---
+    weather_info_contents = []
+
+    # 直接使用 forecast_flex_converter.py 預先處理好的顯示字串
+    # 這些鍵現在應該以 'display_' 開頭
+    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("display_weather_desc", "N/A")))
+    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("display_feels_like_temp", "N/A")))
+    weather_info_contents.append(make_kv_row("濕度：", outfit_info.get("display_humidity", "N/A")))
+    weather_info_contents.append(make_kv_row("降雨機率：", outfit_info.get("display_pop", "N/A")))
+    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("display_uv_index", "N/A")))
+    
+    # 你也可以選擇加入其他顯示資訊，例如風速和風向
+    # weather_info_contents.append(make_kv_row("風速", outfit_info.get("display_wind_speed", "N/A")))
+    # weather_info_contents.append(make_kv_row("風向", outfit_info.get("display_wind_dir", "N/A")))
+
+    return FlexBubble(
+        direction="ltr",
+        hero=FlexBox(
+            layout="vertical",
+            contents=[
+                FlexImage(
+                    url=suggestion_image_url, 
+                    size="full",
+                    aspectRatio="20:9",
+                    aspectMode="cover"
+                )
             ]
-        },
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": f"📅 {location_name} 未來 7 天穿搭建議",
-                    "weight": "bold",
-                    "size": "lg",
-                    "align": "center",
-                    "margin": "md",
-                    "color": "#000000"
-                },
-                {
-                    "type": "text",
-                    "text": subtitle_text, # 副標題
-                    "size": "sm", # 副標題可以小一點
-                    "color": "#666666",
-                    "align": "center",
-                    "margin": "none" # 緊跟主標題，不需要額外間距
-                },
-                {
-                    "type": "separator",
-                    "margin": "md" # 調整分隔線與上方/下方元件的間距
-                },
-                {   "type": "box", # 用一個 Box 包裹多個 Text 元件
-                    "layout": "vertical",
-                    "spacing": "sm", # 設定 Box 內元件間距
-                    "margin": "md",
-                    "contents": suggestion_text_contents
-                }
+        ),
+        body=FlexBox(
+            layout="vertical",
+            contents=[
+                FlexText(
+                    text=title_text,
+                    weight="bold",
+                    size="lg",
+                    align="center",
+                    margin="md",
+                    color="#000000"
+                ),
+                FlexText(
+                    text=subtitle_text,
+                    size="sm",
+                    color="#666666",
+                    align="center",
+                    margin="none"
+                ),
+                FlexSeparator(margin="md"),
+                FlexBox(
+                    layout="vertical",
+                    spacing="sm",
+                    margin="md",
+                    contents=weather_info_contents # 這裡直接放入 FlexBox 物件列表
+                ),
+                FlexSeparator(margin="md"),
+                FlexBox(
+                    layout="vertical",
+                    spacing="sm",
+                    margin="md",
+                    contents=suggestion_text_contents # 這裡直接放入 FlexText 物件列表
+                )
             ]
-        }
-    }
-
-def build_forecast_outfit_carousel(daily_outfit_data: list[dict], location_name: str = "該地區") -> dict:
-    """
-    生成未來穿搭建議的 Flex Message Carousel，包含多張穿搭卡片。
-    Args:
-        daily_outfit_data (list[dict]): 包含每天穿搭資訊的列表，每個字典包含
-                                         'suggestion_text' 和 'suggestion_image_url'。
-                                         列表的順序代表天數 (索引 0 為第 1 天)。
-        location_name (str): 查詢的城市名稱，用於標題。
-    Returns:
-        dict: Flex Message 的 Carousel 內容字典。
-              如果 daily_outfit_data 為空，返回一個包含單一預設 bubble 的 Carousel。
-    """
-    bubbles = []
-
-    for day_offset, outfit_info in enumerate(daily_outfit_data[:7]):
-        if not outfit_info or not outfit_info.get("suggestion_text"):
-            continue
-        bubble = build_forecast_outfit_card(outfit_info, location_name, day_offset)
-        # 使用 day_offset = 0 來表示 "今天" 或 "目前"
-        bubbles.append(bubble)
-
-    if not bubbles:
-        # 所有資料都不合法或空值
-        default_outfit_info = {
-            "suggestion_text": ["抱歉，目前沒有未來天氣的穿搭建議。"],
-            "suggestion_image_url": "https://i.imgur.com/no_data_available.png"
-        }
-        bubbles.append(build_forecast_outfit_card(default_outfit_info, location_name, 0))
-
-    return {
-        "type": "carousel",
-        "contents": bubbles
-    }
+        )
+    )

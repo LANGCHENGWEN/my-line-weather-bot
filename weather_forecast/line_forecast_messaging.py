@@ -48,9 +48,9 @@ def build_forecast_weather_flex(parsed_data: dict, days: int, city_name: str) ->
         )
     
     # ✅ 正確流程：轉換為 bubble list 並組成 Carousel
-    bubble_list = convert_forecast_to_bubbles(parsed_data, days)
+    general_weather_bubbles, _ = convert_forecast_to_bubbles(parsed_data, days)
 
-    if not bubble_list:
+    if not general_weather_bubbles:
         logger.error(f"無法從解析後的數據構建天氣預報 Bubble 列表。城市: {city_name}, 天數: {days}")
         alt_text = f"{city_name} 未來天氣預報"
         return FlexMessage(
@@ -64,9 +64,9 @@ def build_forecast_weather_flex(parsed_data: dict, days: int, city_name: str) ->
 
     alt_txt = f"{city_name} 未來 {days} 天氣預報"
     # carousel = FlexCarousel(contents=build_observe_weather_flex)
-    flex_msg = build_flex_carousel(bubble_list, alt_text=alt_txt)
+    flex_msg = build_flex_carousel(general_weather_bubbles, alt_text=alt_txt)
 
-    logger.info(f"預報 FlexMessage 已建立，共 {len(bubble_list)} 張 bubble，alt_text: {alt_txt}")
+    logger.info(f"預報 FlexMessage 已建立，共 {len(general_weather_bubbles)} 張 bubble，alt_text: {alt_txt}")
     return flex_msg
     
     """
