@@ -143,19 +143,19 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
                     try:
                         at_value = element_value.get("ApparentTemperature")
                         at_float = float(at_value)
-                        weather_elements_map[data_time]["apparent_temp"] = f"{round(at_float, 1)}°C"
+                        weather_elements_map[data_time]["apparent_temp_formatted"] = f"{round(at_float, 1)}°C"
                         weather_elements_map[data_time]["apparent_temp_raw"] = at_float # 保留原始數值供穿搭判斷
                     except (ValueError, TypeError):
-                        weather_elements_map[data_time]["apparent_temp"] = "N/A"
+                        weather_elements_map[data_time]["apparent_temp_formatted"] = "N/A"
                         weather_elements_map[data_time]["apparent_temp_raw"] = None
                 elif element_name == "相對濕度":
                     try:
                         rh_value = element_value.get("RelativeHumidity")
                         rh_float = float(rh_value)
-                        weather_elements_map[data_time]["humidity"] = f"{round(rh_float)}%"
+                        weather_elements_map[data_time]["humidity_formatted"] = f"{round(rh_float)}%"
                         weather_elements_map[data_time]["humidity_raw"] = rh_float # 保留原始數值供穿搭判斷
                     except (ValueError, TypeError):
-                        weather_elements_map[data_time]["humidity"] = "N/A"
+                        weather_elements_map[data_time]["humidity_formatted"] = "N/A"
                         weather_elements_map[data_time]["humidity_raw"] = None
                 elif element_name == "風向":
                     weather_elements_map[data_time]["wind_direction"] = element_value.get("WindDirection", "N/A")
@@ -163,7 +163,7 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
                     try:
                         ws_value = element_value.get("WindSpeed")
                         ws_float = float(ws_value)
-                        weather_elements_map[data_time]["wind_speed"] = f"{round(ws_float, 1)} m/s"
+                        weather_elements_map[data_time]["wind_speed_formatted"] = f"{round(ws_float, 1)} m/s"
                         weather_elements_map[data_time]["wind_speed_raw"] = ws_float # 保留原始數值供穿搭判斷
                         
                         # 在這裡將風級轉換並直接格式化為字串
@@ -172,7 +172,7 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
                         weather_elements_map[data_time]["wind_scale_formatted"] = f"{wind_scale_int} 級 ({wind_scale_desc})"
                         weather_elements_map[data_time]["wind_scale_raw"] = wind_scale_int # 純數字風級
                     except (ValueError, TypeError):
-                        weather_elements_map[data_time]["wind_speed"] = "N/A"
+                        weather_elements_map[data_time]["wind_speed_formatted"] = "N/A"
                         weather_elements_map[data_time]["wind_speed_raw"] = None
                         weather_elements_map[data_time]["wind_scale_formatted"] = "N/A" # 無法解析風速時，風級也給 N/A
                         weather_elements_map[data_time]["wind_scale_raw"] = None

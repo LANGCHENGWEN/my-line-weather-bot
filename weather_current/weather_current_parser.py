@@ -5,6 +5,77 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# --- 新增的蒲福風級描述函數 ---
+def get_beaufort_scale_description(wind_scale_int: int) -> str:
+    """
+    根據蒲福風級數字返回對應的文字描述。
+    Args:
+        wind_scale_int (int): 蒲福風級數字 (0-12)。
+    Returns:
+        str: 蒲福風級的文字描述。
+    """
+    if wind_scale_int == 0:
+        return "無風"
+    elif wind_scale_int == 1:
+        return "軟風"
+    elif wind_scale_int == 2:
+        return "輕風"
+    elif wind_scale_int == 3:
+        return "微風"
+    elif wind_scale_int == 4:
+        return "和風"
+    elif wind_scale_int == 5:
+        return "清風"
+    elif wind_scale_int == 6:
+        return "強風"
+    elif wind_scale_int == 7:
+        return "疾風"
+    elif wind_scale_int == 8:
+        return "大風"
+    elif wind_scale_int == 9:
+        return "烈風"
+    elif wind_scale_int == 10:
+        return "狂風"
+    elif wind_scale_int == 11:
+        return "暴風"
+    elif wind_scale_int == 12:
+        return "颶風"
+    else:
+        return "N/A" # 超出範圍或無效風級
+
+# --- 新增的風速轉換函式 ---
+def convert_ms_to_beaufort_scale(wind_speed_ms: float) -> int:
+    """
+    將風速 (m/s) 轉換為蒲福風級 (Beaufort scale)。
+    參考中央氣象署風級對照表 (簡化)。
+    """
+    if wind_speed_ms < 0.3:
+        return 0 # 無風
+    elif wind_speed_ms <= 1.5:
+        return 1 # 軟風
+    elif wind_speed_ms <= 3.3:
+        return 2 # 輕風
+    elif wind_speed_ms <= 5.4:
+        return 3 # 微風
+    elif wind_speed_ms <= 7.9:
+        return 4 # 和風
+    elif wind_speed_ms <= 10.7:
+        return 5 # 勁風
+    elif wind_speed_ms <= 13.8:
+        return 6 # 強風
+    elif wind_speed_ms <= 17.1:
+        return 7 # 疾風
+    elif wind_speed_ms <= 20.7:
+        return 8 # 大風
+    elif wind_speed_ms <= 24.4:
+        return 9 # 烈風
+    elif wind_speed_ms <= 28.4:
+        return 10 # 狂風
+    elif wind_speed_ms <= 32.6:
+        return 11 # 暴風
+    else:
+        return 12 # 颶風 (或更高)
+
 def calculate_apparent_temperature(temp_c: float, humidity_percent: float) -> float | str:
     """
     簡化版的體感溫度計算。這是一個基於熱指數的近似值，非精確科學公式。
@@ -62,7 +133,8 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
         
     Returns:
         dict: 包含解析並完全格式化後天氣數據的字典，如果找不到數據則為 None。
-              這個字典的鍵值對可以直接用於 Flex Message 填充。
+              這個字典的鍵值對可以直接用於 Flex Message 填充，
+              同時包含數值型別的鍵值供邏輯判斷使用。
     """
     # 檢查數據基本結構和成功標誌
     if not cwa_data or cwa_data.get('success') != 'true' or \
@@ -140,97 +212,120 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
 
     # 氣溫 (AirTemperature)
     raw_temp_str = weather_elements.get('AirTemperature')
-    temp_val = 'N/A'
+    temp_val = None
     if raw_temp_str is not None and raw_temp_str.strip() not in ['', '-99.0', 'N/A'] and raw_temp_str.replace('.', '', 1).isdigit():
         try:
             temp_val = float(raw_temp_str)
             parsed_and_formatted_info['current_temp'] = f"{round(temp_val, 1)}°C"
+            parsed_and_formatted_info['current_temp_value'] = temp_val # 儲存數值
         except ValueError:
             logger.warning(f"無法將氣溫 '{raw_temp_str}' 轉換為浮點數。")
+    else:
+        parsed_and_formatted_info['current_temp'] = 'N/A'
+        parsed_and_formatted_info['current_temp_value'] = None # 數值為 None
     
     # 濕度 (RelativeHumidity)
     raw_humidity_str = weather_elements.get('RelativeHumidity')
-    hum_val = 'N/A'
+    hum_val = None
     if raw_humidity_str is not None and raw_humidity_str.strip() not in ['', '-99.0', 'N/A'] and raw_humidity_str.isdigit():
         try:
             hum_val = float(raw_humidity_str) # 濕度也可能是浮點數，為了calculate_apparent_temperature
             parsed_and_formatted_info['humidity'] = f"{round(hum_val)}%"
+            parsed_and_formatted_info['humidity_value'] = hum_val # 儲存數值
         except ValueError:
             logger.warning(f"無法將濕度 '{raw_humidity_str}' 轉換為數字。")
+    else:
+        parsed_and_formatted_info['humidity'] = 'N/A'
+        parsed_and_formatted_info['humidity_value'] = None # 數值為 None
+
+    # 計算體感溫度 (sensation_temp_display 和 sensation_temp_value)
+    calculated_apparent_temp = 'N/A'
+    sensation_temp_display = 'N/A'
+    sensation_temp_value = None
 
     # 計算體感溫度並組合到 temp_display
-    current_temp_display = f"{round(temp_val, 1)}°C" if temp_val != 'N/A' else 'N/A'
-    
-    # 初始化 calculated_apparent_temp，以防進入 if 塊之前使用
-    calculated_apparent_temp = 'N/A'
-
-    if temp_val != 'N/A' and hum_val != 'N/A':
-        calculated_apparent_temp = calculate_apparent_temperature(temp_val, hum_val)
+    # current_temp_display = f"{round(temp_val, 1)}°C" if temp_val != 'N/A' else 'N/A'
 
     # 判斷體感溫度是否與實際溫度差異不大，如果差異小於 1 
     # 修改這裡來處理三種情況：顯著差異、相近、N/A
-    if isinstance(calculated_apparent_temp, float):
-        # 如果體感溫度與實際溫度差異達到 1 度或以上，則顯示體感溫度
-        if abs(calculated_apparent_temp - temp_val) >= 1.0: 
-            # 顯著差異，顯示具體體感溫度
-            parsed_and_formatted_info['sensation_temp_display'] = f"{calculated_apparent_temp}°C"
-        else:
-            # 差異不顯著，顯示「與實際溫度相近」
-            parsed_and_formatted_info['sensation_temp_display'] = "與實際溫度相近"
-    else:
-        # 無法計算（例如輸入是N/A），顯示 N/A
-        parsed_and_formatted_info['sensation_temp_display'] = "N/A"
-
-    parsed_and_formatted_info['current_temp'] = current_temp_display
-    # parsed_and_formatted_info['sensation_temp_display'] = f"{calculated_apparent_temp}°C" if isinstance(calculated_apparent_temp, float) and abs(calculated_apparent_temp - temp_val) >= 1.0 else "N/A"
+    if temp_val is not None and hum_val is not None:
+        calculated_apparent_temp = calculate_apparent_temperature(temp_val, hum_val)
+        if isinstance(calculated_apparent_temp, float):
+            sensation_temp_value = calculated_apparent_temp # 儲存數值
+            # 如果體感溫度與實際溫度差異達到 1 度或以上，則顯示體感溫度
+            if abs(calculated_apparent_temp - temp_val) >= 1.0:
+                sensation_temp_display = f"{calculated_apparent_temp:.1f}°C"
+            else:
+                sensation_temp_display = f"{calculated_apparent_temp:.1f}°C (與實際溫度相近)"
+    
+    parsed_and_formatted_info['sensation_temp_display'] = sensation_temp_display
+    parsed_and_formatted_info['sensation_temp_value'] = sensation_temp_value
         
     # 濕度 (已在上面處理，這裡只是存儲最終格式化值)
-    parsed_and_formatted_info['humidity'] = f"{round(hum_val)}%" if hum_val != 'N/A' else 'N/A'
+    # parsed_and_formatted_info['humidity'] = f"{round(hum_val)}%" if hum_val != 'N/A' else 'N/A'
 
-    # 降水量 (Precipitation)
+    # 降雨量 (Precipitation)
     raw_precipitation_str = weather_elements.get('Now', {}).get('Precipitation', '-99.0') # <-- 關鍵修正！
-    prec_val = float(raw_precipitation_str) if raw_precipitation_str not in ['-99.0', 'N/A'] else 'N/A'
-    # parsed_and_formatted_info['precipitation'] = f"{prec_val} mm" if prec_val != 'N/A' else 'N/A'
-
-    # *** 修改這裡：如果為 'N/A'，則顯示 '無' 或 '-' ***
-    if prec_val != 'N/A':
-        # 判斷是否為 0 降雨，或者顯示具體數值
-        # 這裡假設小於 0.1 mm 也算無降雨，可根據需求調整閾值
-        # precipitation_data = weather_elements.get('Now', {}).get('Precipitation', '-99.0')
-        # prec_val = float(precipitation_data) if precipitation_data not in ['-99.0', 'N/A'] else 'N/A'
-
-        if prec_val <= 0.1: # 幾乎無降雨，顯示 "無"
-            parsed_and_formatted_info['precipitation'] = "無"
-        else:
-            parsed_and_formatted_info['precipitation'] = f"{prec_val} mm"
+    prec_val = None
+    if raw_precipitation_str not in ['-99.0', 'N/A']:
+        try:
+            prec_val = float(raw_precipitation_str)
+            parsed_and_formatted_info['precipitation_value'] = prec_val # 儲存數值
+            if prec_val <= 0.1: # 幾乎無降雨，顯示 "無"
+                parsed_and_formatted_info['precipitation'] = "無"
+            else:
+                parsed_and_formatted_info['precipitation'] = f"{prec_val} mm"
+        except ValueError:
+            logger.warning(f"無法將降水量 '{raw_precipitation_str}' 轉換為浮點數。")
+            parsed_and_formatted_info['precipitation'] = "無" # 解析失敗或無數據
+            parsed_and_formatted_info['precipitation_value'] = 0.0 # 數值為 0.0
     else:
         parsed_and_formatted_info['precipitation'] = "無"
+        parsed_and_formatted_info['precipitation_value'] = 0.0 # 數值為 0.0
 
     # 風速 (WindSpeed) & 風向 (WindDirection)
     raw_wind_speed_str = weather_elements.get('WindSpeed')
     raw_wind_direction_str = weather_elements.get('WindDirection')
     
-    wind_speed_val = 'N/A'
-    wind_direction_val = 'N/A'
-    wind_direction_desc = 'N/A'
+    wind_speed_val = None # m/s 數值
+    beaufort_scale_int = None # 蒲福風級數字
+    beaufort_scale_desc = 'N/A' # 蒲福風級描述
+    wind_speed_beaufort_display = 'N/A' # 組合後的顯示字串
+
+    wind_direction_val = None # 角度數值
+    wind_direction_desc = 'N/A' # 方向描述
 
     if raw_wind_speed_str is not None and raw_wind_speed_str.strip() not in ['', '-99.0', 'N/A'] and raw_wind_speed_str.replace('.', '', 1).isdigit():
         try:
             wind_speed_val = float(raw_wind_speed_str)
+            parsed_and_formatted_info['wind_speed_ms_value'] = wind_speed_val # 儲存 m/s 數值
+
+            # 計算並取得蒲福風級描述
+            beaufort_scale_int = convert_ms_to_beaufort_scale(wind_speed_val)
+            beaufort_scale_desc = get_beaufort_scale_description(beaufort_scale_int)
+            wind_speed_beaufort_display = f"{beaufort_scale_int} 級 ({beaufort_scale_desc})"
+
+            parsed_and_formatted_info['beaufort_scale_int'] = beaufort_scale_int # 儲存蒲福風級數字
+            parsed_and_formatted_info['beaufort_scale_desc'] = beaufort_scale_desc # 儲存蒲福風級描述
+            parsed_and_formatted_info['wind_speed_beaufort_display'] = wind_speed_beaufort_display # 儲存組合顯示字串
         except ValueError:
             logger.warning(f"無法將風速 '{raw_wind_speed_str}' 轉換為浮點數。")
+            parsed_and_formatted_info['wind_speed_ms_value'] = 0.0
+            parsed_and_formatted_info['beaufort_scale_int'] = 0
+    else:
+        parsed_and_formatted_info['wind_speed_ms_value'] = 0.0
+        parsed_and_formatted_info['beaufort_scale_int'] = 0
     
     if raw_wind_direction_str is not None and raw_wind_direction_str.strip() not in ['', '-99.0', 'N/A'] and raw_wind_direction_str.replace('.', '', 1).isdigit():
         try:
             wind_direction_val = float(raw_wind_direction_str)
             wind_direction_desc = get_wind_direction_description(wind_direction_val)
+            parsed_and_formatted_info['wind_direction'] = wind_direction_desc # 儲存方向描述
         except ValueError:
             logger.warning(f"無法將風向 '{raw_wind_direction_str}' 轉換為浮點數。")
-    
-    # 組合風速和風向
-    # 拆分儲存：風速與風向
-    parsed_and_formatted_info['wind_speed'] = f"{wind_speed_val} m/s" if wind_speed_val != 'N/A' else 'N/A'
-    parsed_and_formatted_info['wind_direction'] = wind_direction_desc if wind_direction_desc != 'N/A' else 'N/A'
+            parsed_and_formatted_info['wind_direction'] = 'N/A'
+    else:
+        parsed_and_formatted_info['wind_direction'] = 'N/A'
 
     '''
     if wind_speed_val != 'N/A' and wind_direction_desc != 'N/A':
@@ -245,34 +340,51 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
 
     # 氣壓 (AirPressure)
     raw_pressure_str = weather_elements.get('AirPressure', '-99.0')
-    pres_val = float(raw_pressure_str) if raw_pressure_str not in ['-99.0', 'N/A'] else 'N/A'
-    parsed_and_formatted_info['pressure'] = f"{pres_val} hPa" if pres_val != 'N/A' else 'N/A'
+    pres_val = None
+    if raw_pressure_str not in ['-99.0', 'N/A']:
+        try:
+            pres_val = float(raw_pressure_str)
+            parsed_and_formatted_info['pressure'] = f"{pres_val} hPa"
+            parsed_and_formatted_info['pressure_value'] = pres_val # 儲存數值
+        except ValueError:
+            logger.warning(f"無法將氣壓 '{raw_pressure_str}' 轉換為浮點數。")
+            parsed_and_formatted_info['pressure'] = 'N/A'
+            parsed_and_formatted_info['pressure_value'] = None
+    else:
+        parsed_and_formatted_info['pressure'] = 'N/A'
+        parsed_and_formatted_info['pressure_value'] = None
 
     # 紫外線指數 (UVI)
     raw_uv_index_str = weather_elements.get('UVIndex', '-99.0')
-    uv_val = float(raw_uv_index_str) if raw_uv_index_str not in ['-99.0', 'N/A'] else 'N/A'
-    # 這裡可以根據 UV 值判斷等級，或者假設 UV API 返回時已包含等級
-    # 為了簡潔，這裡直接顯示數值。如果需要等級判斷，請自行添加邏輯。
-    # parsed_and_formatted_info['uv_index'] = str(uv_val) if uv_val != 'N/A' else 'N/A'
+    uv_val = None
+    uv_index_display = 'N/A'
+    if raw_uv_index_str not in ['-99.0', 'N/A']:
+        try:
+            uv_val = float(raw_uv_index_str)
+            parsed_and_formatted_info['uv_index_value'] = int(uv_val) # 儲存整數數值
 
-    # *** 修改這裡：如果為 'N/A'，則顯示 '無' 或 '-' ***
-    if uv_val != '-' and uv_val != 'N/A': # 確保 uv_val 是有效數字或可轉換為數字
-        # 根據 UV 值判斷等級，或者直接顯示數值
-        # 這裡為了簡單，直接顯示數值。如果您有等級判斷，可以加上。
-        if uv_val >= 11:
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (危險)"
-        elif uv_val >= 8:
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (過量)"
-        elif uv_val >= 6:
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (高)"
-        elif uv_val >= 3:
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (中)"
-        elif uv_val >= 0: # 包含 0-2 的低級
-            parsed_and_formatted_info['uv_index'] = f"{int(uv_val)} (低)"
-        else: # 考慮負值或其他異常情況
-            parsed_and_formatted_info['uv_index'] = "-" # 或其他適當的默認值
+            if uv_val >= 11:
+                uv_index_display = f"{int(uv_val)} (危險)"
+            elif uv_val >= 8:
+                uv_index_display = f"{int(uv_val)} (過量)"
+            elif uv_val >= 6:
+                uv_index_display = f"{int(uv_val)} (高)"
+            elif uv_val >= 3:
+                uv_index_display = f"{int(uv_val)} (中)"
+            elif uv_val >= 0: # 包含 0-2 的低級
+                uv_index_display = f"{int(uv_val)} (低)"
+            else: # 考慮負值或其他異常情況
+                uv_index_display = "無"
+
+            parsed_and_formatted_info['uv_index'] = uv_index_display # 儲存格式化字串
+        
+        except ValueError:
+            logger.warning(f"無法將紫外線指數 '{raw_uv_index_str}' 轉換為浮點數。")
+            parsed_and_formatted_info['uv_index'] = "無"
+            parsed_and_formatted_info['uv_index_value'] = 0
     else:
         parsed_and_formatted_info['uv_index'] = "無"
+        parsed_and_formatted_info['uv_index_value'] = 0
 
     parsed_and_formatted_info["location_name"] = query_location_name
 

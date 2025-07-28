@@ -47,7 +47,7 @@ def build_weather_flex(data: dict) -> FlexBubble:
                             layout="vertical",
                             spacing="sm",
                             contents=[
-                                make_kv_row("🌬️ 風速：", data["wind_speed"]),
+                                make_kv_row("🌬️ 風速：", data["wind_speed_beaufort_display"]),
                                 make_kv_row("      (風向：", f"{data['wind_direction']})")
                             ]
                         ),

@@ -109,11 +109,11 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
     生成即時穿搭建議的 Flex Message 字典，包含穿搭圖片、天氣資訊和建議文字。
     Args:
         outfit_info (dict): 包含 'suggestion_text', 'suggestion_image_url'
-                             以及天氣數據 (weather_condition, feels_like, humidity,
-                             wind_speed, uv_index, raw_precipitation_str) 的字典。
+                            以及所有從 weather_current_parser.py 輸出並由
+                            current_outfit_logic.py 傳遞過來的格式化天氣數據。
         location_name (str): 查詢的城市名稱，用於標題。
     Returns:
-        dict: Flex Message 的內容字典。
+        FlexBubble: Flex Message 的內容字典。
     """
     # 獲取建議文字列表，如果沒有則使用預設單句建議
     suggestion_text = outfit_info.get("suggestion_text", ["目前無法提供即時穿搭建議。"])
@@ -136,13 +136,15 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
             )
         )
 
+    # 創建天氣資訊內容列表
     weather_info_contents = []
 
+    # 直接使用 outfit_info 中已經格式化好的字串
     weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("weather_condition", "N/A")))
     weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("feels_like", "N/A")))
     weather_info_contents.append(make_kv_row("濕度：", outfit_info.get("humidity", "N/A")))
     weather_info_contents.append(make_kv_row("降雨量：", outfit_info.get("precipitation", "N/A")))
-    weather_info_contents.append(make_kv_row("風速：", outfit_info.get("wind_speed", "N/A")))
+    weather_info_contents.append(make_kv_row("風速：", outfit_info.get("wind_speed_beaufort_display", "N/A")))
     weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("uv_index", "N/A")))
 
     return FlexBubble(

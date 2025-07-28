@@ -1,5 +1,6 @@
 # weather_today/weather_today_parser.py
 import logging
+from collections import Counter
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -35,8 +36,7 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
         logger.warning(f"在資料中找不到 {location_name} 的天氣資訊。")
         return None
     
-    # --- 修改開始 ---
-    # 獲取今天的日期和星期幾
+    # --- 日期和星期幾的格式化 ---
     today = datetime.now()
     date_formatted = today.strftime("%Y年%m月%d日")
     
@@ -52,11 +52,11 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
         "location_name": location_name,
         "date_full_formatted": full_date_string, # 今日日期
         "weather_phenomenon": "N/A",
-        "max_temp": -float('inf'), # 初始化為負無窮大以便找到最大值
-        "min_temp": float('inf'),  # 初始化為正無窮大以便找到最小值
+        "max_temp_raw": -float('inf'), # 初始化為負無窮大以便找到最大值
+        "min_temp_raw": float('inf'),  # 初始化為正無窮大以便找到最小值
         "formatted_temp_range": "N/A", # 帶有單位的格式化溫度範圍
-        "pop": 0, # 初始化為0，以便找到最大降雨機率
-        "pop_raw": 0, # 用於存儲原始數字降雨機率
+        "pop_raw": 0, # 原始數字降雨機率，用於內部邏輯或傳遞給判斷層
+        "pop_formatted": "0%", # 格式化後的降雨機率字串
         "comfort_index": "N/A"
     }
 
@@ -75,7 +75,7 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
 
     today_date = datetime.now().date()
 
-    temp_weather_phenomenon = []
+    all_weather_phenomena_today = [] # 新增：用來收集今天所有時段的天氣現象
     temp_comfort_index = []
 
     for element in target_location_data.get("weatherElement", []):
@@ -111,22 +111,22 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
                 # param_name = time_period["parameter"]["parameterName"]
 
                 if element_name == "Wx":
-                    if param_name and param_name not in temp_weather_phenomenon:
-                        temp_weather_phenomenon.append(param_name)
+                    if param_name:
+                        all_weather_phenomena_today.append(param_name)
 
                 elif element_name == "MaxT":
                     try:
                         current_max_t = int(param_name)
-                        if current_max_t > parsed_weather["max_temp"]:
-                            parsed_weather["max_temp"] = current_max_t
+                        if current_max_t > parsed_weather["max_temp_raw"]:
+                            parsed_weather["max_temp_raw"] = current_max_t
                     except (ValueError, TypeError):
                         pass # 忽略無效的溫度值
 
                 elif element_name == "MinT":
                     try:
                         current_min_t = int(param_name)
-                        if current_min_t < parsed_weather["min_temp"]: # 尋找最小值
-                            parsed_weather["min_temp"] = current_min_t
+                        if current_min_t < parsed_weather["min_temp_raw"]: # 尋找最小值
+                            parsed_weather["min_temp_raw"] = current_min_t
                     except (ValueError, TypeError):
                         pass # 忽略無效的溫度值
 
@@ -142,26 +142,29 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
                     if param_name and param_name not in temp_comfort_index:
                         temp_comfort_index.append(param_name)
 
-    # 後處理和格式化
-    if temp_weather_phenomenon:
-        # 簡單合併多個天氣現象，移除重複
-        unique_wx = list(dict.fromkeys(temp_weather_phenomenon))
-        parsed_weather["weather_phenomenon"] = "、".join(unique_wx)
+    # --- 後處理和格式化 ---
+    if all_weather_phenomena_today:
+        wx_counts = Counter(all_weather_phenomena_today)
+        # 找到次數最多的天氣現象，most_common(1) 返回一個列表，例如 [('多雲', 2)]
+        most_common_wx = wx_counts.most_common(1)
+
+        if most_common_wx:
+            # 提取最常見的天氣現象名稱
+            parsed_weather["weather_phenomenon"] = most_common_wx[0][0]
+        else:
+            parsed_weather["weather_phenomenon"] = "無資訊"
     else:
         parsed_weather["weather_phenomenon"] = "無資訊"
 
-    # 處理降雨機率
-    if parsed_weather["pop_raw"] is not None and parsed_weather["pop_raw"] != 0:
-        parsed_weather["pop"] = f"{parsed_weather['pop_raw']}%"
-    else:
-        parsed_weather["pop"] = "0%" # 確保有預設值
+    # 處理降雨機率的格式化
+    parsed_weather["pop_formatted"] = f"{parsed_weather['pop_raw']}%"
 
-    # 處理溫度範圍
-    if parsed_weather["min_temp"] != float('inf') and parsed_weather["max_temp"] != -float('inf'):
-        parsed_weather["formatted_temp_range"] = f"{int(parsed_weather['min_temp'])}°C ~ {int(parsed_weather['max_temp'])}°C"
+    # 處理溫度範圍的格式化
+    if parsed_weather["min_temp_raw"] != float('inf') and parsed_weather["max_temp_raw"] != -float('inf'):
+        parsed_weather["formatted_temp_range"] = f"{int(parsed_weather['min_temp_raw'])}°C ~ {int(parsed_weather['max_temp_raw'])}°C"
     else:
-        parsed_weather["min_temp"] = "N/A" # 如果沒找到有效溫度，將原始數值也設為 N/A
-        parsed_weather["max_temp"] = "N/A"
+        parsed_weather["min_temp_raw"] = None # 如果沒找到有效溫度，將原始數值設為 None
+        parsed_weather["max_temp_raw"] = None
         parsed_weather["formatted_temp_range"] = "N/A"
 
     # 處理舒適度指數
@@ -194,8 +197,8 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
     """
 
     # 最終檢查關鍵數據是否齊全
-    required_keys = ["weather_phenomenon", "max_temp", "min_temp", "pop", "comfort_index"]
-    missing_keys = [key for key in required_keys if parsed_weather[key] in ["N/A", "無資訊", 0] and not (key == "pop" and parsed_weather[key] == "0%")]
+    required_keys = ["weather_phenomenon", "max_temp_raw", "min_temp_raw", "formatted_temp_range", "pop_raw", "comfort_index"]
+    # missing_keys = [key for key in required_keys if parsed_weather[key] in ["N/A", "無資訊", 0] and not (key == "pop" and parsed_weather[key] == "0%")]
     """
     if all(parsed_weather[key] != "N/A" for key in required_keys):
         logger.info(f"成功解析 {location_name} 今日天氣資料。")
@@ -204,20 +207,25 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
     
     # 如果未能找到所有數據，則在日誌中記錄哪些數據缺失
     # missing_keys = [key for key in required_keys if parsed_weather[key] == "N/A"]
+    """
     if missing_keys:
         # 如果是 PoP 為 0% 就不算缺失
         if "pop" in missing_keys and parsed_weather["pop"] == "0%":
             missing_keys.remove("pop")
         if missing_keys: # 再次檢查是否還有缺失
             logger.warning(f"為 {location_name} 找到部分數據，但缺少關鍵資訊：{', '.join(missing_keys)}")
+    """
         # 這裡你可以選擇返回部分數據，或返回 None
         # 如果你希望即使不完整也返回，則移除下面的 return None
         # 我建議在 Flex Message 處理 N/A 比較好，所以這裡返回 partial_data
         # 但如果數據太少沒意義，可以 return None
         # 對於穿搭建議，基礎數據 (溫度、天氣現象、降雨) 是必須的
-            if any(parsed_weather[key] in ["N/A", "無資訊"] for key in ["weather_phenomenon", "formatted_temp_range"]):
-                logger.error(f"未能從 {location_name} 的資料中提取足夠的今日天氣資訊。")
-                return None
+
+    # 檢查核心數據是否為 'N/A', '無資訊', 或 None
+    # 注意：pop_raw 預設為 0，如果為 0 則不視為缺失
+    if any(parsed_weather[key] in ["N/A", "無資訊", None] for key in required_keys if not (key == "pop_raw" and parsed_weather[key] == 0)):
+        logger.error(f"未能從 {location_name} 的資料中提取足夠的今日天氣資訊。缺失數據可能包括：{[k for k in required_keys if parsed_weather[k] in ['N/A', '無資訊', None]]}")
+        return None
 
     """
     # 如果沒找到 06-18 時段，或者找不到今天任何時段，則嘗試拿第一個時段的資料
