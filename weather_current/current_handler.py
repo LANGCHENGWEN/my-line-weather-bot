@@ -1,6 +1,7 @@
 # current_handler.py
 # 主要處理即時天氣用戶輸入的回覆邏輯
 import logging
+from linebot.v3.messaging import ApiClient
 from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexBubble
 from linebot.v3.webhooks.models import MessageEvent
 
@@ -96,10 +97,10 @@ def handle_current_message(messaging_api, event: MessageEvent) -> bool:
     return False # 這個 handler 沒有處理這個訊息
 
 # 在 current_handler.py 最下方加一個 util
-def reply_current_weather_of_city(api, reply_token: str, city_name: str) -> None:
+def reply_current_weather_of_city(api: ApiClient, reply_token: str, user_id: str, city_name: str) -> None:
     """
-    直接根據 city_name 抓資料、組 Flex、回覆。
-    用在「查詢其他縣市」或任何想動態查城市的地方。
+    這個函式負責查詢指定城市的即時天氣並回覆給用戶。
+    它會被 city_input_handler 調用。
     """
     # 🚀 在這裡正規化傳入的 city_name
     normalized_city_name = normalize_city_name(city_name)
@@ -133,7 +134,6 @@ def reply_current_weather_of_city(api, reply_token: str, city_name: str) -> None
 
     # 4. 回覆
     send_line_reply_message(api, reply_token, [flex_msg_to_send])
-
 
     '''
         # 5. 發送回覆訊息 (傳入 Line Bot SDK 的 Message 物件)

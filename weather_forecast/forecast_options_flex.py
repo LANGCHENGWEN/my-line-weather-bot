@@ -67,7 +67,7 @@ def create_forecast_options_flex_message(
                 _day_btn(5),
                 _day_btn(7),
                 _other_location_btn()
-            ],
+            ]
         )
     )
 

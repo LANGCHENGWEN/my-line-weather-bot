@@ -1,110 +1,98 @@
-# outfit_type_flex_messages.py
-from linebot.v3.messaging import PostbackAction
+# life_reminders/outfit_type_flex_messages.py
 from linebot.v3.messaging.models import (
-    FlexBox, FlexText, FlexBubble,
-    FlexButton, FlexSeparator, FlexImage
+    FlexBox, FlexText, FlexImage, FlexBubble,
+    FlexButton, FlexMessage, FlexSeparator, PostbackAction
 )
 
-def build_outfit_suggestions_flex() -> dict:
+def build_outfit_suggestions_flex(target_query_city: str, default_city_display: str) -> FlexMessage:
     """
     生成一個單一 Flex Message 卡片選單，包含今日、即時、未來穿搭建議選項。
-    返回的是可以直接用來構建 FlexMessage 的 JSON 字典。
+    只顯示用戶的預設城市。
+
+    Args:
+        target_query_city (str): 用戶當前查詢的城市名稱 (用於 Postback data)。
+        default_city_display (str): 用戶預設城市（用於顯示，如果沒有則為「未設定」）。
+    Returns:
+        FlexMessage: 可以直接用來構建 FlexMessage 的 LINE Bot SDK 物件。
     """
-    flex_message_content = {
-        "type": "bubble",
-        "direction": "ltr",
-        "hero": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "image",
-                    "url": "https://i.imgur.com/your_outfit_menu_banner.png", # 請替換成你菜單的橫幅圖片 URL
-                    "size": "full",
-                    "aspectRatio": "20:9",
-                    "aspectMode": "cover"
-                }
+    # 輔助函式，用於生成穿搭建議按鈕
+    def _outfit_button(label: str, data_type: str) -> FlexButton:
+        return FlexButton(
+            action=PostbackAction(
+                label=label,
+                data=f"action=outfit_query&type={data_type}&city={target_query_city}"
+            ),
+            style="primary",
+            color="#00B900",  # LINE 綠色，使按鈕更顯眼
+            height="sm",
+            margin="md"
+        )
+
+    # 查詢其他縣市按鈕
+    def _other_location_button() -> FlexButton:
+        return FlexButton(
+            action=PostbackAction(
+                type="postback",
+                label="查詢其他縣市",
+                data="action=outfit_other_city" # 新增一個用於查詢其他縣市的 action
+            ),
+            style="secondary",
+            color="#AAAAAA", # 灰色，與主要按鈕區隔
+            height="sm",
+            margin="lg" # 增加上方間距，與穿搭建議按鈕區隔
+        )
+    
+    bubble = FlexBubble(
+        direction="ltr",
+        hero=FlexBox(
+            layout="vertical",
+            contents=[
+                FlexImage(
+                    url="https://i.imgur.com/your_outfit_menu_banner.png", # 請替換成你菜單的橫幅圖片 URL
+                    size="full",
+                    aspectRatio="20:9",
+                    aspectMode="cover"
+                )
             ]
-        },
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": "👗 穿搭建議 👔",
-                    "weight": "bold",
-                    "size": "xl",
-                    "align": "center",
-                    "margin": "md"
-                },
-                {
-                    "type": "text",
-                    "text": "請選擇您想查詢的穿搭類型：",
-                    "size": "sm",
-                    "color": "#999999",
-                    "align": "center",
-                    "margin": "md"
-                },
-                {
-                    "type": "separator",
-                    "margin": "lg"
-                },
-                {
-                    "type": "button",
-                    "style": "link",
-                    "height": "sm",
-                    "action": {
-                        "type": "postback",
-                        "label": "☀️ 今日穿搭建議",
-                        "data": "action=outfit_query&type=today"
-                    }
-                },
-                {
-                    "type": "separator",
-                    "margin": "md"
-                },
-                {
-                    "type": "button",
-                    "style": "link",
-                    "height": "sm",
-                    "action": {
-                        "type": "postback",
-                        "label": "⏰ 即時穿搭建議",
-                        "data": "action=outfit_query&type=current"
-                    }
-                },
-                {
-                    "type": "separator",
-                    "margin": "md"
-                },
-                {
-                    "type": "button",
-                    "style": "link",
-                    "height": "sm",
-                    "action": {
-                        "type": "postback",
-                        "label": "📅 未來穿搭建議 (1-7天)",
-                        "data": "action=outfit_query&type=forecast"
-                    }
-                }
+        ),
+        body=FlexBox(
+            layout="vertical",
+            contents=[
+                FlexText(
+                    text="👗 穿搭建議 👔",
+                    weight="bold",
+                    size="xl",
+                    align="center",
+                    margin="md"
+                ),
+                FlexText(
+                    text=f"您的預設城市：{default_city_display}", # 顯示用戶預設城市
+                    size="sm",
+                    color="#666666",
+                    align="center",
+                    margin="sm",
+                    wrap=True
+                ),
+                FlexText(
+                    text="請選擇您想查詢的穿搭時間：",
+                    size="sm",
+                    color="#999999",
+                    align="center",
+                    margin="md"
+                ),
+                FlexSeparator(margin="lg"),
+                _outfit_button("☀️ 今日穿搭建議", "today"),
+                _outfit_button("⏰ 即時穿搭建議", "current"),
+                _outfit_button("📅 未來穿搭建議 (1-7天)", "forecast"),
+                _other_location_button() # 加入查詢其他縣市按鈕
             ]
-        },
-        "footer": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": "點擊選項即可查詢",
-                    "size": "xs",
-                    "color": "#aaaaaa",
-                    "align": "center"
-                }
-            ]
-        }
-    }
-    return flex_message_content
+        )
+    )
+
+    return FlexMessage(
+        alt_text="穿搭建議選單", # 訊息預覽文字
+        contents=bubble
+    )
 
 # --- 範例使用方式 (假設在你的 Line Bot Webhook 處理函數中) ---
 

@@ -61,7 +61,7 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
 
         default_user_city = get_default_city(user_id)
         if default_user_city is None:
-            default_user_city = "請輸入您想要設定的預設城市" # 或者你希望的預設顯示文字
+            default_user_city = "未設定" # 或者你希望的預設顯示文字
         
         flex_message = create_forecast_options_flex_message(
             default_county=default_city,   # 用於顯示的預設城市
@@ -75,40 +75,31 @@ def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
         return True
     
 # **修改這裡：處理情境二：使用者輸入縣市名稱後，回覆該縣市的天數選單**
-def reply_forecast_weather_of_city(api: ApiClient, event, target_city: str = None) -> bool:
-    user_id = event.source.user_id
-    reply_token = event.reply_token
+def reply_forecast_weather_of_city(api: ApiClient, reply_token: str, user_id: str, target_city: str) -> bool:
+    """
+    這個函式用於在用戶輸入特定城市後，回覆該城市的天數選擇 Flex Message。
+    它會被 city_input_handler.py 中的 handle_awaiting_forecast_city_input 調用。
+    """
+    logger.info(f"[ForecastHandler] 用戶 {user_id} 輸入縣市 {target_city}，準備回覆該城市的天數選單。")
+    city_normalized = normalize_city_name(target_city)
 
-    city = target_city 
-    if city is None:
-        if event.message and event.message.type == "text":
-            city = event.message.text.strip()
-        else:
-            logger.error(f"[ForecastHandler] 無法從 event 或 target_city 獲取城市名稱。Event 類型: {event.message.type if event.message else 'N/A'}")
-            send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法識別您查詢的城市名稱。")])
-            return False # 無法獲取城市，返回 False
-
-    logger.info(f"[ForecastHandler] {user_id} 收到指定縣市 {city}，準備回覆該城市的天數選單。")
-    city_normalized = normalize_city_name(city)
-
+    # 獲取用戶的預設城市，用於在 Flex Message 中顯示
     default_user_city = get_default_city(user_id)
+    default_display_city = normalize_city_name(default_user_city) if default_user_city else "未設定"
 
-    if default_user_city is not None:
-        default_user_city_normalized = normalize_city_name(default_user_city)
-    else:
-        # 如果沒有預設城市，則使用這個預設顯示文字
-        default_user_city_normalized = "請輸入您想要設定的預設城市" # 或者你希望的預設顯示文字
-
-    # 🚀 新增這一行日誌來檢查 default_user_city_normalized 的值
-    logger.debug(f"[ForecastHandler] 用戶 {user_id} 的預設城市 (from DB): {default_user_city_normalized}")
+    # 🚀 新增這一行日誌來檢查 default_display_city 的值
+    logger.debug(f"[ForecastHandler] 用戶 {user_id} 的預設城市 (for display): {default_display_city}")
     
     # 這裡不再直接發送天氣預報，而是再次發送天數選單，但以用戶輸入的城市為主
-    flex_message = create_forecast_options_flex_message(default_user_city_normalized, city_normalized) 
-    
+    flex_message = create_forecast_options_flex_message(
+        default_county=default_display_city, 
+        target_query_city=city_normalized
+)
+
     if flex_message:
         send_line_reply_message(api, reply_token, [flex_message])
         logger.info(f"[ForecastHandler] 成功回覆天數選單（針對指定城市 {city_normalized}）給 {user_id}。")
-        # 清空等待輸入城市的狀態，並設定為等待天數選擇
+        # 設定用戶狀態，以便後續的 Postback 知道要查詢哪個城市
         set_user_state(user_id, "awaiting_forecast_selection", data={"city": city_normalized}) 
         return True
     else:
