@@ -319,7 +319,7 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
         if max_feel is not None and min_feel is not None:
             # 確保體感溫度在顯示時也是 float，如果需要更精確
             if abs(max_feel - min_feel) < 1.0: # 如果差異小於1度，則顯示單一值
-                feels_like_display = f"{min_feel:.1f}°C (與實際溫度相近)" # 顯示單一體感溫度並註明相近
+                feels_like_display = f"{min_feel:.1f}°C 與實際溫度相近" # 顯示單一體感溫度並註明相近
             else:
                 feels_like_display = f"{min_feel:.1f}°C ~ {max_feel:.1f}°C"
         elif max_feel is not None:

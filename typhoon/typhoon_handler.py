@@ -55,28 +55,20 @@ class TyphoonLogic:
         # 注意：這裡需要將解析後的數據傳遞給 create_typhoon_flex_message
         # 你的 create_typhoon_flex_message 函式需要調整以接收這個結構化的 parsed_data
         try:
-            # 找到 24, 48, 72 小時的預報點
-            forecast_24hr = next((f for f in parsed_data.get("forecasts", []) if f.get("tau") == "24"), None)
-            forecast_48hr = next((f for f in parsed_data.get("forecasts", []) if f.get("tau") == "48"), None)
-            forecast_72hr = next((f for f in parsed_data.get("forecasts", []) if f.get("tau") == "72"), None)
-            
-            flex_bubble_object = create_typhoon_flex_message(
-                current_status=parsed_data["currentStatus"],
-                forecast_24hr=forecast_24hr,
-                forecast_48hr=forecast_48hr,
-                forecast_72hr=forecast_72hr
-            )
-            # 確保 create_typhoon_flex_message 返回的是 FlexSendMessage 物件
-            if not isinstance(flex_bubble_object, FlexBubble):
-                logger.error("create_typhoon_flex_message 未返回 FlexBubble 物件。")
+            if parsed_data:
+                flex_message_object = create_typhoon_flex_message(parsed_data)
+            else:
+                # 如果解析失敗，返回一個預設的錯誤訊息 FlexMessage
+                # create_typhoon_flex_message 已經處理了 parsed_typhoon_data 為 None 的情況
+                flex_message_object = create_typhoon_flex_message(None)
+
+            # 確保 create_typhoon_flex_message 返回的是 FlexMessage 物件
+            if not isinstance(flex_message_object, FlexMessage):
+                logger.error("create_typhoon_flex_message 未返回 FlexMessage 物件。")
                 return None
             
-            typhoon_name = parsed_data["currentStatus"].get('typhoonName', '未知颱風')
-            
-            return FlexMessage(
-                alt_text=f"🌀 颱風 {typhoon_name} 現況與預報",
-                contents=flex_bubble_object # 將 FlexBubble 物件作為 contents 傳遞
-            )
+            # 直接返回由 create_typhoon_flex_message 產生的 FlexMessage 物件
+            return flex_message_object
 
         except Exception as e:
             logger.error(f"生成颱風 Flex Message 時發生錯誤: {e}", exc_info=True)

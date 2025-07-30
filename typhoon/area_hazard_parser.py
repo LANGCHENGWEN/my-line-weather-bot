@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 class AreaHazardParser:
     """
     解析中央氣象署地區影響預警 API (W-C0033-002) 的原始 JSON 數據。
+    負責將原始數據解析、清理並格式化為 Flex Message 可直接使用的形式。
     """
-
     def parse_area_hazard_data(self, raw_hazard_data: Dict[str, Any], target_city: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
         """
         從原始地區影響預警數據中提取並整理出用於顯示的關鍵資訊。
@@ -43,13 +43,13 @@ class AreaHazardParser:
                 contents_data = record.get("contents", {}).get("content", {})
                 hazard_conditions = record.get("hazardConditions", {})
 
-                # 從 datasetInfo 獲取基本資訊
+                # 1. 提取原始數據並設定預設值
                 issue_time_raw = dataset_info.get("issueTime")
                 valid_time = dataset_info.get("validTime", {})
                 start_time_raw = valid_time.get("startTime")
                 end_time_raw = valid_time.get("endTime")
 
-                # 提取描述
+                # 先獲取原始描述
                 description = contents_data.get("contentText", "無詳細說明").strip()
 
                 # 從 hazardConditions 獲取現象、意義和受影響區域
@@ -69,10 +69,30 @@ class AreaHazardParser:
                     # 提取 locationName
                     affected_areas_list = [loc.get("locationName") for loc in locations_data if loc.get("locationName")]
 
+                # 2. 數據清洗與格式化
+                # 清理描述字串
+                description_formatted = description.strip()
+                # 如果需要限制描述長度，在這裡處理：
+                # if len(description_formatted) > 150:
+                #     description_formatted = description_formatted[:150] + "..."
+
+                # 格式化時間
+                issue_time_formatted = self._format_time(issue_time_raw)
+                start_time_formatted = self._format_time(start_time_raw)
+                end_time_formatted = self._format_time(end_time_raw)
+                
+                # 將起訖時間合併為單一字串
+                effective_period_formatted = f"{start_time_formatted} ~ {end_time_formatted}"
+
                 # 移除重複的地區並排序，以便顯示
                 affected_areas_list = sorted(list(set(affected_areas_list)))
+                affected_areas_formatted = ", ".join(affected_areas_list) if affected_areas_list else "無"
 
+                # 構建完整的標題字串
+                # 這裡使用 _raw 值，因為這是原始 API 提供的，並用於拼接。如果想用 N/A 替換，前面就處理好了。
+                title_formatted = f"【{phenomena}{significance}】" if phenomena != "N/A" else "地區預警"
 
+                """
                 # 格式化時間為 "YYYY-MM-DD HH:MM:SS" (原始格式) 到 "YYYY-MM-DD HH:MM"
                 time_format_in = '%Y-%m-%d %H:%M:%S'
                 time_format_out = '%Y-%m-%d %H:%M'
@@ -101,24 +121,13 @@ class AreaHazardParser:
                         end_time_formatted = dt_obj.strftime(time_format_out)
                     except ValueError:
                         logger.warning(f"解析地區預警結束時間 '{end_time_raw}' 失敗。")
+                """
 
-                # 構建單個預警的字典
-                warning_data = {
-                    "phenomena": phenomena,
-                    "significance": significance,
-                    "description": description,
-                    "affected_areas": affected_areas_list,
-                    "issue_time": issue_time_formatted, # 新增 issue_time
-                    "start_time": start_time_formatted,
-                    "end_time": end_time_formatted
-                }
-
-                # --- 新增的過濾邏輯 ---
-                # 如果現象是 "N/A" 或者沒有影響地區，則跳過這個預警
-                if warning_data["phenomena"] == "N/A" and not warning_data["affected_areas"]:
-                    logger.debug(f"跳過無效預警 (無現象且無影響地區): {warning_data}")
+                # 3. 執行過濾邏輯
+                # 如果現象是 "N/A" 且沒有影響地區，則跳過這個預警
+                if phenomena == "N/A" and not affected_areas_list:
+                    logger.debug(f"跳過無效預警 (無現象且無影響地區): {record.get('id', '未知ID')}")
                     continue # 跳過當前循環，處理下一個 record
-                # --- 結束新增的過濾邏輯 ---
                 
                 # 根據 target_city 進行篩選
                 if target_city:
@@ -129,13 +138,31 @@ class AreaHazardParser:
                             target_found = True
                             break
 
-                    if target_found:
-                        parsed_warnings.append(warning_data)
-                    else:
+                    if not target_found:
                         logger.debug(f"跳過不影響 '{target_city}' 的預警: {phenomena} - {affected_areas_list}")
-                else:
-                    # 如果沒有指定城市，則全部加入
-                    parsed_warnings.append(warning_data)
+                        continue # 跳過不符合篩選條件的預警
+
+                # 4. 將處理好的數據加入列表
+                parsed_warnings.append({
+                    "title": title_formatted,
+                    "issue_time_formatted": issue_time_formatted,
+                    "effective_period_formatted": effective_period_formatted,
+                    "affected_areas_formatted": affected_areas_formatted,
+                    "description_formatted": description_formatted
+                })
+
+                """
+                # 構建單個預警的字典
+                warning_data = {
+                    "phenomena": phenomena,
+                    "significance": significance,
+                    "description": description,
+                    "affected_areas": affected_areas_list,
+                    "issue_time": issue_time_formatted, # 新增 issue_time
+                    "start_time": start_time_formatted,
+                    "end_time": end_time_formatted
+                }
+                """
 
             if not parsed_warnings:
                 logger.info(f"解析後，無符合 '{target_city if target_city else '所有'}' 條件的地區影響預警。")
@@ -150,3 +177,17 @@ class AreaHazardParser:
         except Exception as e:
             logger.error(f"解析地區影響預警數據時發生未預期的錯誤: {e}", exc_info=True)
             return None
+
+    def _format_time(self, iso_time_str: Optional[str]) -> str:
+        """
+        將原始 ISO 格式的時間字串 (e.g., "YYYY-MM-DD HH:MM:SS") 轉換為指定格式。
+        """
+        if not iso_time_str:
+            return "N/A"
+        try:
+            # 注意：CWA API 的時間格式通常是 'YYYY-MM-DD HH:MM:SS'
+            dt_object = datetime.strptime(iso_time_str, '%Y-%m-%d %H:%M:%S')
+            return dt_object.strftime("%Y/%m/%d %H:%M") # 轉換為 YYYY/MM/DD HH:MM
+        except ValueError:
+            logger.warning(f"解析時間字串 '{iso_time_str}' 失敗。", exc_info=True)
+            return "N/A"

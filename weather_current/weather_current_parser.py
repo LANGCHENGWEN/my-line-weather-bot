@@ -256,7 +256,7 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
             if abs(calculated_apparent_temp - temp_val) >= 1.0:
                 sensation_temp_display = f"{calculated_apparent_temp:.1f}°C"
             else:
-                sensation_temp_display = f"{calculated_apparent_temp:.1f}°C (與實際溫度相近)"
+                sensation_temp_display = "與實際溫度相近"
     
     parsed_and_formatted_info['sensation_temp_display'] = sensation_temp_display
     parsed_and_formatted_info['sensation_temp_value'] = sensation_temp_value

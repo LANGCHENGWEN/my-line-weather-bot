@@ -14,43 +14,8 @@ logger = logging.getLogger(__name__)
 def make_kv_row_area_hazard(label: str, value: str) -> FlexBox:
     """
     建立一行兩欄的 Key-Value FlexBox，專為地區預警調整樣式。
-    value 參數可以是一個字串，也可以是一個字串列表 (代表多行)。
+    value 參數現在預期只是一個已格式化好的字串。
     """
-    # 處理 value 可以是單一字串或字串列表
-    if isinstance(value, list):
-        value_contents = [
-            FlexText(
-                text=str(value[0]) + " ~" if value[0] is not None else "N/A",
-                wrap=True,
-                color="#333333",
-                size="md",
-                flex=1,
-                # margin="sm" # 在垂直Box內，由Box的spacing控制，這裡不設定
-            ),
-            FlexText(
-                text=str(value[1]) if value[1] is not None else "N/A", # 第二個元素保持不變
-                wrap=True,
-                color="#333333",
-                size="md",
-                flex=1
-            )
-        ]
-        value_element = FlexBox(
-            layout="vertical",
-            contents=value_contents,
-            spacing="none", # 兩行之間無間距
-            flex=1
-        )
-    else:
-        value_element = FlexText(
-            text=str(value) if value is not None else "N/A",
-            wrap=True,
-            color="#333333",
-            size="md",
-            flex=1,
-            margin="sm" # 僅在單行時應用，因為這是一個直接的 FlexText 子元素
-        )
-
     return FlexBox(
         layout="horizontal",
         spacing="sm",
@@ -63,48 +28,58 @@ def make_kv_row_area_hazard(label: str, value: str) -> FlexBox:
                 weight="bold",
                 align="start"
             ),
-            value_element # 使用根據類型判斷後得到的元素
+            FlexText(
+                text=str(value) if value is not None else "N/A",
+                wrap=True,
+                color="#333333",
+                size="md",
+                flex=1, # 值放大填滿剩餘空間
+                margin="sm" # 僅在單行時應用
+            )
         ],
-        alignItems="flex-start"
+        alignItems="flex-start" # 讓內容頂部對齊
     )
 
 def create_area_hazard_flex_message(
     warnings: List[Dict[str, Any]], target_city: Optional[str] = None
 ) -> Optional[Message]:
     """
-    根據解析後的地區影響預警數據，構建一個 Flex Message。
+    根據解析後、且**已完全格式化**的地區影響預警數據，構建一個 Flex Message。
     每個預警創建一個 Flex Bubble，如果有多個則放入 Flex Carousel。
 
     Args:
-        warnings (List[Dict[str, Any]]): 包含解析後預警資訊的字典列表。
-        target_city (Optional[str]): 用戶查詢的目標城市，用於標題顯示。
+        warnings (List[Dict[str, Any]]): 包含解析和格式化後預警資訊的字典列表。
+                                          每個字典應包含以下已處理好的鍵：
+                                          - 'title': str (例如: "【陸上強風特報】")
+                                          - 'issue_time_formatted': str (例如: "2025/07/30 14:00")
+                                          - 'effective_period_formatted': str (例如: "2025/07/30 14:00 ~ 2025/07/31 14:00")
+                                          - 'affected_areas_formatted': str (例如: "臺北市, 新北市")
+                                          - 'description_formatted': str (例如: "東北風增強，局部地區將有強陣風...")
+        target_city (Optional[str]): 用戶查詢的目標城市，用於 alt_text 顯示。
 
     Returns:
         Optional[Message]: 構建好的 FlexMessage (可能是 FlexBubble 或 FlexCarousel)，
-                          如果沒有預警，返回 None。
+                           如果沒有預警，返回 None。
     """
     if not warnings:
         return None
 
     bubbles: List[FlexBubble] = []
 
-    for i, warning in enumerate(warnings):
-        phenomena = warning.get('phenomena', '未知現象')
-        significance = warning.get('significance', '特報')
-        description = warning.get('description', '無詳細說明').strip() # 清理換行符
-        affected_areas = warning.get('affected_areas', [])
-        start_time = warning.get('start_time', '未知')
-        end_time = warning.get('end_time', '未知')
-        issue_time = warning.get('issue_time', '未知')
-
-        display_description = description
+    for warning in warnings:
+        # 直接從 warning 字典中獲取已格式化的數據，不再進行任何處理或預設值設置
+        title = warning.get('title', 'N/A') # 這裡的 N/A 僅作為最終防線，理論上 parser 應已確保有值
+        issue_time = warning.get('issue_time_formatted', 'N/A')
+        effective_period = warning.get('effective_period_formatted', 'N/A')
+        affected_areas = warning.get('affected_areas_formatted', 'N/A')
+        description = warning.get('description_formatted', '無詳細說明')
 
         # 限制描述的長度，避免 Flex Message 過大
         # display_description = description[:150] + "..." if len(description) > 150 else description
 
         # 標題 (例如: 【陸上強風特報】)
         title_text = FlexText(
-            text=f"【{phenomena}{significance}】",
+            text=title,
             weight="bold",
             size="xl",
             color="#FF0000", # 預警類型用紅色
@@ -118,20 +93,19 @@ def create_area_hazard_flex_message(
             spacing="sm",
             contents=[
                 make_kv_row_area_hazard("發布時間：", issue_time),
-                make_kv_row_area_hazard("有效期間：", [start_time, end_time])
+                make_kv_row_area_hazard("有效期間：", effective_period)
             ],
             paddingTop="sm",
             paddingBottom="sm"
         )
 
         # 影響地區資訊
-        affected_areas_text = ", ".join(affected_areas) if affected_areas else "無"
         affected_areas_box = FlexBox(
             layout="vertical",
             spacing="none",
             contents=[
                 FlexText(text="影響地區：", weight="bold", size="md", color="#4169E1"),
-                FlexText(text=affected_areas_text, wrap=True, color="#333333", size="md", margin="sm")
+                FlexText(text=affected_areas, wrap=True, color="#333333", size="md", margin="sm")
             ],
             paddingBottom="sm"
         )
@@ -142,7 +116,7 @@ def create_area_hazard_flex_message(
             spacing="none",
             contents=[
                 FlexText(text="說明：", weight="bold", size="md", color="#4169E1"),
-                FlexText(text=display_description, wrap=True, color="#333333", size="md", margin="sm")
+                FlexText(text=description, wrap=True, color="#333333", size="md", margin="sm")
             ],
             paddingTop="sm"
         )
