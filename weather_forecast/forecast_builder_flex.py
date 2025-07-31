@@ -22,7 +22,7 @@ def build_observe_weather_flex(data, days) -> FlexBubble:
     Returns:
         FlexBubble: LINE Flex Message 的 Bubble 元件。
     """
-    logger.debug(f"🧪 傳入 Flex 的資料: {json.dumps(data, ensure_ascii=False, indent=2)}")
+    # logger.debug(f"🧪 傳入 Flex 的資料: {json.dumps(data, ensure_ascii=False, indent=2)}")
 
     day_index = data.get('day_index', None)
     if day_index:

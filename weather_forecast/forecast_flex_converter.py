@@ -1,14 +1,18 @@
 # forecast_flex_converter.py
 # 處理從「原始解析數據」到「可填充到 LINE Flex Message 模板的格式」之間的複雜數據和聚合邏輯，並協調 forecast_builder_flex.py 來實際生成多個天氣預報卡片
 import json
-import datetime
 import logging
-from typing import Any, List, Dict
+import datetime
 from collections import Counter
+from typing import Any, List, Dict
 from linebot.v3.messaging.models import FlexMessage, FlexBubble, FlexCarousel
-from .forecast_builder_flex import build_observe_weather_flex  # 已在同檔定義
+
 from utils.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
+from utils.weather_utils import get_beaufort_scale_description, convert_ms_to_beaufort_scale
+
+from .forecast_builder_flex import build_observe_weather_flex  # 已在同檔定義
 from life_reminders.forecast_outfit_flex_messages import build_forecast_outfit_card
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,140 +29,34 @@ def safe_int(val: Any) -> int | None:
         return int(float(val)) # 先轉 float 再轉 int，處理 "25.0" 這種情況
     except (ValueError, TypeError):
         return None
-    
-# --- 新增的蒲福風級描述函數 ---
-def get_beaufort_scale_description(wind_scale_int: int) -> str:
-    """
-    根據蒲福風級數字返回對應的文字描述。
-    Args:
-        wind_scale_int (int): 蒲福風級數字 (0-12)。
-    Returns:
-        str: 蒲福風級的文字描述。
-    """
-    if wind_scale_int == 0:
-        return "無風"
-    elif wind_scale_int == 1:
-        return "軟風"
-    elif wind_scale_int == 2:
-        return "輕風"
-    elif wind_scale_int == 3:
-        return "微風"
-    elif wind_scale_int == 4:
-        return "和風"
-    elif wind_scale_int == 5:
-        return "清風"
-    elif wind_scale_int == 6:
-        return "強風"
-    elif wind_scale_int == 7:
-        return "疾風"
-    elif wind_scale_int == 8:
-        return "大風"
-    elif wind_scale_int == 9:
-        return "烈風"
-    elif wind_scale_int == 10:
-        return "狂風"
-    elif wind_scale_int == 11:
-        return "暴風"
-    elif wind_scale_int == 12:
-        return "颶風"
-    else:
-        return "N/A" # 超出範圍或無效風級
 
-# --- 新增的風速轉換函式 ---
-def convert_ms_to_beaufort_scale(wind_speed_ms: float) -> int:
+# --- 修改後的內部輔助函數：只負責數據聚合，不含日期格式化 ---
+def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
     """
-    將風速 (m/s) 轉換為蒲福風級 (Beaufort scale)。
-    參考中央氣象署風級對照表 (簡化)。
-    """
-    if wind_speed_ms < 0.3:
-        return 0 # 無風
-    elif wind_speed_ms <= 1.5:
-        return 1 # 軟風
-    elif wind_speed_ms <= 3.3:
-        return 2 # 輕風
-    elif wind_speed_ms <= 5.4:
-        return 3 # 微風
-    elif wind_speed_ms <= 7.9:
-        return 4 # 和風
-    elif wind_speed_ms <= 10.7:
-        return 5 # 勁風
-    elif wind_speed_ms <= 13.8:
-        return 6 # 強風
-    elif wind_speed_ms <= 17.1:
-        return 7 # 疾風
-    elif wind_speed_ms <= 20.7:
-        return 8 # 大風
-    elif wind_speed_ms <= 24.4:
-        return 9 # 烈風
-    elif wind_speed_ms <= 28.4:
-        return 10 # 狂風
-    elif wind_speed_ms <= 32.6:
-        return 11 # 暴風
-    else:
-        return 12 # 颶風 (或更高)
-
-# --------- 將 parser 的結果 => Bubble 清單 ---------
-def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_suggestions: bool = False) -> tuple[List[FlexBubble], List[FlexBubble]]:
-    """
-    將解析後的未來天氣預報數據轉換為 LINE Flex Message 的氣泡列表。
-    此函數負責數據的聚合、格式化和協調穿搭建議的生成。
+    聚合解析後的未來天氣預報數據。
+    這個函數只負責數據的提取、處理和彙整，不生成 FlexBubble，也不處理日期格式化（由 parser 完成）。
+    其結果會被 convert_forecast_to_bubbles 和 get_weekend_forecast_flex_messages 使用。
 
     Args:
         parsed_data (Dict): 來自 weather_forecast_parser.parse_forecast_weather() 的輸出。
-        days (int): 需要生成預報的日數 (例如 3, 5, 7)。
-        include_outfit_suggestions (bool): 是否包含穿搭建議卡片。
 
     Returns:
-        tuple[List[FlexBubble], List[FlexBubble]]: 
-            包含兩個列表的元組：
-            - 第一個列表是每日天氣預報的 FlexBubble 物件。
-            - 第二個列表是每日穿搭建議的 FlexBubble 物件 (如果 include_outfit_suggestions 為 True)。
+        List[Dict]: 包含每日聚合天氣數據的列表。
     """
-    logger.debug(f"第一筆 forecast_period 資料: {parsed_data.get('forecast_periods', [])[0] if parsed_data.get('forecast_periods') else '無資料'}")
+    logger.debug(f"開始聚合原始預報數據。第一筆資料: {parsed_data.get('forecast_periods', [])[0] if parsed_data.get('forecast_periods') else '無資料'}")
 
     final_days_aggregated: List[Dict] = []
 
+    # 直接迭代解析器已經處理好的 forecast_periods
     for p in parsed_data.get("forecast_periods", []):
+        # 這裡的 p 已經包含了 'date', 'date_obj', 'date_prefix', 'date_str', 'is_weekend'
         # 提取當天的日期鍵，以便後續操作
         date_key = p.get("date")  # 例如: "2025-07-17"
         if not date_key:
             logger.warning("單一預報時段缺少 'date' 鍵，跳過處理。")
             continue
 
-        # --- 新增日期和星期幾的處理 ---
-        formatted_date_weekday = "N/A"
-        try:
-            # 假設 date_key 是 YYYY-MM-DD 格式
-            date_obj = datetime.datetime.strptime(date_key, "%Y-%m-%d").date()
-            
-            # 獲取中文星期幾
-            weekday_map = {
-                0: "一", 1: "二", 2: "三", 3: "四",
-                4: "五", 5: "六", 6: "日"
-            }
-            # weekday() 回傳 0=星期一, 6=星期日。我們需要轉換成 %w (0=星期日, 6=星期六)
-            # 或者更簡單地，直接使用 strftime("%w") 來獲取 0-6 的數字，然後對應
-            # weekday_num = date_obj.strftime("%w") # 0=星期一, 1=星期二, ..., 6=星期日
-            # 調整為 %w 的對應關係 (0=日, 1=一, ...)
-            # adjusted_weekday_num = (weekday_num + 1) % 7 # 0(一) -> 1, 6(日) -> 0
-            
-            chinese_weekday = weekday_map.get(date_obj.weekday(), "")
-
-            # 格式化日期字串
-            # 兼容不同系統的 strftime 格式
-            try:
-                formatted_date = date_obj.strftime("%Y年%-m月%-d日") # For Linux/macOS
-            except ValueError:
-                formatted_date = date_obj.strftime("%Y年%m月%d日") # For Windows
-
-            formatted_date_weekday = f"日期：{formatted_date} ({chinese_weekday})"
-
-        except ValueError as e:
-            logger.error(f"日期格式化錯誤: {e}, 原始日期鍵: {date_key}")
-        # --- 結束日期和星期幾的處理 ---
-
-        # --- 數據聚合：從原始數據中提取並處理數值 (使用重構方式) ---
-        # 初始化字典來收集所有數值和字串類型的值
+        # --- 數據聚合：從原始數據中提取並處理數值 ---
         numeric_values: Dict[str, List[float]] = {
             "max_temp": [], "min_temp": [], "max_feel": [], "min_feel": [],
             "humidity": [], "pop": [], "wind_speed": [], "uv_index": []
@@ -186,123 +84,6 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
                 raw_val = p.get(f"{field_name}{suffix}")
                 if raw_val is not None and str(raw_val).strip() not in ["N/A", "-"]: # 確保處理空字串和"N/A"
                     string_values[field_name].append(str(raw_val).strip())
-
-        """
-        # 初始化每日資料儲存用
-        current_day_data = {
-            "county_name": parsed_data.get("county_name", "N/A"),
-            # "num_days": parsed_weather.get("num_days", 1),
-            "obs_time": formatted_date_weekday, # 使用 parser 提供的格式化日期字串
-            "date": date_key, # 原始日期鍵
-            # 儲存多個欄位的累積值
-            "weather_desc_list": [],
-            "max_temp_list": [],
-            "max_feel_list": [],
-            "min_temp_list": [],
-            "min_feel_list": [],
-            "humidity_list": [],
-            "pop_list": [],
-            "wind_speed_list": [],
-            "wind_dir_list": [],
-            "comfort_max_list": [],
-            "comfort_min_list": [],
-            "uv_index_list": [],
-            "raw_period_data": p
-        }
-        # 可在這裡做「取極值」或「覆蓋」… 視需求而定
-
-        # 定義數據提取的優先級順序 (從高到低)
-        # 這裡的順序是 (day, night, unknown)
-        # 例如，對於天氣描述，先找 weather_desc_day，然後 weather_desc_night，最後 weather_desc_unknown
-        data_fields = {
-            "weather_desc": ["weather_desc_day", "weather_desc_night", "weather_desc_unknown"],
-            "max_temp": ["max_temp_day", "max_temp_night", "max_temp_unknown"],
-            "max_feel": ["max_feel_day", "max_feel_night", "max_feel_unknown"],
-            "min_temp": ["min_temp_day", "min_temp_night", "min_temp_unknown"],
-            "min_feel": ["min_feel_day", "min_feel_night", "min_feel_unknown"],
-            "humidity": ["humidity_day", "humidity_night", "humidity_unknown"],
-            "pop": ["pop_day", "pop_night", "pop_unknown"],
-            "wind_speed": ["wind_speed_day", "wind_speed_night", "wind_speed_unknown"],
-            "wind_dir": ["wind_dir_day", "wind_dir_night", "wind_dir_unknown"],
-            "comfort_max": ["comfort_max_day", "comfort_max_night", "comfort_max_unknown"],
-            "comfort_min": ["comfort_min_day", "comfort_min_night", "comfort_min_unknown"],
-            "uv_index": ["uv_index_day", "uv_index_night", "uv_index_unknown"]
-        }
-
-        # 迭代所有數據字段，根據優先級提取值並添加到對應的列表中
-        for summary_key, source_keys in data_fields.items():
-            for source_key in source_keys:
-                raw_val = p.get(source_key)
-                if raw_val is not None and raw_val not in ["N/A", "-"]:
-                    target_list_key = summary_key + "_list"
-                    # 根據數據類型處理
-                    if summary_key in ["max_temp", "max_feel", "min_temp", "min_feel", "humidity", "pop", "wind_speed", "uv_index"]:
-                        val = safe_float(raw_val)
-                        if val is not None:
-                            current_day_data[target_list_key].append(val)
-                    else: # 文本類型，如 weather_desc, wind_dir, comfort, uv_index
-                        current_day_data[target_list_key].append(str(raw_val))
-                    # 找到第一個有效值就跳出內層迴圈，因為是優先級
-                    break
-        """
-
-        """
-        # 處理白天數據
-        current_day_data["weather_descs"].append(p.get("weather_desc_day", "N/A"))
-        for key, bucket in [
-            ("max_temp_day", "max_temps"),
-            ("max_feel_day", "max_feels"),
-            ("min_temp_day", "min_temps"),
-            ("min_feel_day", "min_feels"),
-            ("humidity_day", "humidities"),
-            ("pop_day", "pops"),
-            ("wind_speed_day", "wind_speeds")
-        ]:
-            val = safe_float(p.get(key))
-            if val is not None:
-                current_day_data[bucket].append(val)
-
-        wind_dir_day = p.get("wind_dir_day", "-")
-        if wind_dir_day != "-" and wind_dir_day != "N/A":
-            current_day_data["wind_dirs"].append(wind_dir_day)
-
-        for key, bucket in [
-            ("comfort_max_day", "comfort_maxs"),
-            ("comfort_min_day", "comfort_mins"),
-            ("uv_index_day", "uv_indices")
-        ]:
-            val = p.get(key, "-")
-            if val != "-" and val != "N/A":
-                current_day_data[bucket].append(val)
-
-        # 處理夜晚數據
-        current_day_data["weather_descs"].append(p.get("weather_desc_night", "N/A"))
-        for key, bucket in [
-            ("max_temp_night", "max_temps"),
-            ("max_feel_night", "max_feels"),
-            ("min_temp_night", "min_feels"),
-            ("min_feel_night", "min_feels"),
-            ("humidity_night", "humidities"),
-            ("pop_night", "pops"),
-            ("wind_speed_night", "wind_speeds")
-        ]:
-            val = safe_float(p.get(key))
-            if val is not None:
-                current_day_data[bucket].append(val)
-
-        wind_dir_night = p.get("wind_dir_night", "-")
-        if wind_dir_night != "-" and wind_dir_night != "N/A":
-            current_day_data["wind_dirs"].append(wind_dir_night)
-            
-        for key, bucket in [
-            ("comfort_max_night", "comfort_maxs"),
-            ("comfort_min_night", "comfort_mins"),
-            ("uv_index_night", "uv_indices")
-        ]:
-            val = p.get(key, "-")
-            if val != "-" and val != "N/A":
-                current_day_data[bucket].append(val)
-        """
 
         # --- 將累積的每日數據進行最終彙整 (取極值、平均值、最常見值) ---
         weather_desc_counter = Counter(string_values["weather_desc"])
@@ -394,10 +175,10 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
         }
 
         # --- 格式化為顯示字串的數據 (用於 Flex Message) ---
+        # 直接使用 parser 提供的日期和地點資訊
         final_day_data = {
             "county_name": parsed_data.get("county_name", "N/A"),
-            # "num_days": current_day_data["num_days"],
-            "obs_time": formatted_date_weekday,
+            "obs_time": p.get("date_str"), # 直接使用 parser 格式化的日期字串
             "date": date_key,
             "loc_name": parsed_data.get("county_name", "N/A"), # 地點名稱
             "display_weather_desc": weather_desc_display,
@@ -411,7 +192,11 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
             "display_comfort_max": comfort_max_display,
             "display_comfort_min": comfort_min_display,
             "display_uv_index": uv_index_display, # 已經是 "X (描述)"
-            "raw_period_data_for_outfit": processed_data_for_outfit_logic # 保留原始數據供 outfit_logic 使用
+            "raw_period_data_for_outfit": processed_data_for_outfit_logic, # 保留原始數據供 outfit_logic 使用
+            "date_obj": p.get("date_obj"), # 保留 date_obj 方便篩選
+            "is_weekend": p.get("is_weekend"), # 保留 is_weekend 狀態
+            "date_prefix": p.get("date_prefix"), # 保留 '今天', '明天', '07/03'
+            "date_formatted": p.get("date_str") # ***週末天氣的日期一直沒有數據，是因為沒有增加這行
         }
         
         """
@@ -433,20 +218,42 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
         final_days_aggregated.append(final_day_data)
 
     logger.debug(f"✅ 每日預報數據已彙整完畢。總計 {len(final_days_aggregated)} 天數據。")
+    return final_days_aggregated
+
+# --------- 將 parser 的結果 => Bubble 清單 ---------
+def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_suggestions: bool = False) -> tuple[List[FlexBubble], List[FlexBubble]]:
+    """
+    將解析後的未來天氣預報數據轉換為 LINE Flex Message 的氣泡列表。
+    此函數負責數據的聚合、格式化和協調穿搭建議的生成。
+
+    Args:
+        parsed_data (Dict): 來自 weather_forecast_parser.parse_forecast_weather() 的輸出。
+        days (int): 需要生成預報的日數 (例如 3, 5, 7)。
+        include_outfit_suggestions (bool): 是否包含穿搭建議卡片。
+
+    Returns:
+        tuple[List[FlexBubble], List[FlexBubble]]: 
+            包含兩個列表的元組：
+            - 第一個列表是每日天氣預報的 FlexBubble 物件。
+            - 第二個列表是每日穿搭建議的 FlexBubble 物件 (如果 include_outfit_suggestions 為 True)。
+    """
+    logger.debug(f"呼叫 convert_forecast_to_bubbles。")
+
+    # 使用內部輔助函數獲取聚合後的數據
+    all_aggregated_data = _aggregate_parsed_forecast_data(parsed_data)
 
     general_weather_bubbles: List[FlexBubble] = []
     outfit_suggestion_bubbles: List[FlexBubble] = [] # 這個列表將包含每天的完整 outfit_info
 
     # logger.debug(f"✅ 每日預報整理結果: {json.dumps(final_days_aggregated, ensure_ascii=False, indent=2)}")
 
-
     # 依序取前 N 天並建立 bubbles
     loc_name = f"{parsed_data.get('county_name', 'N/A')}"
-    for i, day_data_for_bubble in enumerate(final_days_aggregated):
-        if i >= days:
+    for i, day_data_for_bubble in enumerate(all_aggregated_data):
+        if i >= days: # 只處理指定天數
             break
 
-        day_data_for_bubble['loc_name'] = loc_name
+        day_data_for_bubble['loc_name'] = loc_name # 確保 loc_name 傳遞給 Flex 模板
         day_data_for_bubble['day_index'] = i + 1  # 新增第幾天
         # bubbles.append(build_observe_weather_flex(day_data))
 
@@ -456,7 +263,6 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
         if "raw_period_data_for_outfit" in data_for_flex:
             if "weather_phenomena" in data_for_flex["raw_period_data_for_outfit"] and \
             isinstance(data_for_flex["raw_period_data_for_outfit"]["weather_phenomena"], set):
-                
                 data_for_flex["raw_period_data_for_outfit"]["weather_phenomena"] = \
                     list(data_for_flex["raw_period_data_for_outfit"]["weather_phenomena"])
 
@@ -477,11 +283,10 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
             # 這裡也建立一個副本並轉換，以防 build_forecast_outfit_card 內部也有 json.dumps
             outfit_data_for_card_flex = outfit_info_for_card.copy()
             if "raw_period_data_for_outfit" in outfit_data_for_card_flex and \
-            "weather_phenomena" in outfit_data_for_card_flex["raw_period_data_for_outfit"] and \
-            isinstance(outfit_data_for_card_flex["raw_period_data_for_outfit"]["weather_phenomena"], set):
-                
-                outfit_data_for_card_flex["raw_period_data_for_outfit"]["weather_phenomena"] = \
-                    list(outfit_data_for_card_flex["raw_period_data_for_outfit"]["weather_phenomena"])
+                "weather_phenomena" in outfit_data_for_card_flex["raw_period_data_for_outfit"] and \
+                isinstance(outfit_data_for_card_flex["raw_period_data_for_outfit"]["weather_phenomena"], set):
+                    outfit_data_for_card_flex["raw_period_data_for_outfit"]["weather_phenomena"] = \
+                        list(outfit_data_for_card_flex["raw_period_data_for_outfit"]["weather_phenomena"])
 
             outfit_bubble_obj = build_forecast_outfit_card(outfit_info_for_card, loc_name, i) # 這裡傳入 i 作為 day_offset
             outfit_suggestion_bubbles.append(outfit_bubble_obj)
@@ -501,3 +306,121 @@ def build_flex_carousel(bubble_list: List[FlexBubble], alt_text="天氣預報") 
         alt_text=alt_text,
         contents=FlexCarousel(contents=bubble_list)
     )
+
+
+"""
+        # 初始化每日資料儲存用
+        current_day_data = {
+            "county_name": parsed_data.get("county_name", "N/A"),
+            # "num_days": parsed_weather.get("num_days", 1),
+            "obs_time": formatted_date_weekday, # 使用 parser 提供的格式化日期字串
+            "date": date_key, # 原始日期鍵
+            # 儲存多個欄位的累積值
+            "weather_desc_list": [],
+            "max_temp_list": [],
+            "max_feel_list": [],
+            "min_temp_list": [],
+            "min_feel_list": [],
+            "humidity_list": [],
+            "pop_list": [],
+            "wind_speed_list": [],
+            "wind_dir_list": [],
+            "comfort_max_list": [],
+            "comfort_min_list": [],
+            "uv_index_list": [],
+            "raw_period_data": p
+        }
+        # 可在這裡做「取極值」或「覆蓋」… 視需求而定
+
+        # 定義數據提取的優先級順序 (從高到低)
+        # 這裡的順序是 (day, night, unknown)
+        # 例如，對於天氣描述，先找 weather_desc_day，然後 weather_desc_night，最後 weather_desc_unknown
+        data_fields = {
+            "weather_desc": ["weather_desc_day", "weather_desc_night", "weather_desc_unknown"],
+            "max_temp": ["max_temp_day", "max_temp_night", "max_temp_unknown"],
+            "max_feel": ["max_feel_day", "max_feel_night", "max_feel_unknown"],
+            "min_temp": ["min_temp_day", "min_temp_night", "min_temp_unknown"],
+            "min_feel": ["min_feel_day", "min_feel_night", "min_feel_unknown"],
+            "humidity": ["humidity_day", "humidity_night", "humidity_unknown"],
+            "pop": ["pop_day", "pop_night", "pop_unknown"],
+            "wind_speed": ["wind_speed_day", "wind_speed_night", "wind_speed_unknown"],
+            "wind_dir": ["wind_dir_day", "wind_dir_night", "wind_dir_unknown"],
+            "comfort_max": ["comfort_max_day", "comfort_max_night", "comfort_max_unknown"],
+            "comfort_min": ["comfort_min_day", "comfort_min_night", "comfort_min_unknown"],
+            "uv_index": ["uv_index_day", "uv_index_night", "uv_index_unknown"]
+        }
+
+        # 迭代所有數據字段，根據優先級提取值並添加到對應的列表中
+        for summary_key, source_keys in data_fields.items():
+            for source_key in source_keys:
+                raw_val = p.get(source_key)
+                if raw_val is not None and raw_val not in ["N/A", "-"]:
+                    target_list_key = summary_key + "_list"
+                    # 根據數據類型處理
+                    if summary_key in ["max_temp", "max_feel", "min_temp", "min_feel", "humidity", "pop", "wind_speed", "uv_index"]:
+                        val = safe_float(raw_val)
+                        if val is not None:
+                            current_day_data[target_list_key].append(val)
+                    else: # 文本類型，如 weather_desc, wind_dir, comfort, uv_index
+                        current_day_data[target_list_key].append(str(raw_val))
+                    # 找到第一個有效值就跳出內層迴圈，因為是優先級
+                    break
+        """
+
+"""
+# 處理白天數據
+current_day_data["weather_descs"].append(p.get("weather_desc_day", "N/A"))
+for key, bucket in [
+    ("max_temp_day", "max_temps"),
+    ("max_feel_day", "max_feels"),
+    ("min_temp_day", "min_temps"),
+    ("min_feel_day", "min_feels"),
+    ("humidity_day", "humidities"),
+    ("pop_day", "pops"),
+    ("wind_speed_day", "wind_speeds")
+]:
+    val = safe_float(p.get(key))
+    if val is not None:
+        current_day_data[bucket].append(val)
+
+wind_dir_day = p.get("wind_dir_day", "-")
+if wind_dir_day != "-" and wind_dir_day != "N/A":
+    current_day_data["wind_dirs"].append(wind_dir_day)
+
+for key, bucket in [
+    ("comfort_max_day", "comfort_maxs"),
+    ("comfort_min_day", "comfort_mins"),
+    ("uv_index_day", "uv_indices")
+]:
+    val = p.get(key, "-")
+    if val != "-" and val != "N/A":
+        current_day_data[bucket].append(val)
+
+# 處理夜晚數據
+current_day_data["weather_descs"].append(p.get("weather_desc_night", "N/A"))
+for key, bucket in [
+    ("max_temp_night", "max_temps"),
+    ("max_feel_night", "max_feels"),
+    ("min_temp_night", "min_feels"),
+    ("min_feel_night", "min_feels"),
+    ("humidity_night", "humidities"),
+    ("pop_night", "pops"),
+    ("wind_speed_night", "wind_speeds")
+]:
+    val = safe_float(p.get(key))
+    if val is not None:
+        current_day_data[bucket].append(val)
+
+wind_dir_night = p.get("wind_dir_night", "-")
+if wind_dir_night != "-" and wind_dir_night != "N/A":
+    current_day_data["wind_dirs"].append(wind_dir_night)
+    
+for key, bucket in [
+    ("comfort_max_night", "comfort_maxs"),
+    ("comfort_min_night", "comfort_mins"),
+    ("uv_index_night", "uv_indices")
+]:
+    val = p.get(key, "-")
+    if val != "-" and val != "N/A":
+        current_day_data[bucket].append(val)
+"""

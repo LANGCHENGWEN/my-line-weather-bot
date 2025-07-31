@@ -94,33 +94,47 @@ YOUR_LINE_USER_ID = os.getenv("YOUR_LINE_USER_ID")
 # 1. 即時天氣查詢 (Current Weather Observations)
 # 資料集名稱：自動氣象站-氣象觀測資料 (Automated Weather Station - Meteorological Observation Data)
 # 提供氣溫、濕度、風速等即時資料。
+
+# 現在天氣觀測報告 (用於即時天氣)
 CWA_CURRENT_WEATHER_API = CWA_BASE_URL + "O-A0003-001" # O-A0001-001(1小時更新)
 
 # 2. 未來天氣預報 (Future Weather Forecasts)
 # 2.1 鄉鎮天氣預報-臺灣未來3天天氣預報 (包含未來36小時詳細預報)
 # 提供天氣現象、降雨機率、最高/最低溫度、風速等。
+
+# 一般天氣預報-今明36小時天氣預報 (用於每日天氣的天氣現象、最高溫度、最低溫度、降雨機率、舒適度指數)
 CWA_FORECAST_36HR_API = CWA_BASE_URL + "F-C0032-001" # ***F‑C0032‑001(適合找城市) # ***F-D0047-089(適合找城市+區域) # F-C0032-005
 
+# 鄉鎮天氣預報-臺灣未來3天天氣預報 (用於每日天氣的體感溫度、濕度、風速、風向)
 CWA_FORECAST_3DAYS_API = CWA_BASE_URL + "F-D0047-089"
 
+# 紫外線指數-每日紫外線指數最大值 (用於每日天氣的紫外線指數)
 CWA_TODAY_UVINDEX_API = CWA_BASE_URL + "O-A0005-001"
 
 # 2.2 鄉鎮天氣預報-臺灣未來1週天氣預報 (包含未來7天預報)
 # 提供天氣現象、最高/最低溫度等，降雨機率通常只到前三天。
+
+# 鄉鎮天氣預報-臺灣未來1週天氣預報 (用於未來 7 天預報)
 CWA_FORECAST_1WEEK_API = CWA_BASE_URL + "F-D0047-091" # ***F-D0047-091 # F-D0047-093
 
 # 3. 颱風資訊 (Typhoon Information)
 # 3.1 颱風消息與警報-颱風警報
 # 提供目前颱風名稱、位置、移動、風速、半徑等基本資訊。
+
+# 颱風消息與警報-熱帶氣旋路徑 (用於颱風現況)
 CWA_TYPHOON_WARNING_API = CWA_BASE_URL + "W-C0034-005"
 
 # 3.2 颱風消息與警報-颱風侵襲機率
 # 提供各地區受颱風侵襲的機率。
+
+# 天氣特報-各別天氣警特報之內容及所影響之區域 (用於地區影響預警)
 CWA_TYPHOON_PROBABILITY_API = CWA_BASE_URL + "W-C0033-002"
 
 # 4. 天氣特報 (Weather Alerts/Warnings)
 # 資料集名稱：天氣特報-各別縣市地區目前之天氣警特報情形
 # 提供豪大雨、強風、低溫等警特報資訊。
+
+# 天氣特報-各別縣市地區目前之天氣警特報情形 (目前沒用到)
 CWA_WEATHER_ALERTS_API = CWA_BASE_URL + "W-C0033-001"
 
 # 中央氣象署颱風專區主頁（用於「颱風現況」功能）

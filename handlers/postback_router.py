@@ -40,7 +40,7 @@ ACTION_DISPATCH = {
     "forecast_days"       : "weather_forecast.postback_handler", # 未來預報的天數選單
     "outfit_advisor"      : "life_reminders.outfit_handler",     # 穿搭建議子選單
     "outfit_query"        : "life_reminders.outfit_handler",     # 穿搭建議類型的flex message選單
-    "weekend_weather"     : "life_reminders.",
+    "weekend_weather"     : "life_reminders.weekend_handler",
     "solar_term_info"     : "life_reminders.",
     "settings"            : "menu_handlers.settings_menu_handler"
 }
@@ -122,6 +122,11 @@ def handle(event):
             elif action == "outfit_query" and hasattr(mod, "handle_outfit_query"):
                 logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_outfit_query 處理 outfit_query。")
                 return mod.handle_outfit_query(api, event)
+            
+            elif action == "weekend_weather" and hasattr(mod, "handle_weekend_weather_postback"):
+                # 假設 weekend_handler.py 裡面有一個叫做 handle_weekend_weather_postback 的函數
+                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_weekend_weather_postback 處理 weekend_weather。")
+                return mod.handle_weekend_weather_postback(api, event)
         
             # Fallback 處理：通用 handle 函數或其他特定命名函數
             elif hasattr(mod, "handle"):
