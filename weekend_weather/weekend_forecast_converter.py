@@ -1,15 +1,15 @@
-# life_reminders/weekend_forecast_converter.py (保持不變)
+# weekend_weather/weekend_forecast_converter.py
 import logging
 import datetime
 from typing import List, Dict, Tuple
 from linebot.v3.messaging.models import FlexBubble
 
 # 導入穿搭建議邏輯
-from utils.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
+from outfit_suggestion.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
 # 導入 build_weekend_weather_flex 函數，用於生成週末天氣卡片
-from life_reminders.weekend_weather_flex import build_weekend_weather_flex
+from weekend_weather.weekend_weather_flex import build_weekend_weather_flex
 # 導入 build_forecast_outfit_card 函數，用於生成穿搭卡片
-from life_reminders.forecast_outfit_flex_messages import build_forecast_outfit_card
+from outfit_suggestion.forecast_outfit_flex_messages import build_forecast_outfit_card
 # 從 forecast_flex_converter 導入內部輔助函數
 from weather_forecast.forecast_flex_converter import _aggregate_parsed_forecast_data
 

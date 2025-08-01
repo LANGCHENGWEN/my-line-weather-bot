@@ -38,9 +38,9 @@ ACTION_TO_ALIAS = {
 # 所有 action 與「子 handler 模組路徑」的對照 (Rich‑menu 子選單)
 ACTION_DISPATCH = {
     "forecast_days"       : "weather_forecast.postback_handler", # 未來預報的天數選單
-    "outfit_advisor"      : "life_reminders.outfit_handler",     # 穿搭建議子選單
-    "outfit_query"        : "life_reminders.outfit_handler",     # 穿搭建議類型的flex message選單
-    "weekend_weather"     : "life_reminders.weekend_handler",
+    "outfit_advisor"      : "outfit_suggestion.outfit_handler",     # 穿搭建議子選單
+    "outfit_query"        : "outfit_suggestion.outfit_handler",     # 穿搭建議類型的flex message選單
+    "weekend_weather"     : "weekend_weather.weekend_handler",
     "solar_term_info"     : "life_reminders.",
     "settings"            : "menu_handlers.settings_menu_handler"
 }

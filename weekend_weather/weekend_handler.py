@@ -1,4 +1,4 @@
-# life_reminders/weekend_handler.py
+# weekend_weather/weekend_handler.py
 import json
 import logging
 from typing import Dict, List
@@ -16,7 +16,7 @@ from utils.line_common_messaging import send_line_reply_message, send_api_error_
 from weather_forecast.cwa_forecast_api import get_cwa_forecast_data
 from weather_forecast.weather_forecast_parser import parse_forecast_weather
 # from life_reminders.weekend_weather_flex import build_weekend_weather_flex
-from life_reminders.weekend_forecast_converter import get_weekend_forecast_flex_messages 
+from weekend_weather.weekend_forecast_converter import get_weekend_forecast_flex_messages 
 
 logger = logging.getLogger(__name__)
 

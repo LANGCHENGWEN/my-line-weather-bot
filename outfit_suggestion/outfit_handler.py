@@ -1,4 +1,4 @@
-# life_reminders/outfit_handler.py
+# outfit_suggestion/outfit_handler.py
 import json
 import logging
 from typing import List, Dict
@@ -16,9 +16,9 @@ from utils.message_builder import format_flex_message
 from utils.line_common_messaging import send_line_reply_message
 
 # 導入穿搭邏輯
-from utils.today_outfit_logic import get_outfit_suggestion_for_today_weather
-from utils.current_outfit_logic import get_outfit_suggestion_for_current_weather 
-from utils.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
+from outfit_suggestion.today_outfit_logic import get_outfit_suggestion_for_today_weather
+from outfit_suggestion.current_outfit_logic import get_outfit_suggestion_for_current_weather 
+from outfit_suggestion.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
 
 from weather_today.cwa_today_api import get_cwa_today_data
 from weather_today.weather_today_parser import parse_today_weather
@@ -37,12 +37,12 @@ from weather_forecast.cwa_forecast_api import get_cwa_forecast_data
 from weather_forecast.weather_forecast_parser import parse_forecast_weather
 
 # 🚀 從 life_reminders/outfit_responses.py 導入通用回覆選單函式
-from life_reminders.outfit_responses import reply_outfit_weather_of_city
+from outfit_suggestion.outfit_responses import reply_outfit_weather_of_city
 
 # 導入你的 Flex Message 定義
 # 它會返回你想要作為「穿搭建議」入口選單的 Flex Message JSON 結構
-from life_reminders.outfit_type_flex_messages import build_outfit_suggestions_flex
-from life_reminders.outfit_flex_messages import build_today_outfit_flex, build_current_outfit_flex
+from outfit_suggestion.outfit_type_flex_messages import build_outfit_suggestions_flex
+from outfit_suggestion.outfit_flex_messages import build_today_outfit_flex, build_current_outfit_flex
 # from life_reminders.forecast_outfit_flex_messages import build_forecast_outfit_carousel
 
 from weather_forecast.forecast_flex_converter import convert_forecast_to_bubbles, build_flex_carousel

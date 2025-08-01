@@ -1,4 +1,4 @@
-# life_reminders/outfit_flex_messages.py
+# outfit_suggestion/outfit_flex_messages.py
 from linebot.v3.messaging.models import (
     FlexBox, FlexText, FlexImage, FlexBubble, FlexSeparator
 )

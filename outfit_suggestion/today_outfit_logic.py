@@ -1,4 +1,4 @@
-# utils/today_outfit_logic.py
+# outfit_suggestion/today_outfit_logic.py
 import logging
 from typing import Any, Dict, List
 

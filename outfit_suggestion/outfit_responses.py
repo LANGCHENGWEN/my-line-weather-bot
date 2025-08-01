@@ -1,10 +1,10 @@
-# life_reminders/outfit_responses.py
+# outfit_suggestion/outfit_responses.py
 import logging
 from linebot.v3.messaging import ApiClient
 from linebot.v3.messaging.models import TextMessage, FlexMessage
 
 # 從您現有的檔案引入 Flex Message 建立器
-from life_reminders.outfit_type_flex_messages import build_outfit_suggestions_flex
+from outfit_suggestion.outfit_type_flex_messages import build_outfit_suggestions_flex
 
 from utils.text_processing import normalize_city_name
 from utils.line_common_messaging import send_line_reply_message # 假設您有這個實用工具

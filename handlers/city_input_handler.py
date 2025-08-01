@@ -21,7 +21,7 @@ from weather_today.today_handler import reply_today_weather_of_city
 from weather_current.current_handler import reply_current_weather_of_city
 from weather_forecast.forecast_handler import reply_forecast_weather_of_city
 
-from life_reminders.outfit_responses import reply_outfit_weather_of_city
+from outfit_suggestion.outfit_responses import reply_outfit_weather_of_city
 
 logger = logging.getLogger(__name__)
 

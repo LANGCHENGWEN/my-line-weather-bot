@@ -1,4 +1,4 @@
-# life_reminders/forecast_outfit_flex_messages.py
+# outfit_suggestion/forecast_outfit_flex_messages.py
 import logging
 from linebot.v3.messaging.models import FlexBubble, FlexBox, FlexText, FlexImage, FlexSeparator
 from utils.flex_message_elements import make_kv_row

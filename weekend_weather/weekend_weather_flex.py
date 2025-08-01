@@ -1,4 +1,4 @@
-# life_reminders/weekend_weather_flex.py
+# weekend_weather/weekend_weather_flex.py
 import json
 import logging
 from typing import Any, Dict, List, Optional

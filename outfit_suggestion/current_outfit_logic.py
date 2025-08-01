@@ -1,4 +1,4 @@
-# utils/current_outfit_logic.py
+# outfit_suggestion/current_outfit_logic.py
 import logging
 
 logger = logging.getLogger(__name__)

@@ -7,11 +7,11 @@ from collections import Counter
 from typing import Any, List, Dict
 from linebot.v3.messaging.models import FlexMessage, FlexBubble, FlexCarousel
 
-from utils.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
+from outfit_suggestion.forecast_outfit_logic import get_outfit_suggestion_for_forecast_weather
 from utils.weather_utils import get_beaufort_scale_description, convert_ms_to_beaufort_scale
 
 from .forecast_builder_flex import build_observe_weather_flex  # 已在同檔定義
-from life_reminders.forecast_outfit_flex_messages import build_forecast_outfit_card
+from outfit_suggestion.forecast_outfit_flex_messages import build_forecast_outfit_card
 
 
 logger = logging.getLogger(__name__)
