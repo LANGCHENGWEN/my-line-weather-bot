@@ -38,10 +38,10 @@ ACTION_TO_ALIAS = {
 # 所有 action 與「子 handler 模組路徑」的對照 (Rich‑menu 子選單)
 ACTION_DISPATCH = {
     "forecast_days"       : "weather_forecast.postback_handler", # 未來預報的天數選單
-    "outfit_advisor"      : "outfit_suggestion.outfit_handler",     # 穿搭建議子選單
-    "outfit_query"        : "outfit_suggestion.outfit_handler",     # 穿搭建議類型的flex message選單
-    "weekend_weather"     : "weekend_weather.weekend_handler",
-    "solar_term_info"     : "life_reminders.",
+    "outfit_advisor"      : "outfit_suggestion.outfit_handler", # 穿搭建議子選單
+    "outfit_query"        : "outfit_suggestion.outfit_handler", # 穿搭建議類型的flex message選單
+    "weekend_weather"     : "weekend_weather.weekend_handler", # 週末天氣子選單
+    "solar_term_info"     : "solar_terms.solar_terms_handler", # 節氣小知識子選單
     "settings"            : "menu_handlers.settings_menu_handler"
 }
 
@@ -108,7 +108,7 @@ def handle(event):
             # 🚀 優化點 2: 處理 forecast_days
             # 因為這個 action 是特定且需要解析參數的，所以單獨處理
             if action == "forecast_days": # 處理未來預報的天數選單
-                # 直接呼叫專門處理 forecast_days 的函數
+                # 直接呼叫專門處理 forecast_days 的函式
                 # 這個函數 (handle_postback_forecast_query) 需要從 event 中自行解析 days 和 city
                 logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_forecast_postback 處理 forecast_days。")
                 return mod.handle_forecast_postback(api, event)
@@ -123,10 +123,17 @@ def handle(event):
                 logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_outfit_query 處理 outfit_query。")
                 return mod.handle_outfit_query(api, event)
             
+            # 處理週末天氣子選單
             elif action == "weekend_weather" and hasattr(mod, "handle_weekend_weather_postback"):
                 # 假設 weekend_handler.py 裡面有一個叫做 handle_weekend_weather_postback 的函數
                 logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_weekend_weather_postback 處理 weekend_weather。")
                 return mod.handle_weekend_weather_postback(api, event)
+            
+            # 處理節氣小知識子選單
+            elif action == "solar_term_info" and hasattr(mod, "handle_solar_term_query"):
+                # 直接呼叫專門處理 solar_term_info 的函式
+                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_solar_term_query 處理 solar_term_info。")
+                return mod.handle_solar_term_query(api, event)
         
             # Fallback 處理：通用 handle 函數或其他特定命名函數
             elif hasattr(mod, "handle"):
