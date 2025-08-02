@@ -146,12 +146,12 @@ def get_settings_rich_menu() -> RichMenuRequest:
         chat_bar_text="設定子選單",
         areas=[
             RichMenuArea(
-                bounds=RichMenuBounds(x=0, y=0, width=1250, height=843),
-                action=PostbackAction(data="action=toggle_daily_reminder", displayText="每日提醒推播")
+                bounds=RichMenuBounds(x=0, y=0, width=833, height=843),
+                action=PostbackAction(label="每日天氣推播", data="action=daily_reminder_push")
             ),
             RichMenuArea(
-                bounds=RichMenuBounds(x=1250, y=0, width=1250, height=843),
-                action=PostbackAction(data="action=toggle_typhoon_notification", displayText="颱風通知推播")
+                bounds=RichMenuBounds(x=833, y=0, width=834, height=843),
+                action=PostbackAction(label="颱風通知推播", data="action=typhoon_notification_push")
             ),
             # 注意：原始 JSON 中這裡有兩個按鈕重疊或座標有問題 (x=0, y=843, width=833, height=843) 和 (x=833, y=843, width=834, height=843)
             # 並且還有一個 x=0, y=1686 的按鈕，這超出了 2500x1686 的 height 範圍。
@@ -163,22 +163,22 @@ def get_settings_rich_menu() -> RichMenuRequest:
 
             # 調整後的坐標（假設為3行佈局）
             RichMenuArea(
-                bounds=RichMenuBounds(x=0, y=843, width=1250, height=421), # 位於第三行上半部分
-                action=PostbackAction(data="action=toggle_weekend_weather", label="週末天氣推播")
+                bounds=RichMenuBounds(x=1667, y=0, width=833, height=843), # 位於第三行上半部分
+                action=PostbackAction(label="週末天氣推播", data="action=weekend_weather_push")
             ),
             RichMenuArea(
-                bounds=RichMenuBounds(x=1250, y=843, width=1250, height=421), # 位於第三行下半部分，與上一行相對
-                action=PostbackAction(data="action=toggle_solar_terms", label="節氣小知識推播")
+                bounds=RichMenuBounds(x=0, y=843, width=833, height=843), # 位於第三行下半部分，與上一行相對
+                action=PostbackAction(label="節氣小知識推播", data="action=solar_terms_push")
             ),
             RichMenuArea(
                 # 這個按鈕的原始 y 座標 1686 超出範圍，我會把它放在最底層左邊
-                bounds=RichMenuBounds(x=0, y=1264, width=1250, height=422), # 調整到最下面一行
-                action=PostbackAction(data="action=change_default_city", label="切換預設城市")
+                bounds=RichMenuBounds(x=833, y=843, width=834, height=843), # 調整到最下面一行
+                action=PostbackAction(label="切換預設城市", data="action=change_default_city")
             ),
             # 原始JSON中的 "回上一頁" 按鈕座標為 x=1667, y=843, width=833, height=843，這個與 "週末天氣推播" 和 "節氣小知識推播" 有重疊，且寬度不均勻。
             # 我將其調整為位於最底層右邊。
             RichMenuArea(
-                bounds=RichMenuBounds(x=1250, y=1264, width=1250, height=422), # 調整到最下面一行右邊
+                bounds=RichMenuBounds(x=1667, y=843, width=833, height=843), # 調整到最下面一行右邊
                 action=PostbackAction(label="回上一頁", data="action=return_to_main_menu")
             )
         ]

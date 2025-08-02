@@ -37,12 +37,16 @@ ACTION_TO_ALIAS = {
 
 # 所有 action 與「子 handler 模組路徑」的對照 (Rich‑menu 子選單)
 ACTION_DISPATCH = {
-    "forecast_days"       : "weather_forecast.postback_handler", # 未來預報的天數選單
-    "outfit_advisor"      : "outfit_suggestion.outfit_handler", # 穿搭建議子選單
-    "outfit_query"        : "outfit_suggestion.outfit_handler", # 穿搭建議類型的flex message選單
-    "weekend_weather"     : "weekend_weather.weekend_handler", # 週末天氣子選單
-    "solar_term_info"     : "solar_terms.solar_terms_handler", # 節氣小知識子選單
-    "settings"            : "menu_handlers.settings_menu_handler"
+    "forecast_days"             : "weather_forecast.postback_handler", # 未來預報的天數選單
+    "outfit_advisor"            : "outfit_suggestion.outfit_handler", # 穿搭建議子選單
+    "outfit_query"              : "outfit_suggestion.outfit_handler", # 穿搭建議類型的flex message選單
+    "weekend_weather"           : "weekend_weather.weekend_handler", # 週末天氣子選單
+    "solar_term_info"           : "solar_terms.solar_terms_handler", # 節氣小知識子選單
+    "daily_reminder_push"       : "settings.settings_handler", # 每日提醒推播
+    "typhoon_notification_push" : "settings.settings_handler", # 颱風通知推播
+    "weekend_weather_push"      : "settings.settings_handler", # 週末天氣推播
+    "solar_terms_push"          : "settings.settings_handler", # 節氣小知識推播
+    "set_status"                : "settings.settings_handler"
 }
 
 # -------------------- 3) 入口 --------------------
@@ -81,6 +85,13 @@ def handle(event):
         set_user_state(user_id, "awaiting_outfit_city_input")
         send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
         logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢穿搭建議其他縣市，狀態設為 awaiting_outfit_city_input。")
+        return True # 已處理
+    
+    # 新增這段邏輯來處理切換預設城市
+    elif action == "change_default_city":
+        set_user_state(user_id, "awaiting_default_city_input")
+        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想設定的預設縣市名稱，例如：台中市 或 台北市")])
+        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇切換預設城市，狀態設為 awaiting_default_city_input。")
         return True # 已處理
     
     # 處理返回主選單的 postback action (通常是最優先處理的選單切換)
@@ -134,6 +145,14 @@ def handle(event):
                 # 直接呼叫專門處理 solar_term_info 的函式
                 logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_solar_term_query 處理 solar_term_info。")
                 return mod.handle_solar_term_query(api, event)
+            
+            # 統一處理所有推播設定相關的 Postback
+            # 包含從 Rich Menu 按鈕來的「daily_reminder_push」
+            # 以及從 Flex Message 按鈕來的「set_status」
+            elif action in ["daily_reminder_push", "typhoon_notification_push", "weekend_weather_push", "solar_terms_push", "set_status"]:
+                if hasattr(mod, "handle_settings_postback"):
+                    logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_settings_postback 處理 {action}。")
+                    return mod.handle_settings_postback(api, event)
         
             # Fallback 處理：通用 handle 函數或其他特定命名函數
             elif hasattr(mod, "handle"):
