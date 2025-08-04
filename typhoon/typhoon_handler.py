@@ -35,41 +35,66 @@ class TyphoonLogic:
         self.api_client = TyphoonApiClient(CWA_API_KEY)
         self.parser = TyphoonParser()
 
-    def get_typhoon_flex_message(self) -> Optional[FlexMessage]:
+    def fetch_and_parse_typhoon_data(self) -> Optional[Dict[str, Any]]:
         """
-        獲取並處理颱風數據，返回一個 Flex Message 物件。
+        私有方法：獲取原始颱風數據並進行解析。
+        若成功，回傳解析後的字典；若失敗，回傳 None。
         """
         # 1. 呼叫 API 獲取原始數據
         raw_data = self.api_client.fetch_typhoon_raw_data()
         if not raw_data:
             logger.warning("無法獲取颱風原始資料，無法生成 Flex Message。")
             return None
-
+        
         # 2. 解析原始數據
         parsed_data = self.parser.parse_typhoon_data(raw_data)
         if not parsed_data:
             logger.warning("無法解析颱風數據，無法生成 Flex Message。")
+            return None
+        
+        return parsed_data
+
+    def get_typhoon_flex_message(self) -> Optional[FlexMessage]:
+        """
+        獲取並處理颱風數據，返回一個 Flex Message 物件。
+        """
+        # 呼叫私有方法來獲取解析後的數據
+        parsed_data = self.fetch_and_parse_typhoon_data()
+        if not parsed_data:
             return None
 
         # 3. 生成 Flex Message
         # 注意：這裡需要將解析後的數據傳遞給 create_typhoon_flex_message
         # 你的 create_typhoon_flex_message 函式需要調整以接收這個結構化的 parsed_data
         try:
-            if parsed_data:
-                flex_message_object = create_typhoon_flex_message(parsed_data)
-            else:
-                # 如果解析失敗，返回一個預設的錯誤訊息 FlexMessage
-                # create_typhoon_flex_message 已經處理了 parsed_typhoon_data 為 None 的情況
-                flex_message_object = create_typhoon_flex_message(None)
-
+            flex_message_object = create_typhoon_flex_message(parsed_data)
             # 確保 create_typhoon_flex_message 返回的是 FlexMessage 物件
             if not isinstance(flex_message_object, FlexMessage):
                 logger.error("create_typhoon_flex_message 未返回 FlexMessage 物件。")
                 return None
-            
             # 直接返回由 create_typhoon_flex_message 產生的 FlexMessage 物件
             return flex_message_object
+        except Exception as e:
+            logger.error(f"生成颱風 Flex Message 時發生錯誤: {e}", exc_info=True)
+            return None
+        
+    # --- 新增的方法 ---
+    def get_typhoon_info_and_message(self) -> Optional[tuple[dict, FlexMessage]]:
+        """
+        獲取並處理颱風數據，返回包含解析數據和 Flex Message 的元組。
+        """
+        # 呼叫私有方法來獲取解析後的數據
+        parsed_data = self._fetch_and_parse_typhoon_data()
+        if not parsed_data:
+            return None
 
+        # 3. 生成 Flex Message
+        try:
+            flex_message_object = create_typhoon_flex_message(parsed_data)
+            if not isinstance(flex_message_object, FlexMessage):
+                logger.error("create_typhoon_flex_message 未返回 FlexMessage 物件。")
+                return None
+            return parsed_data, flex_message_object
         except Exception as e:
             logger.error(f"生成颱風 Flex Message 時發生錯誤: {e}", exc_info=True)
             return None

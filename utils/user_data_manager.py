@@ -64,6 +64,25 @@ def _upsert_cols(user_id: str, **cols: Any):
     except sqlite3.Error as e:
         logger.error(f"更新或插入用戶 {user_id} 資料時發生資料庫錯誤: {e}", exc_info=True)
 
+def get_users_by_city() -> Dict[str, List[str]]:
+    """
+    獲取一個字典，鍵為城市名稱，值為該城市所有用戶 ID 的列表。
+    方便按城市進行推播。
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        # 查詢所有用戶的 user_id 和 default_city
+        cursor.execute("SELECT user_id, default_city FROM users WHERE default_city IS NOT NULL")
+        rows = cursor.fetchall()
+    
+    city_users = {}
+    for user_id, city in rows:
+        if city not in city_users:
+            city_users[city] = []
+        city_users[city].append(user_id)
+        
+    return city_users
+
 # ---- 狀態管理 ----
 def set_user_state(user_id: str, state: str, data: Dict[str, Any] = None):
     """
@@ -180,3 +199,14 @@ def is_valid_city(city_name: str) -> bool:
     城市列表從 major_stations.py 中的 ALL_TAIWAN_COUNTIES 載入。
     """
     return city_name in ALL_TAIWAN_COUNTIES
+
+def get_user_push_settings(user_id: str) -> Dict[str, bool]:
+    """獲取指定用戶的推播設定。"""
+    return get_user_metadata(user_id, "push_settings", {})
+
+def update_user_push_setting(user_id: str, feature_id: str, is_enabled: bool):
+    """更新指定用戶的單個推播設定。"""
+    current_push_settings = get_user_push_settings(user_id)
+    current_push_settings[feature_id] = is_enabled
+    set_user_metadata(user_id, push_settings=current_push_settings)
+    logger.info(f"用戶 {user_id} 的 {feature_id} 推播已設定為: {is_enabled}")

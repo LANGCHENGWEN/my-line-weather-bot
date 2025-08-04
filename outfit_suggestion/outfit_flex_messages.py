@@ -26,7 +26,7 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
     suggestion_text = outfit_info.get("outfit_suggestion_text", "目前無法提供即時穿搭建議。")
     suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
 
-    date_display_string = outfit_info.get("date_full_formatted", "日期 N/A")
+    date_display_string = outfit_info.get("date_full_formatted")
 
     # 創建一個列表，用於存放每個 FlexText 元件
     suggestion_text_contents = []
@@ -45,15 +45,15 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
 
     weather_info_contents = []
 
-    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("weather_phenomenon", "N/A")))
-    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("feels_like", "N/A")))
+    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("weather_phenomenon")))
+    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("feels_like")))
     # --- 修改開始 ---
     # 直接從 outfit_info 提取格式化後的溫度範圍
-    weather_info_contents.append(make_kv_row("溫度：", outfit_info.get("formatted_temp_range", "N/A")))
+    weather_info_contents.append(make_kv_row("溫度：", outfit_info.get("formatted_temp_range")))
     # --- 修改結束 ---
-    weather_info_contents.append(make_kv_row("降雨機率：", outfit_info.get("pop", "N/A")))
-    weather_info_contents.append(make_kv_row("風速：", outfit_info.get("wind_scale", "N/A")))
-    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("uv_index", "N/A")))
+    weather_info_contents.append(make_kv_row("降雨機率：", outfit_info.get("pop")))
+    weather_info_contents.append(make_kv_row("風速：", outfit_info.get("wind_scale")))
+    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("uv_index")))
 
     return FlexBubble(
         direction="ltr",
@@ -119,7 +119,7 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
     suggestion_text = outfit_info.get("suggestion_text", ["目前無法提供即時穿搭建議。"])
     suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
 
-    date_full_formatted = outfit_info.get("observation_time", "日期 N/A")
+    date_full_formatted = outfit_info.get("observation_time")
 
     # 創建一個列表，用於存放每個 FlexText 元件
     suggestion_text_contents = []
@@ -140,12 +140,12 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
     weather_info_contents = []
 
     # 直接使用 outfit_info 中已經格式化好的字串
-    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("weather_condition", "N/A")))
-    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("feels_like", "N/A")))
-    weather_info_contents.append(make_kv_row("濕度：", outfit_info.get("humidity", "N/A")))
-    weather_info_contents.append(make_kv_row("降雨量：", outfit_info.get("precipitation", "N/A")))
-    weather_info_contents.append(make_kv_row("風速：", outfit_info.get("wind_speed_beaufort_display", "N/A")))
-    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("uv_index", "N/A")))
+    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("weather_condition")))
+    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("feels_like")))
+    weather_info_contents.append(make_kv_row("濕度：", outfit_info.get("humidity")))
+    weather_info_contents.append(make_kv_row("降雨量：", outfit_info.get("precipitation")))
+    weather_info_contents.append(make_kv_row("風速：", outfit_info.get("wind_speed_beaufort_display")))
+    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("uv_index")))
 
     return FlexBubble(
         direction="ltr",

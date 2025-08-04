@@ -2,13 +2,12 @@
 import logging
 from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexBubble
 from linebot.v3.webhooks.models import PostbackEvent
-from .create_push_setting_flex_message import create_push_setting_flex_message
 from utils.line_common_messaging import send_line_reply_message
+from utils.user_data_manager import get_user_push_settings, update_user_push_setting
+from .create_push_setting_flex_message import create_push_setting_flex_message
+
 
 logger = logging.getLogger(__name__)
-
-# 模擬資料庫，請替換成你的實際資料庫操作
-user_settings_db = {}
 
 # 1. 根據 feature_id 獲取功能的名稱
 # 將 feature_map 定義在模組層級，讓所有函式都可以使用
@@ -37,17 +36,23 @@ def handle_settings_postback(api, event):
 
     # 1. 解析 postback.data
     data = event.postback.data
-    query_params = dict(param.split('=') for param in data.split('&'))
+    try:
+        query_params = dict(param.split('=') for param in data.split('&'))
+    except ValueError:
+        logger.error(f"Postback data 格式錯誤: {data}")
+        send_line_reply_message(api, reply_token, [TextMessage(text="無效的設定指令。")])
+        return
+    
     action_type = query_params.get('action')
 
-    # 直接使用 action 作為 feature_id
     # 處理來自選單按鈕的 Postback
     if action_type in feature_map:
         feature_id = action_type
         logger.debug(f"解析出的 feature_id: {feature_id}")
 
-        # 獲取使用者目前的設定狀態
-        is_enabled = user_settings_db.get(user_id, {}).get(feature_id, False)
+        # 從資料庫獲取使用者目前的設定狀態
+        user_push_settings = get_user_push_settings(user_id)
+        is_enabled = user_push_settings.get(feature_id, False)
 
         # 取得功能名稱，如果找不到則返回空字串
         feature_name = feature_map.get(feature_id, "")
@@ -65,11 +70,9 @@ def handle_settings_postback(api, event):
             is_enabled = status_str == 'on'
             feature_name = feature_map.get(feature_id, "")
 
-            # 模擬更新資料庫
-            if user_id not in user_settings_db:
-                user_settings_db[user_id] = {}
-            user_settings_db[user_id][feature_id] = is_enabled
-
+            # 呼叫資料庫管理模組函式來更新設定
+            update_user_push_setting(user_id, feature_id, is_enabled)
+            
             status_text = "開啟" if is_enabled else "關閉"
             message_text = f"「{feature_name}」推播已成功設定為：{status_text}。"
             send_line_reply_message(api, reply_token, [TextMessage(text=message_text)])

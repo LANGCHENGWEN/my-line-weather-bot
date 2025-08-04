@@ -132,9 +132,9 @@ def parse_current_weather(cwa_data: dict, query_location_name: str) -> dict | No
 
         except ValueError:
             logger.warning(f"無法解析或格式化日期: {obs_time_str}")
-            parsed_and_formatted_info['observation_time'] = "無資料" # 解析失敗，設定為 無資料
+            parsed_and_formatted_info['observation_time'] = "未知日期" # 解析失敗，設定為 無資料
     else:
-        parsed_and_formatted_info['observation_time'] = "無資料"
+        parsed_and_formatted_info['observation_time'] = "未知日期"
 
     # --- 提取、計算並**最終格式化**其他天氣元素 ---
     # 天氣描述 (Weather)

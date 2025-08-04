@@ -76,7 +76,7 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
                         weather_elements_map[data_time]["apparent_temp_formatted"] = f"{round(at_float, 1)}°C"
                         weather_elements_map[data_time]["apparent_temp_raw"] = at_float # 保留原始數值供穿搭判斷
                     except (ValueError, TypeError):
-                        weather_elements_map[data_time]["apparent_temp_formatted"] = "N/A"
+                        weather_elements_map[data_time]["apparent_temp_formatted"] = "無資料"
                         weather_elements_map[data_time]["apparent_temp_raw"] = None
                 elif element_name == "相對濕度":
                     try:
@@ -85,10 +85,8 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
                         weather_elements_map[data_time]["humidity_formatted"] = f"{round(rh_float)}%"
                         weather_elements_map[data_time]["humidity_raw"] = rh_float # 保留原始數值供穿搭判斷
                     except (ValueError, TypeError):
-                        weather_elements_map[data_time]["humidity_formatted"] = "N/A"
+                        weather_elements_map[data_time]["humidity_formatted"] = "無資料"
                         weather_elements_map[data_time]["humidity_raw"] = None
-                elif element_name == "風向":
-                    weather_elements_map[data_time]["wind_direction"] = element_value.get("WindDirection", "N/A")
                 elif element_name == "風速":
                     try:
                         ws_value = element_value.get("WindSpeed")
@@ -102,10 +100,12 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
                         weather_elements_map[data_time]["wind_scale_formatted"] = f"{wind_scale_int} 級 ({wind_scale_desc})"
                         weather_elements_map[data_time]["wind_scale_raw"] = wind_scale_int # 純數字風級
                     except (ValueError, TypeError):
-                        weather_elements_map[data_time]["wind_speed_formatted"] = "N/A"
+                        weather_elements_map[data_time]["wind_speed_formatted"] = "無資料"
                         weather_elements_map[data_time]["wind_speed_raw"] = None
-                        weather_elements_map[data_time]["wind_scale_formatted"] = "N/A" # 無法解析風速時，風級也給 N/A
+                        weather_elements_map[data_time]["wind_scale_formatted"] = "無資料" # 無法解析風速時，風級也給 N/A
                         weather_elements_map[data_time]["wind_scale_raw"] = None
+                elif element_name == "風向":
+                    weather_elements_map[data_time]["wind_direction"] = element_value.get("WindDirection", "無資料")
 
     if not weather_elements_map:
         logger.warning(f"未能從 '{location_name}' 的天氣數據中解析出任何有效的天氣元素。")

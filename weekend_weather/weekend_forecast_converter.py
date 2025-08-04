@@ -58,7 +58,7 @@ def get_weekend_forecast_flex_messages(
     weekend_weather_bubbles: List[FlexBubble] = []
     # weekend_outfit_bubbles: List[FlexBubble] = []
 
-    loc_name = parsed_full_forecast_data.get("county_name", "N/A")
+    loc_name = parsed_full_forecast_data.get("county_name", "無資料")
     for i, day_data_for_bubble in enumerate(weekend_aggregated_data):
         day_data_for_bubble['loc_name'] = loc_name
         day_data_for_bubble['day_index'] = i + 1 # 新增第幾天 (週末中的第一天/第二天)

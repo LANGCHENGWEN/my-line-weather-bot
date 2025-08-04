@@ -5,7 +5,8 @@ from linebot.v3.messaging import MessagingApi, MessagingApiBlob
 from menu_handlers import menu_switcher
 from utils.api_helper import get_line_bot_apis
 from rich_menu_manager import rich_menu_deployer
-from daily_notifier import start_daily_notifier # 導入 daily_notifier
+# 導入我們自己的排程器模組
+# from scheduler import main as run_scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,11 @@ def initialize(
 
     # 將這個全局的 line_bot_api_instance 傳遞給 daily_notifier
     if enable_daily_notifications:
-        start_daily_notifier(line_bot_api)
-        logger.info("每日天氣通知排程器已啟動。")
+        # run_scheduler(line_bot_api)
+        logger.warning("在雲端環境中，請不要在主執行緒中直接呼叫排程器。")
+        logger.info("推播排程器已啟動。(注意：此處僅為日誌記錄，需獨立執行 scheduler.py)")
     else:
-        logger.info("每日天氣通知排程器已禁用。")
+        logger.info("推播排程器已禁用。")
 
     # 呼叫 Rich Menu 部署器來設定所有 Rich Menu
     # 注意：rich_menu_deployer.setup_all_rich_menus 需要的參數也要傳遞進來

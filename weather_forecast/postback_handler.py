@@ -30,6 +30,34 @@ from utils.line_common_messaging import (
 
 logger = logging.getLogger(__name__)
 
+def fetch_and_parse_forecast_data(city_name: str) -> dict | None:
+    """
+    通用函式：獲取並解析指定城市的預報天氣資料。
+    如果成功，回傳解析後的字典；如果失敗，回傳 None。
+    """
+    try:
+        # 獲取中央氣象署資料
+        weather_data = get_cwa_forecast_data(api_key=CWA_API_KEY, location_name=city_name) 
+        if not weather_data:
+            logger.warning(f"[ForecastPostbackHandler] get_cwa_forecast_data 未返回任何資料，城市: {city_name}")
+            return None
+        
+        logger.debug(f"[ForecastPostbackHandler] 接收到的 CWA API 原始資料: {json.dumps(weather_data, indent=2, ensure_ascii=False)[:2000]}...")
+
+        # 解析天氣數據
+        parsed_weather = parse_forecast_weather(weather_data, city_name)
+        if not parsed_weather:
+            # 格式化為 LINE 訊息
+            logger.error(f"[ForecastPostbackHandler] 無法從取得的預報資料中解析出 {city_name} 的天氣資訊，或解析結果不完整。")
+            return None
+        
+        logger.debug(f"[ForecastPostbackHandler] 成功解析天氣數據: {parsed_weather}")
+        return parsed_weather
+    
+    except Exception as e:
+        logger.error(f"在獲取及解析 {city_name} 預報天氣時發生錯誤: {e}", exc_info=True)
+        return None
+
 def handle_forecast_postback(messaging_api, event: PostbackEvent) -> bool:
     """
     處理天氣預報相關的 Postback 事件 (例如點擊 3/5/7 天按鈕)。
@@ -110,31 +138,18 @@ def handle_forecast_postback(messaging_api, event: PostbackEvent) -> bool:
             else:
                 logger.warning("get_cwa_forecast_data 未返回任何資料。")
             """
-        weather_data = get_cwa_forecast_data(api_key=CWA_API_KEY, location_name=city_to_query) 
-
-        if not weather_data:
-            logger.warning(f"[ForecastPostbackHandler] get_cwa_forecast_data 未返回任何資料，城市: {city_to_query}")
-            send_api_error_message(messaging_api, user_id, reply_token, f"{city_to_query} (無法取得中央氣象署資料)")
-            set_user_state(user_id, "idle")
-            return True
         
-        logger.debug(f"[ForecastPostbackHandler] 接收到的 CWA API 原始資料: {json.dumps(weather_data, indent=2, ensure_ascii=False)[:2000]}...")
-
-        # 解析天氣數據
-        parsed_weather = parse_forecast_weather(weather_data, city_to_query)
-
-        # 呼叫 debug helper 印出log
-        # debug_parsed_weather(parsed_weather, weather_data)
+        # --- 關鍵變更點：呼叫新建立的共用函式 ---
+        parsed_weather = fetch_and_parse_forecast_data(city_to_query)
 
         if not parsed_weather:
-            # 格式化為 LINE 訊息
-            logger.error(f"[ForecastPostbackHandler] 無法從取得的預報資料中解析出 {city_to_query} 的天氣資訊，或解析結果不完整。")
-            send_api_error_message(messaging_api, user_id, reply_token, f"{city_to_query} (天氣解析失敗)")
+            # 如果解析失敗，_fetch_and_parse_forecast_data 會在內部記錄錯誤，
+            # 我們在這裡發送一個通用的錯誤訊息即可。
+            send_api_error_message(messaging_api, user_id, reply_token, f"{city_to_query} (天氣資料處理失敗)")
             set_user_state(user_id, "idle")
             return True
+        # --- 變更點結束 ---
         
-        logger.debug(f"[ForecastPostbackHandler] 成功解析天氣數據: {parsed_weather}")
-
         response_message = build_forecast_weather_flex(parsed_weather, days, city_to_query)
         
         if not response_message:
@@ -144,7 +159,7 @@ def handle_forecast_postback(messaging_api, event: PostbackEvent) -> bool:
             return True
 
         # 發送回覆
-        send_line_reply_message(messaging_api, reply_token, [response_message], user_id=user_id)
+        send_line_reply_message(messaging_api, reply_token, [response_message])
         logger.info(f"[ForecastPostbackHandler] 已成功回覆用戶 {user_id} {city_to_query} 的 {days} 天天氣預報。")
         
         # 清除用戶狀態
@@ -153,7 +168,7 @@ def handle_forecast_postback(messaging_api, event: PostbackEvent) -> bool:
 
     except Exception as e:
         logger.error(f"[ForecastPostbackHandler] 處理 forecast_days Postback 時發生未預期錯誤: {e}", exc_info=True)
-        send_line_reply_message(messaging_api, reply_token, [TextMessage(text="處理您的預報請求時發生錯誤，請稍後再試。")])
+        send_line_reply_message(messaging_api, reply_token, [TextMessage(text="處理您的預報請求時發生錯誤，請稍候再試。")])
         set_user_state(user_id, "idle")
         return True
     

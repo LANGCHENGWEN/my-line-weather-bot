@@ -51,13 +51,13 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
     parsed_weather = {
         "location_name": location_name,
         "date_full_formatted": full_date_string, # 今日日期
-        "weather_phenomenon": "N/A",
+        "weather_phenomenon": "無資料",
         "max_temp_raw": -float('inf'), # 初始化為負無窮大以便找到最大值
         "min_temp_raw": float('inf'),  # 初始化為正無窮大以便找到最小值
-        "formatted_temp_range": "N/A", # 帶有單位的格式化溫度範圍
+        "formatted_temp_range": "無資料", # 帶有單位的格式化溫度範圍
         "pop_raw": 0, # 原始數字降雨機率，用於內部邏輯或傳遞給判斷層
-        "pop_formatted": "0%", # 格式化後的降雨機率字串
-        "comfort_index": "N/A"
+        "pop_formatted": "無資料", # 格式化後的降雨機率字串
+        "comfort_index": "無資料"
     }
 
     # 初始化用於內部處理的溫度變數
@@ -167,7 +167,7 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
         # 找到次數最多的天氣現象，most_common(1) 返回一個列表，例如 [('多雲', 2)]
         parsed_weather["weather_phenomenon"] = wx_counts.most_common(1)[0][0]
     else:
-        parsed_weather["weather_phenomenon"] = "無資訊"
+        parsed_weather["weather_phenomenon"] = "無資料"
 
     # 處理降雨機率的格式化
     if main_period_data["PoP"]:
@@ -185,7 +185,7 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
     else:
         parsed_weather["min_temp_raw"] = None # 如果沒找到有效溫度，將原始數值設為 None
         parsed_weather["max_temp_raw"] = None
-        parsed_weather["formatted_temp_range"] = "N/A"
+        parsed_weather["formatted_temp_range"] = "無資料"
 
     # 處理舒適度指數
     if main_period_data["CI"]:
@@ -193,7 +193,7 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
         unique_ci = list(dict.fromkeys(main_period_data["CI"]))
         parsed_weather["comfort_index"] = "、".join(unique_ci)
     else:
-        parsed_weather["comfort_index"] = "N/A"
+        parsed_weather["comfort_index"] = "無資料"
 
     """
     # 在此處更新格式化的溫度範圍
@@ -225,8 +225,8 @@ def parse_today_weather(raw_data: dict, location_name: str) -> dict | None:
         # 如果是 pop_raw 且其值為 0，則不視為缺失
         if key == "pop_raw" and parsed_weather[key] == 0:
             continue
-        # 其他情況下，如果值是 "N/A", "無資訊", None, 或是預設的極值，則視為缺失
-        if parsed_weather[key] in ["N/A", "無資訊", None] or \
+        # 其他情況下，如果值是 "N/A", "無資料", None, 或是預設的極值，則視為缺失
+        if parsed_weather[key] in ["N/A", "無資料", None] or \
            (key == "max_temp_raw" and parsed_weather[key] == -float('inf')) or \
            (key == "min_temp_raw" and parsed_weather[key] == float('inf')):
             missing_data_found = True

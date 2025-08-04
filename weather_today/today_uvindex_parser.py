@@ -22,8 +22,10 @@ def get_uv_level_description(uv_index: int) -> str:
         return "高"
     elif uv_index >= 3:
         return "中"
-    else:
+    elif uv_index >= 0:
         return "低"
+    else:
+        return "N/A" # 處理無效或預設值
 
 def parse_uv_index(data: dict, target_station_id: str) -> dict | None:
     """
@@ -32,12 +34,20 @@ def parse_uv_index(data: dict, target_station_id: str) -> dict | None:
 
     :param data: 從中央氣象局 API 獲取到的原始 JSON 資料 (字典形式)。
     :param target_station_id: 要解析的目標測站 ID。
-    :return: 包含指定測站紫外線指數的字典 (例如: {"Date": "2025-07-03", "UVIndex": 9})，
-             如果資料不存在或測站未找到則返回 None。
+    :return: 包含指定測站紫外線指數的字典。如果資料不存在或測站未找到，
+             則返回包含預設值的字典。
     """
+    # 預設的回傳值，以便在找不到資料時直接使用
+    default_data = {
+        "Date": datetime.now().strftime("%Y-%m-%d"),
+        "StationID": target_station_id,
+        "UVIndexRaw": -1, # 預設為 -1，代表無資料
+        "UVIndexFormatted": "無資料"
+    }
+
     if not data or "records" not in data or "weatherElement" not in data["records"]:
         logger.warning("傳入的紫外線數據無效或缺少必要鍵。")
-        return None
+        return default_data
 
     try:
         weather_element = data["records"]["weatherElement"]
@@ -46,7 +56,7 @@ def parse_uv_index(data: dict, target_station_id: str) -> dict | None:
 
         if not locations:
             logger.warning("紫外線數據中 'location' 列表為空或不存在。")
-            return None
+            return default_data
 
         for loc in locations:
             station_id = loc.get("StationID")
@@ -70,14 +80,15 @@ def parse_uv_index(data: dict, target_station_id: str) -> dict | None:
                     return parsed_uv_data
                 else:
                     logger.warning(f"測站 '{target_station_id}' 的紫外線指數值為空。")
-                    return None
+                    return default_data
         
+        # 迴圈結束後仍未找到匹配的測站 ID
         logger.warning(f"在原始紫外線數據中未找到測站 ID '{target_station_id}' 的資料。")
-        return None
+        return default_data
 
     except KeyError as e:
         logger.error(f"解析紫外線數據時發生鍵錯誤: {e}")
-        return None
+        return default_data
     except Exception as e:
         logger.error(f"解析紫外線數據時發生未知錯誤: {e}")
-        return None
+        return default_data

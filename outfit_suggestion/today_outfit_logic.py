@@ -47,12 +47,12 @@ def get_outfit_suggestion_for_today_weather(
     """
     logger.debug(f"[OutfitLogic] Generating outfit suggestion for {location}.")
 
-    # --- 初始化逐時數據相關變數為 N/A 或 None ---
+    # --- 初始化逐時數據相關變數為無資料 ---
     # 格式化字符串，用於顯示
-    formatted_feels_like = "N/A"
-    formatted_humidity = "N/A"
-    formatted_wind_speed = "N/A" # 這裡會是 m/s 單位
-    formatted_wind_scale = "N/A" # 這是 "X級 (描述)" 的字串
+    formatted_feels_like = "無資料"
+    formatted_humidity = "無資料"
+    formatted_wind_speed = "無資料" # 這裡會是 m/s 單位
+    formatted_wind_scale = "無資料" # 這是 "X級 (描述)" 的字串
 
     # 原始數值，用於邏輯判斷
     apparent_temp_raw = None
@@ -68,14 +68,14 @@ def get_outfit_suggestion_for_today_weather(
     if current_hour_data:
         # 直接提取已格式化的字串 (用於顯示)
         # 提取 F-D0047-089 數據
-        formatted_feels_like = current_hour_data.get("apparent_temp_formatted", "N/A") # 這裡使用 parse_3days_weather 調整後的鍵名
-        formatted_humidity = current_hour_data.get("humidity_formatted", "N/A") # 使用調整後的鍵名
-        formatted_wind_speed = current_hour_data.get("wind_speed_formatted", "N/A") # 使用調整後的鍵名
+        formatted_feels_like = current_hour_data.get("apparent_temp_formatted") # 這裡使用 parse_3days_weather 調整後的鍵名
+        formatted_humidity = current_hour_data.get("humidity_formatted") # 使用調整後的鍵名
+        formatted_wind_speed = current_hour_data.get("wind_speed_formatted") # 使用調整後的鍵名
         # formatted_wind_scale = current_hour_data.get("wind_scale", "N/A") # 直接從 parser 獲取格式化後的風級
         # wind_direction = current_hour_data.get("wind_direction", "N/A") # 如果需要，這裡也可以提取
         
         # --- 這裡獲取格式化後的字串和原始數字風級 ---
-        formatted_wind_scale = current_hour_data.get("wind_scale_formatted", "N/A")
+        formatted_wind_scale = current_hour_data.get("wind_scale_formatted")
         wind_scale_raw = current_hour_data.get("wind_scale_raw") # **用於判斷**
 
         # 提取原始數值 (用於邏輯判斷)
@@ -89,8 +89,8 @@ def get_outfit_suggestion_for_today_weather(
 
     # --- 從 general_forecast (F-C0032-001) 提取數據 ---
     # 確保這裡使用的鍵名與 weather_today_parser.py 的輸出一致
-    date_full_formatted = general_forecast.get("date_full_formatted", "N/A")
-    weather_phenomenon = general_forecast.get("weather_phenomenon", "無資訊")
+    date_full_formatted = general_forecast.get("date_full_formatted")
+    weather_phenomenon = general_forecast.get("weather_phenomenon")
 
     # 這些現在應該是數字，來自解析器
     max_temp_raw = general_forecast.get("max_temp_raw", None) # 獲取原始數值用於判斷
@@ -98,8 +98,8 @@ def get_outfit_suggestion_for_today_weather(
     precipitation_prob_raw = general_forecast.get("pop_raw", None) # 獲取原始數字降雨機率
 
     # 這些是已經格式化好的字串，來自解析器
-    formatted_temp_range = general_forecast.get("formatted_temp_range", "N/A") # 從解析器直接獲取帶 °C 的字串
-    formatted_pop = general_forecast.get("pop_formatted", "N/A") # 從解析器直接獲取帶 % 的字串
+    formatted_temp_range = general_forecast.get("formatted_temp_range") # 從解析器直接獲取帶 °C 的字串
+    formatted_pop = general_forecast.get("pop_formatted") # 從解析器直接獲取帶 % 的字串
     # comfort_index = general_forecast.get("comfort_index", "N/A") # 應該是 'comfort_index'
     # uv_index = "N/A" # F-C0032-001 不包含紫外線指數，需要其他數據源
 

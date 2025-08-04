@@ -13,7 +13,6 @@ from utils.weather_utils import get_beaufort_scale_description, convert_ms_to_be
 from .forecast_builder_flex import build_observe_weather_flex  # 已在同檔定義
 from outfit_suggestion.forecast_outfit_flex_messages import build_forecast_outfit_card
 
-
 logger = logging.getLogger(__name__)
 
 def safe_float(val: Any) -> float | None:
@@ -87,7 +86,7 @@ def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
 
         # --- 將累積的每日數據進行最終彙整 (取極值、平均值、最常見值) ---
         weather_desc_counter = Counter(string_values["weather_desc"])
-        weather_desc_display = weather_desc_counter.most_common(1)[0][0] if string_values["weather_desc"] else "N/A"
+        weather_desc_display = weather_desc_counter.most_common(1)[0][0] if string_values["weather_desc"] else "無資料"
 
         # 溫度/體感：取白天和夜晚的極值
         max_temp = max(numeric_values["max_temp"]) if numeric_values["max_temp"] else None
@@ -96,7 +95,7 @@ def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
         min_feel = min(numeric_values["min_feel"]) if numeric_values["min_feel"] else None
         
         # 體感溫度顯示邏輯
-        feels_like_display = "N/A"
+        feels_like_display = "無資料"
         if max_feel is not None and min_feel is not None:
             # 確保體感溫度在顯示時也是 float，如果需要更精確
             if abs(max_feel - min_feel) < 1.0: # 如果差異小於1度，則顯示單一值
@@ -110,16 +109,16 @@ def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
 
         # 濕度：取平均值，並格式化
         humidity = round(sum(numeric_values["humidity"]) / len(numeric_values["humidity"]), 0) if numeric_values["humidity"] else None
-        humidity_display = f"{int(humidity)}%" if humidity is not None else "N/A"
+        humidity_display = f"{int(humidity)}%" if humidity is not None else "無資料"
         
         # 降雨機率：取白天和夜晚的最大值，並格式化
         pop = max(numeric_values["pop"]) if numeric_values["pop"] else None
-        pop_display = f"{int(pop)}%" if pop is not None else "N/A"
+        pop_display = f"{int(pop)}%" if pop is not None else "無資料"
 
         # 風速：取最大值，並格式化
         raw_wind_speed_ms = max(numeric_values["wind_speed"]) if numeric_values["wind_speed"] else None
         wind_speed_beaufort_scale = None
-        wind_speed_display = "N/A"
+        wind_speed_display = "無資料"
         if raw_wind_speed_ms is not None:
             wind_speed_beaufort_scale = convert_ms_to_beaufort_scale(raw_wind_speed_ms) # 蒲福風級
             wind_scale_description = get_beaufort_scale_description(wind_speed_beaufort_scale) # 蒲福風級描述
@@ -127,17 +126,17 @@ def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
 
         # 風向：取頻率最高
         wind_dir_counter = Counter(string_values["wind_dir"])
-        wind_dir_display = wind_dir_counter.most_common(1)[0][0] if string_values["wind_dir"] else "N/A"
+        wind_dir_display = wind_dir_counter.most_common(1)[0][0] if string_values["wind_dir"] else "無資料"
 
         # 舒適度/紫外線指數：取頻率最高，並格式化紫外線指數
         comfort_max_counter = Counter(string_values["comfort_max"])
-        comfort_max_display = comfort_max_counter.most_common(1)[0][0] if string_values["comfort_max"] else "N/A"
+        comfort_max_display = comfort_max_counter.most_common(1)[0][0] if string_values["comfort_max"] else "無資料"
 
         comfort_min_counter = Counter(string_values["comfort_min"])
-        comfort_min_display = comfort_min_counter.most_common(1)[0][0] if string_values["comfort_min"] else "N/A"
+        comfort_min_display = comfort_min_counter.most_common(1)[0][0] if string_values["comfort_min"] else "無資料"
 
         uv_val = max(numeric_values["uv_index"]) if numeric_values["uv_index"] else None # 取 UV 最大值
-        uv_index_display = "N/A"
+        uv_index_display = "無資料"
         if uv_val is not None: # 確保 uv_val 是有效數字或可轉換為數字
             try:
                 uv_int_val = int(uv_val) # 轉換為整數以便比較
@@ -152,12 +151,12 @@ def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
                 elif uv_int_val >= 0: # 包含 0-2 的低級
                     uv_index_display = f"{uv_int_val} (低)"
                 else: # 考慮負值或其他異常情況
-                    uv_index_display = "N/A" # 或其他適當的默認值
+                    uv_index_display = "無資料" # 或其他適當的默認值
             except (ValueError, TypeError):
-                logger.warning(f"無法將 uv_val 值 '{uv_val}' 轉換為整數。設定為 N/A。")
-                uv_index_display = "N/A" # 如果轉換失敗，也設為 "N/A"
+                logger.warning(f"無法將 uv_val 值 '{uv_val}' 轉換為整數。設定為無資料。")
+                uv_index_display = "無資料" # 如果轉換失敗，也設為 "無資料"
         else:
-            uv_index_display = "無" # 如果原始值是 '-' 或 'N/A'
+            uv_index_display = "無資料" # 如果原始值是 '-' 或 'N/A'
 
         # 準備傳遞給 outfit_logic 的原始數值數據
         # 這裡需要確保所有值都是 int 或 float，且非 None
@@ -177,13 +176,13 @@ def _aggregate_parsed_forecast_data(parsed_data: Dict) -> List[Dict]:
         # --- 格式化為顯示字串的數據 (用於 Flex Message) ---
         # 直接使用 parser 提供的日期和地點資訊
         final_day_data = {
-            "county_name": parsed_data.get("county_name", "N/A"),
+            "county_name": parsed_data.get("county_name", "無資料"),
             "obs_time": p.get("date_str"), # 直接使用 parser 格式化的日期字串
             "date": date_key,
-            "loc_name": parsed_data.get("county_name", "N/A"), # 地點名稱
+            "loc_name": parsed_data.get("county_name", "無資料"), # 地點名稱 
             "display_weather_desc": weather_desc_display,
-            "display_max_temp": f"{int(max_temp)}°C" if max_temp is not None else "N/A",
-            "display_min_temp": f"{int(min_temp)}°C" if min_temp is not None else "N/A",
+            "display_max_temp": f"{int(max_temp)}°C" if max_temp is not None else "無資料",
+            "display_min_temp": f"{int(min_temp)}°C" if min_temp is not None else "無資料",
             "display_feels_like_temp": feels_like_display, # 已經是 "X°C ~ Y°C" 或 "X°C"
             "display_humidity": humidity_display, # 已經是 "Z%"
             "display_pop": pop_display, # 已經是 "Z%"
@@ -248,7 +247,7 @@ def convert_forecast_to_bubbles(parsed_data: Dict, days: int, include_outfit_sug
     # logger.debug(f"✅ 每日預報整理結果: {json.dumps(final_days_aggregated, ensure_ascii=False, indent=2)}")
 
     # 依序取前 N 天並建立 bubbles
-    loc_name = f"{parsed_data.get('county_name', 'N/A')}"
+    loc_name = f"{parsed_data.get('county_name', '無資料')}"
     for i, day_data_for_bubble in enumerate(all_aggregated_data):
         if i >= days: # 只處理指定天數
             break

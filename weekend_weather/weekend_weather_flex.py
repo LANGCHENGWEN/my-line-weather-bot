@@ -38,7 +38,7 @@ def build_weekend_weather_flex(outfit_info: dict, day_data: Dict[str, Any], coun
     # 新標題：縣市名稱 週末天氣
     main_title = f"📍 {county_name} 週末天氣"
     # 新副標題：日期
-    date_subtitle = day_data.get('date_formatted', '未知日期')
+    date_subtitle = day_data.get('date_formatted')
     # date_subtitle = date_full_formatted
 
     # 創建一個列表，用於存放每個 FlexText 元件
@@ -94,20 +94,20 @@ def build_weekend_weather_flex(outfit_info: dict, day_data: Dict[str, Any], coun
                     margin="lg",
                     spacing="sm",
                     contents=[
-                        make_kv_row("🌈 天氣狀況：", day_data.get("display_weather_desc", "N/A")),
+                        make_kv_row("🌈 天氣狀況：", day_data.get("display_weather_desc")),
                         FlexBox(
                             layout="vertical",
                             spacing="sm",
                             contents=[
-                                make_kv_row("🌡️ 最高溫度：", day_data.get("display_max_temp", "N/A")),
-                                make_kv_row("❄️ 最低溫度：", day_data.get("display_min_temp", "N/A")),
-                                make_kv_row("    (體感：", f"{day_data.get('display_feels_like_temp', 'N/A')})") # 體感溫度已格式化為 "X~Y度)"
+                                make_kv_row("🌡️ 最高溫度：", day_data.get("display_max_temp")),
+                                make_kv_row("❄️ 最低溫度：", day_data.get("display_min_temp")),
+                                make_kv_row("    (體感：", f"{day_data.get('display_feels_like_temp')})") # 體感溫度已格式化為 "X~Y度)"
                             ]
                         ),
-                        make_kv_row("💧 濕度：", day_data.get("display_humidity", "N/A")),
-                        make_kv_row("🌧️ 降雨機率：", day_data.get("display_pop", "N/A")),
-                        make_kv_row("🌬️ 風速：", day_data.get("display_wind_speed", "N/A")),
-                        make_kv_row("☀️ 紫外線指數:", day_data.get("display_uv_index", "N/A"))
+                        make_kv_row("💧 濕度：", day_data.get("display_humidity")),
+                        make_kv_row("🌧️ 降雨機率：", day_data.get("display_pop")),
+                        make_kv_row("🌬️ 風速：", day_data.get("display_wind_speed")),
+                        make_kv_row("☀️ 紫外線指數:", day_data.get("display_uv_index"))
                     ]
                 ),
                 FlexSeparator(margin="md"),

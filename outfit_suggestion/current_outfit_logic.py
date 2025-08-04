@@ -42,7 +42,7 @@ def get_outfit_suggestion_for_current_weather(current_weather_data: dict) -> dic
         dict: 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
     """
     # 從傳入的字典中直接獲取數值型別的數據
-    raw_time_str = current_weather_data.get('observation_time', 'N/A')
+    raw_time_str = current_weather_data.get('observation_time')
     weather_phenomenon = current_weather_data.get('weather_description', '晴')
 
     # 直接獲取數值型別的數據，如果沒有則預設為 None 或 0
@@ -56,7 +56,7 @@ def get_outfit_suggestion_for_current_weather(current_weather_data: dict) -> dic
 
     # 獲取蒲福風級相關資訊，直接用於顯示
     beaufort_scale_int = current_weather_data.get('beaufort_scale_int', 0) # 蒲福風級數字
-    wind_speed_beaufort_display = current_weather_data.get('wind_speed_beaufort_display', 'N/A') # 組合後的顯示字串
+    wind_speed_beaufort_display = current_weather_data.get('wind_speed_beaufort_display') # 組合後的顯示字串
     
     # 如果體感溫度仍為None，則使用實際溫度（如果存在）
     if feels_like is None and temp is not None:
@@ -184,12 +184,12 @@ def get_outfit_suggestion_for_current_weather(current_weather_data: dict) -> dic
         "suggestion_image_url": suggestion_image_url,
         "weather_condition": weather_phenomenon,
         # "current_temp": current_weather_data.get('current_temp', 'N/A'), # 使用已格式化的字串
-        "feels_like": current_weather_data.get('sensation_temp_display', 'N/A'), # 使用已格式化的字串
-        "humidity": current_weather_data.get('humidity', 'N/A'), # 使用已格式化的字串
-        "precipitation": current_weather_data.get('precipitation', 'N/A'), # 使用已格式化的字串
+        "feels_like": current_weather_data.get('sensation_temp_display'), # 使用已格式化的字串
+        "humidity": current_weather_data.get('humidity'), # 使用已格式化的字串
+        "precipitation": current_weather_data.get('precipitation'), # 使用已格式化的字串
         "wind_speed_beaufort_display": wind_speed_beaufort_display, # 使用蒲福風級顯示字串
         # "wind_direction": current_weather_data.get('wind_direction', 'N/A'), # 使用已格式化的字串
-        "uv_index": current_weather_data.get('uv_index', 'N/A'), # 使用已格式化的字串
+        "uv_index": current_weather_data.get('uv_index'), # 使用已格式化的字串
         #"pressure": current_weather_data.get('pressure', 'N/A') # 使用已格式化的字串
     }
 

@@ -109,11 +109,11 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
 
     # 直接使用 forecast_flex_converter.py 預先處理好的顯示字串
     # 這些鍵現在應該以 'display_' 開頭
-    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("display_weather_desc", "N/A")))
-    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("display_feels_like_temp", "N/A")))
-    weather_info_contents.append(make_kv_row("濕度：", outfit_info.get("display_humidity", "N/A")))
-    weather_info_contents.append(make_kv_row("降雨機率：", outfit_info.get("display_pop", "N/A")))
-    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("display_uv_index", "N/A")))
+    weather_info_contents.append(make_kv_row("天氣狀況：", outfit_info.get("display_weather_desc")))
+    weather_info_contents.append(make_kv_row("體感溫度：", outfit_info.get("display_feels_like_temp")))
+    weather_info_contents.append(make_kv_row("濕度：", outfit_info.get("display_humidity")))
+    weather_info_contents.append(make_kv_row("降雨機率：", outfit_info.get("display_pop")))
+    weather_info_contents.append(make_kv_row("紫外線指數：", outfit_info.get("display_uv_index")))
     
     # 你也可以選擇加入其他顯示資訊，例如風速和風向
     # weather_info_contents.append(make_kv_row("風速", outfit_info.get("display_wind_speed", "N/A")))
