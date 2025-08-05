@@ -36,18 +36,116 @@ ACTION_TO_ALIAS = {
 }
 
 # 所有 action 與「子 handler 模組路徑」的對照 (Rich‑menu 子選單)
-ACTION_DISPATCH = {
-    "forecast_days"             : "weather_forecast.postback_handler", # 未來預報的天數選單
-    "outfit_advisor"            : "outfit_suggestion.outfit_handler", # 穿搭建議子選單
-    "outfit_query"              : "outfit_suggestion.outfit_handler", # 穿搭建議類型的flex message選單
-    "weekend_weather"           : "weekend_weather.weekend_handler", # 週末天氣子選單
-    "solar_term_info"           : "solar_terms.solar_terms_handler", # 節氣小知識子選單
-    "daily_reminder_push"       : "settings.settings_handler", # 每日提醒推播
-    "typhoon_notification_push" : "settings.settings_handler", # 颱風通知推播
-    "weekend_weather_push"      : "settings.settings_handler", # 週末天氣推播
-    "solar_terms_push"          : "settings.settings_handler", # 節氣小知識推播
-    "set_status"                : "settings.settings_handler"
+ACTION_DISPATCH_HANDLERS = {
+    # 專門處理設定狀態的 action
+    "change_city"         : ("handlers.postback_router", "handle_change_city"),
+    "forecast_other_city" : ("handlers.postback_router", "handle_forecast_other_city"),
+    "outfit_other_city"   : ("handlers.postback_router", "handle_outfit_other_city"),
+    "change_default_city" : ("handlers.postback_router", "handle_change_default_city"),
+    "return_to_main_menu" : ("handlers.postback_router", "handle_return_to_main_menu"),
+
+    # 通用模組處理
+    "forecast_days"             : ("weather_forecast.postback_handler", "handle_forecast_postback"), # 未來預報的天數選單
+    "outfit_advisor"            : ("outfit_suggestion.outfit_handler", "handle_outfit_advisor"), # 穿搭建議子選單
+    "outfit_query"              : ("outfit_suggestion.outfit_handler", "handle_outfit_query"), # 穿搭建議類型的flex message選單
+    "weekend_weather"           : ("weekend_weather.weekend_handler", "handle_weekend_weather_postback"), # 週末天氣子選單
+    "solar_term_info"           : ("solar_terms.solar_terms_handler", "handle_solar_term_query"), # 節氣小知識子選單
+    "daily_reminder_push"       : ("settings.settings_handler", "handle_settings_postback"), # 每日提醒推播
+    "typhoon_notification_push" : ("settings.settings_handler", "handle_settings_postback"), # 颱風通知推播
+    "weekend_weather_push"      : ("settings.settings_handler", "handle_settings_postback"), # 週末天氣推播
+    "solar_terms_push"          : ("settings.settings_handler", "handle_settings_postback"), # 節氣小知識推播
+    "set_status"                : ("settings.settings_handler", "handle_settings_postback")
 }
+
+def _set_state_and_reply(api, event, action: str, state_name: str, reply_text: str):
+    """
+    通用輔助函式：設定用戶狀態、發送回覆並記錄日誌。
+    """
+    user_id = event.source.user_id
+    reply_token = event.reply_token
+    
+    set_user_state(user_id, state_name)
+    send_line_reply_message(api, reply_token, [TextMessage(text=reply_text)])
+    
+    logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇 {action}，狀態設為 {state_name}。")
+    return True
+
+# 🌟 簡化後的 action 處理函式 🌟
+def handle_change_city(api, event):
+    return _set_state_and_reply(
+        api, event,
+        action="查詢即時天氣其他縣市",
+        state_name="awaiting_city_input",
+        reply_text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市"
+    )
+
+def handle_forecast_other_city(api, event):
+    return _set_state_and_reply(
+        api, event,
+        action="查詢未來預報其他縣市",
+        state_name="awaiting_forecast_city_input",
+        reply_text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市"
+    )
+
+def handle_outfit_other_city(api, event):
+    return _set_state_and_reply(
+        api, event,
+        action="查詢穿搭建議其他縣市",
+        state_name="awaiting_outfit_city_input",
+        reply_text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市"
+    )
+
+def handle_change_default_city(api, event):
+    user_id = event.source.user_id
+
+    # 1. 取得用戶目前的預設城市
+    current_default_city = get_default_city(user_id)
+    if not current_default_city:
+        current_default_city = "未設定預設城市" # 如果找不到預設城市，顯示「未設定」
+
+    # 2. 組合新的回覆文字
+    combined_text = (
+        f"您目前的預設城市是：{current_default_city}\n\n"
+        "請輸入您想設定的預設城市名稱，例如：台中市 或 台北市"
+    )
+
+    return _set_state_and_reply(
+        api, event,
+        action="切換預設城市",
+        state_name="awaiting_default_city_input",
+        reply_text=combined_text
+    )
+
+def handle_return_to_main_menu(api, event):
+    user_id = event.source.user_id
+    logger.info(f"[PostbackRouter] 用戶 {user_id} 點擊「回上一頁」Postback，切換回主選單。")
+    return switch_to_alias(api, user_id, MAIN_MENU_ALIAS)
+
+# -------------------- 3) 通用函式：安全地調用處理器 --------------------
+def _call_handler(module_path: str, handler_name: str, api, event) -> bool:
+    """
+    通用函式：安全地從指定模組中調用指定的處理函式。
+    """
+    try:
+        mod = import_module(module_path)
+        handler_func = getattr(mod, handler_name)
+        
+        # 檢查函式需要的參數數量，以確保呼叫正確
+        arg_count = handler_func.__code__.co_argcount
+        if arg_count == 2:
+            return handler_func(api, event)
+        else:
+            logger.error(f"[PostbackRouter] 處理函式 '{handler_name}' 參數數量不正確 ({arg_count})。")
+            return False
+            
+    except (ImportError, AttributeError) as e:
+        logger.error(f"[PostbackRouter] 無法調用處理函式 {handler_name}。模組或函式不存在: {e}")
+        send_line_reply_message(api, event.reply_token, [TextMessage(text="抱歉，處理您的請求時發生內部配置錯誤。")])
+        return False
+    except Exception as e:
+        logger.exception(f"[PostbackRouter] 調用處理函式 {handler_name} 時發生未預期錯誤: {e}")
+        send_line_reply_message(api, event.reply_token, [TextMessage(text="抱歉，處理您的請求時發生內部錯誤。")])
+        return False
 
 # -------------------- 3) 入口 --------------------
 def handle(event):
@@ -65,44 +163,8 @@ def handle(event):
     reply_token = event.reply_token
 
     logger.debug(f"[PostbackRouter] 收到 Postback 事件. Action: {action}, 用戶: {user_id}")
-    logger.debug(f"[PostbackRouter] 原始 Postback data: {event.postback.data}") # 記錄完整 data 方便除錯
 
-    # --- 優先級邏輯 ---
-    # 1. 直接處理需要設定狀態或特殊回覆的 action (通常這些 action 會導致後續的文字輸入)
-    if action == "change_city":
-        set_user_state(user_id, "awaiting_city_input")
-        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢即時天氣其他縣市，狀態設為 awaiting_city_input。")
-        return True # 已處理
-    
-    elif action == "forecast_other_city":
-        set_user_state(user_id, "awaiting_forecast_city_input")
-        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢未來預報其他縣市，狀態設為 awaiting_forecast_city_input。")
-        return True # 已處理
-
-    elif action == "outfit_other_city":
-        set_user_state(user_id, "awaiting_outfit_city_input")
-        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想查詢的縣市名稱，例如：台中市 或 台北市")])
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇查詢穿搭建議其他縣市，狀態設為 awaiting_outfit_city_input。")
-        return True # 已處理
-    
-    # 新增這段邏輯來處理切換預設城市
-    elif action == "change_default_city":
-        set_user_state(user_id, "awaiting_default_city_input")
-        send_line_reply_message(api, reply_token, [TextMessage(text="請輸入您想設定的預設縣市名稱，例如：台中市 或 台北市")])
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 選擇切換預設城市，狀態設為 awaiting_default_city_input。")
-        return True # 已處理
-    
-    # 處理返回主選單的 postback action (通常是最優先處理的選單切換)
-    elif action == "return_to_main_menu":
-        logger.info(f"[PostbackRouter] 用戶 {user_id} 點擊「回上一頁」Postback，切換回主選單。")
-        # 直接呼叫 switch_to_alias，它會執行 Rich Menu 切換且不發送回覆訊息
-        # 不需要 send_line_reply_message
-        return switch_to_alias(api, user_id, MAIN_MENU_ALIAS) 
-        # switch_to_alias 會返回 True/False 表示是否成功，這裡直接返回它的結果
-
-    # 2. 處理需要切換 Rich Menu 的 action (如果你的 Rich Menu 觸發行為只在 ACTION_TO_ALIAS 中)
+    # 1. 處理 Rich Menu 切換
     alias = ACTION_TO_ALIAS.get(action)
     if alias:
         # switch_to_alias 需在 menu_switcher 裡面封裝 link_rich_menu_id_to_user(...)
@@ -110,70 +172,15 @@ def handle(event):
         logger.info(f"[PostbackRouter] 用戶 {user_id} 切換 Rich Menu 別名至 {alias}。")
         return True # 必須要 return True
     
-    # 3. 處理需要導向特定模組並呼叫特定函式的 action
-    module_path = ACTION_DISPATCH.get(action)
-    if module_path:
-        try:
-            mod = import_module(module_path)
-        
-            # 🚀 優化點 2: 處理 forecast_days
-            # 因為這個 action 是特定且需要解析參數的，所以單獨處理
-            if action == "forecast_days": # 處理未來預報的天數選單
-                # 直接呼叫專門處理 forecast_days 的函式
-                # 這個函數 (handle_postback_forecast_query) 需要從 event 中自行解析 days 和 city
-                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_forecast_postback 處理 forecast_days。")
-                return mod.handle_forecast_postback(api, event)
+    # 2. 處理需要導向特定模組並呼叫特定函式的 action
+    # 🌟 用字典取代冗長的 if/elif 區塊 🌟
+    handler_info = ACTION_DISPATCH_HANDLERS.get(action)
+    if handler_info:
+        module_path, handler_name = handler_info
+        logger.debug(f"[PostbackRouter] 導向 {module_path}.{handler_name} 處理 action '{action}'。")
+        return _call_handler(module_path, handler_name, api, event)
 
-            # 處理穿搭建議子選單
-            elif action == "outfit_advisor" and hasattr(mod, "handle_outfit_advisor"):
-                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_outfit_advisor 處理 outfit_advisor。")
-                return mod.handle_outfit_advisor(api, event)
-            
-            # 處理通用的穿搭建議類型 Postback
-            elif action == "outfit_query" and hasattr(mod, "handle_outfit_query"):
-                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_outfit_query 處理 outfit_query。")
-                return mod.handle_outfit_query(api, event)
-            
-            # 處理週末天氣子選單
-            elif action == "weekend_weather" and hasattr(mod, "handle_weekend_weather_postback"):
-                # 假設 weekend_handler.py 裡面有一個叫做 handle_weekend_weather_postback 的函數
-                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_weekend_weather_postback 處理 weekend_weather。")
-                return mod.handle_weekend_weather_postback(api, event)
-            
-            # 處理節氣小知識子選單
-            elif action == "solar_term_info" and hasattr(mod, "handle_solar_term_query"):
-                # 直接呼叫專門處理 solar_term_info 的函式
-                logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_solar_term_query 處理 solar_term_info。")
-                return mod.handle_solar_term_query(api, event)
-            
-            # 統一處理所有推播設定相關的 Postback
-            # 包含從 Rich Menu 按鈕來的「daily_reminder_push」
-            # 以及從 Flex Message 按鈕來的「set_status」
-            elif action in ["daily_reminder_push", "typhoon_notification_push", "weekend_weather_push", "solar_terms_push", "set_status"]:
-                if hasattr(mod, "handle_settings_postback"):
-                    logger.debug(f"[PostbackRouter] 導向 {module_path}.handle_settings_postback 處理 {action}。")
-                    return mod.handle_settings_postback(api, event)
-        
-            # Fallback 處理：通用 handle 函數或其他特定命名函數
-            elif hasattr(mod, "handle"):
-                if mod.handle.__code__.co_argcount == 2: # handle(api, event)
-                    logger.debug(f"[PostbackRouter] 導向 {module_path}.handle(api, event)")
-                    return mod.handle(api, event)
-                elif mod.handle.__code__.co_argcount == 1: # handle(event)
-                    logger.debug(f"[PostbackRouter] 導向 {module_path}.handle(event)")
-                    return mod.handle(event)
-            
-            # 如果找到模組但沒有匹配的處理函數
-            logger.error(f"[PostbackRouter] {module_path} 沒有可用的處理函式來處理 action '{action}'。")
-            send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，處理您的請求時發生內部配置錯誤。")])
-            return True # 配置錯誤，回覆用戶後停止
-    
-        except Exception as e:
-                logger.exception(f"[PostbackRouter] 處理 action '{action}' 時發生錯誤: {e}")
-                send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，處理您的請求時發生內部錯誤。")])
-                return True # 處理錯誤，回覆用戶後停止
-
-    # 4. 若沒有對應 action 也沒有導向模組
+    # 3. 若沒有對應 action 也沒有導向模組
     logger.warning(f"[PostbackRouter] 未知的 postback action: {action}")
     send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，我不太懂您的選擇，請再試一次。")])
     return True # 已回覆，所以返回 True

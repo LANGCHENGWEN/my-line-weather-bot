@@ -12,7 +12,7 @@ from push_modules.push_daily_weather import push_daily_weather_notification
 from push_modules.push_weekend_weather import push_weekend_weather_notification
 from push_modules.push_solar_terms import push_solar_terms_notification
 # 颱風通知模組需要一個定時檢查機制，在下面會解釋
-# from push_modules.push_typhoon_notification import check_and_push_typhoon_notification
+from push_modules.push_typhoon_notification import check_and_push_typhoon_notification
 
 logger = logging.getLogger(__name__)
 
@@ -28,19 +28,25 @@ def main():
     line_bot_api = get_messaging_api()
     
     # --- 定義排程任務 ---
-    # 每日天氣：每天早上 8 點
+    # 每日天氣：每天早上 8 點 ***完成測試，成功推播
     schedule.every().day.at("08:00").do(
         push_daily_weather_notification,
         line_bot_api_instance=line_bot_api
     ).tag('daily_weather')
+
+    # 🌟 新增颱風通知排程：每小時檢查一次 🌟
+    schedule.every(1).hour.do(
+        check_and_push_typhoon_notification,
+        line_bot_api_instance=line_bot_api
+    ).tag('typhoon_notification')
     
-    # 週末天氣：每週五晚上 7 點
+    # 週末天氣：每週五晚上 7 點 19:00 ***完成測試，成功推播
     schedule.every().friday.at("19:00").do(
         push_weekend_weather_notification,
         line_bot_api_instance=line_bot_api
     ).tag('weekend_weather')
 
-    # 節氣小知識：每天早上 7:30，但任務會自行檢查是否為節氣日
+    # 節氣小知識：每天早上 7:30，但任務會自行檢查是否為節氣日 07:30
     schedule.every().day.at("07:30").do(
         push_solar_terms_notification,
         line_bot_api_instance=line_bot_api

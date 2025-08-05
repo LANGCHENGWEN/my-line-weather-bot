@@ -1,11 +1,13 @@
-# weather_today/today_weather_flex_messages.py
+# weather_today/today_weather_flex_messages_push.py
 from typing import Any, List, Dict
 from linebot.v3.messaging.models import (
     FlexBox, FlexText, FlexBubble, FlexMessage, FlexSeparator
 )
 from utils.flex_message_elements import make_kv_row
 
-def build_daily_weather_flex_message(
+from outfit_suggestion.today_outfit_logic import get_outfit_suggestion_for_today_weather
+
+def create_daily_weather_flex_message(
     location: str,
     parsed_weather: Dict[str, Any],
     parsed_data: List[Dict[str, Any]],
@@ -15,15 +17,37 @@ def build_daily_weather_flex_message(
     生成每日天氣預報的 Flex Message。
     Args:
         location (str): 查詢的城市名稱。
-        general_forecast (dict): 來自 F-C0032-001 的天氣概況數據。
-        hourly_forecast (dict): 來自 F-D0047-089 的逐時天氣預報數據。
-        uv_data (dict): 來自 O-A0005-001 的紫外線指數數據。
+        parsed_weather (dict): 來自 F-C0032-001 的天氣概況數據。
+        parsed_data (list): 來自 F-D0047-089 的逐時天氣預報數據。
+        parsed_uv_data (dict): 來自 O-A0005-001 的紫外線指數數據。
     Returns:
         FlexBubble: Flex Message 的內容物件。
     """
     date_display_string = parsed_weather.get("date_full_formatted")
 
+    outfit_info = get_outfit_suggestion_for_today_weather(
+        location=location, hourly_forecast=parsed_data,
+        general_forecast=parsed_weather, uv_data=parsed_uv_data
+    )
+
+    suggestion_text = outfit_info.get("outfit_suggestion_text", "目前無法提供即時穿搭建議。")
+    
     hourly_data = parsed_data[0] if parsed_data else {}
+
+    # 創建一個列表，用於存放每個 FlexText 元件
+    suggestion_text_contents = []
+    for suggestion in suggestion_text:
+        suggestion_text_contents.append(
+            FlexText(
+                text=suggestion,
+                size="md",
+                color="#333333",
+                wrap=True,
+                margin="sm",
+                align="start"
+                # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"
+            )
+        )
 
     # 創建天氣資訊的列表，直接從 general_forecast 和 uv_data 字典中獲取
     weather_info_contents = [
@@ -83,13 +107,11 @@ def build_daily_weather_flex_message(
                     contents=weather_info_contents
                 ),
                 FlexSeparator(margin="md"),
-                FlexText(
-                    text="想查詢其他縣市的天氣嗎？可以直接輸入縣市名稱哦！",
-                    size="sm",
-                    color="#999999",
-                    align="center",
-                    wrap=True,
-                    margin="md"
+                FlexBox(
+                    layout="vertical",
+                    spacing="sm",
+                    margin="md",
+                    contents=suggestion_text_contents # 這裡直接放入 FlexText 物件列表
                 )
                 # paddingAll="20px",
                 # backgroundColor="#e0f7fa" # 淡藍色背景
@@ -97,8 +119,6 @@ def build_daily_weather_flex_message(
         )
     )
 
-    # 建立 FlexMessage 並回傳它
-    # alt_text 是一個重要的參數，當手機無法顯示 Flex Message 時會顯示這段文字
     return FlexMessage(
         alt_text=f"{location} 今日天氣預報",
         contents=bubble

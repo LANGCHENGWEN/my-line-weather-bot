@@ -11,7 +11,7 @@ from utils.user_data_manager import get_users_by_city, get_user_push_settings
 from weather_today.today_weather_aggregator import get_today_all_weather_data
 
 # 導入用來建立 Flex Message 的檔案
-from weather_today.today_weather_flex_messages import create_daily_weather_flex_message
+from weather_today.today_weather_flex_messages_push import create_daily_weather_flex_message
 
 logger = logging.getLogger(__name__)
 
@@ -39,34 +39,39 @@ def push_daily_weather_notification(line_bot_api_instance):
                 logger.error(f"無法為城市 {city} 取得所有天氣數據。跳過此城市的推播。")
                 continue
 
-            # 2. 從聚合後的字典中提取建立 Flex Message 所需的參數
-            # 即使部分數據不存在，聚合器也已設定預設值，所以這裡的程式碼是安全的
-            location = all_weather_data.get("locationName", city)
-            general_forecast = all_weather_data.get("general_forecast", {})
-            hourly_forecast = all_weather_data.get("hourly_forecast", [])
-            uv_data = all_weather_data.get("uv_data", {})
-
-            # 3. 整合所有資料並建立 Flex Message
+            # 2. 建立 Flex Message
             flex_message_to_send = create_daily_weather_flex_message(
-                location=location,
-                general_forecast=general_forecast,
-                hourly_forecast=hourly_forecast,
-                uv_data=uv_data
+                location=all_weather_data.get("locationName", city),
+                parsed_weather=all_weather_data.get("general_forecast", {}),
+                parsed_data=all_weather_data.get("hourly_forecast", []),
+                parsed_uv_data=all_weather_data.get("uv_data", {})
             )
             
             if not flex_message_to_send:
                 logger.error(f"無法為 {city} 產生每日天氣 Flex Message，推播跳過。")
                 continue
 
-            # 5. 針對每個用戶，檢查是否開啟了推播並發送訊息
+            # 3. 針對每個用戶，檢查推播設定並發送訊息
             for user_id in user_ids:
-                user_settings = get_user_push_settings(user_id)
-                if user_settings.get(FEATURE_ID):
-                    send_line_push_message(
-                        line_bot_api_instance=line_bot_api_instance,
-                        user_id=user_id,
-                        messages=[flex_message_to_send]
-                    )
+                try:
+                    user_settings = get_user_push_settings(user_id)
+                    if user_settings.get(FEATURE_ID):
+                        logger.info(f"正在為用戶 {user_id[:8]}... 推播 {city} 的每日天氣。")
+
+                        # 你的推播函式
+                        send_line_push_message(
+                            line_bot_api_instance=line_bot_api_instance,
+                            user_id=user_id,
+                            messages=[flex_message_to_send]
+                        )
+
+                        logger.info(f"成功為用戶 {user_id[:8]}... 推播 {city} 的每日天氣。")
+                    else:
+                        logger.debug(f"用戶 {user_id[:8]}... 已關閉每日天氣推播，跳過。")
+
+                except Exception as e:
+                    logger.error(f"為用戶 {user_id[:8]}... 推播 {city} 的每日天氣時發生錯誤: {e}", exc_info=True)
+
         except Exception as e:
             logger.error(f"處理城市 {city} 的推播時發生錯誤: {e}", exc_info=True)
 

@@ -38,13 +38,24 @@ def push_weekend_weather_notification(line_bot_api_instance):
             if messages_to_send:
                 # 針對每個用戶，檢查他們是否開啟了週末天氣推播
                 for user_id in user_ids:
-                    user_settings = get_user_push_settings(user_id)
-                    if user_settings.get(FEATURE_ID):
-                        send_line_push_message(
-                            line_bot_api_instance=line_bot_api_instance,
-                            user_id=user_id,
-                            messages=messages_to_send
-                        )
+                    try:
+                        user_settings = get_user_push_settings(user_id)
+                        if user_settings.get(FEATURE_ID):
+                            logger.info(f"正在為用戶 {user_id[:8]}... 推播 {city} 的週末天氣。")
+
+                            # 你的推播函式
+                            send_line_push_message(
+                                line_bot_api_instance=line_bot_api_instance,
+                                user_id=user_id,
+                                messages=messages_to_send
+                            )
+
+                            logger.info(f"成功為用戶 {user_id[:8]}... 推播 {city} 的週末天氣。")
+                        else:
+                            logger.debug(f"用戶 {user_id[:8]}... 已關閉週末天氣推播，跳過。")
+
+                    except Exception as e:
+                        logger.error(f"為用戶 {user_id[:8]}... 推播 {city} 的週末天氣時發生錯誤: {e}", exc_info=True)
             else:
                 logger.warning(f"無法為城市 {city} 產生訊息，跳過推播。")
                 

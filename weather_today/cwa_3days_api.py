@@ -47,7 +47,7 @@ def get_cwa_3days_data(api_key: str, location_name: str) -> dict | None:
         
         locations_data = data.get("records", {}).get("Locations", [])
         if locations_data:
-            logger.info(f"成功取得 {location_name} 的即時觀測資料。")
+            logger.info(f"成功取得 {location_name} 的今日天氣資料。")
             return data
         else:
             # API 請求成功但數據內容不符合預期
@@ -55,19 +55,19 @@ def get_cwa_3days_data(api_key: str, location_name: str) -> dict | None:
             return None # 數據無效，返回 None
 
     except requests.exceptions.Timeout:
-        logger.error(f"從中央氣象署 API 取得即時觀測資料時發生連線超時錯誤。")
+        logger.error(f"從中央氣象署 API 取得今日天氣資料時發生連線超時錯誤。")
         return None
     except requests.exceptions.HTTPError as e:
-        logger.error(f"從中央氣象署 API 取得即時觀測資料時發生 HTTP 錯誤: {e.response.status_code} - {e.response.text}", exc_info=True)
+        logger.error(f"從中央氣象署 API 取得今日天氣資料時發生 HTTP 錯誤: {e.response.status_code} - {e.response.text}", exc_info=True)
         return None
     except requests.exceptions.RequestException as e:
-        logger.error(f"從中央氣象署 API 取得即時觀測資料時發生網路錯誤: {e}", exc_info=True)
+        logger.error(f"從中央氣象署 API 取得今日天氣資料時發生網路錯誤: {e}", exc_info=True)
         return None
     except ValueError as e:
-        logger.error(f"解析中央氣象署即時觀測 API 回應時發生 JSON 解析錯誤: {e}", exc_info=True)
+        logger.error(f"解析中央氣象署今日天氣 API 回應時發生 JSON 解析錯誤: {e}", exc_info=True)
         return None
     except Exception as e:
-        logger.error(f"取得中央氣象署即時觀測資料時發生未知錯誤: {e}", exc_info=True)
+        logger.error(f"取得中央氣象署今日天氣資料時發生未知錯誤: {e}", exc_info=True)
         return None
 
 # # 範例用法 (在實際應用中，API 金鑰應從環境變數或安全配置中讀取)

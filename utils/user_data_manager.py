@@ -210,3 +210,34 @@ def update_user_push_setting(user_id: str, feature_id: str, is_enabled: bool):
     current_push_settings[feature_id] = is_enabled
     set_user_metadata(user_id, push_settings=current_push_settings)
     logger.info(f"用戶 {user_id} 的 {feature_id} 推播已設定為: {is_enabled}")
+
+def get_users_with_push_enabled(feature_id: str) -> List[str]:
+    """
+    獲取所有開啟特定推播功能的用戶 ID。
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        # 查詢所有用戶的 user_id 和 meta_json
+        cursor.execute("SELECT user_id, meta_json FROM users")
+        rows = cursor.fetchall()
+    
+    enabled_users = []
+    for user_id, meta_json_str in rows:
+        try:
+            meta = json.loads(meta_json_str) if meta_json_str else {}
+            # 檢查 'push_settings' 字典中是否開啟了指定的 feature_id
+            if meta.get('push_settings', {}).get(feature_id):
+                enabled_users.append(user_id)
+        except json.JSONDecodeError:
+            logger.warning(f"用戶 {user_id} 的 meta_json 解析失敗，已跳過。")
+    return enabled_users
+
+SYSTEM_USER_ID = "system_metadata" # 使用更明確的ID
+
+def get_system_metadata(key: str, default: Any = None) -> Any:
+    """獲取系統級的元數據。"""
+    return get_user_metadata(SYSTEM_USER_ID, key, default)
+
+def set_system_metadata(**kwargs: Any) -> None:
+    """設定系統級的元數據。"""
+    set_user_metadata(SYSTEM_USER_ID, **kwargs)

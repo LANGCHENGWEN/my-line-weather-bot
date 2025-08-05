@@ -1,6 +1,6 @@
 # weather_today/today_weather_aggregator.py
 import logging
-from typing import Dict, Optional
+from typing import Any, List, Dict, Optional
 
 from config import CWA_API_KEY
 
@@ -31,39 +31,54 @@ def get_today_all_weather_data(city_name: str) -> Optional[Dict]:
         Optional[Dict]: 包含所有天氣數據的字典，如果獲取或解析失敗則返回 None。
     """
     # 初始化一個空的字典來存放所有數據
-    all_weather_data = {}
+    all_weather_data = {
+        "locationName": city_name,
+        "general_forecast": None,
+        "hourly_forecast": [],
+        "uv_data": None
+    }
 
     # 1. 取得 36 小時天氣預報 (F-C0032-001)
-    raw_forecast_data = get_cwa_today_data(CWA_API_KEY, city_name)
-    if not raw_forecast_data:
-        logger.error(f"無法取得 {city_name} 的 36 小時天氣預報。")
+    try:
+        raw_forecast_data = get_cwa_today_data(CWA_API_KEY, city_name)
+        if not raw_forecast_data:
+            logger.error(f"無法取得 {city_name} 的 36 小時天氣預報。")
+            return None
+        
+        parsed_forecast = parse_today_weather(raw_forecast_data, city_name)
+        if not parsed_forecast:
+            logger.error(f"無法解析 {city_name} 的 36 小時天氣預報。")
+            return None
+        
+        # 儲存解析後的數據
+        all_weather_data["general_forecast"] = parsed_forecast
+
+    except Exception as e:
+        logger.error(f"處理 36 小時天氣預報時發生意外錯誤: {e}", exc_info=True)
         return None
-    
-    parsed_forecast = parse_today_weather(raw_forecast_data, city_name)
-    if not parsed_forecast:
-        logger.error(f"無法解析 {city_name} 的 36 小時天氣預報。")
-        return None
-    
-    # 這裡假設你的 parsed_forecast 已經包含了 location 等通用資訊
-    all_weather_data.update(parsed_forecast)
-    all_weather_data["general_forecast"] = parsed_forecast
-    all_weather_data["locationName"] = city_name
 
     # 2. 取得逐時天氣預報 (F-D0047-089)
     # 這裡假設你的 hourly API 模組已經準備好
-    raw_hourly_data = get_cwa_3days_data(CWA_API_KEY, city_name)
-    if raw_hourly_data:
-        parsed_hourly = parse_3days_weather(raw_hourly_data, city_name)
-        all_weather_data["hourly_forecast"] = parsed_hourly
-    else:
-        logger.warning(f"未能取得 {city_name} 的逐時天氣預報，使用預設值。")
+    try:
+        raw_hourly_data = get_cwa_3days_data(CWA_API_KEY, city_name)
+        if raw_hourly_data:
+            parsed_hourly = parse_3days_weather(raw_hourly_data, city_name)
+            all_weather_data["hourly_forecast"] = parsed_hourly
+        else:
+            logger.warning(f"未能取得 {city_name} 的逐時天氣預報，將使用預設值。")
+    except Exception as e:
+        logger.warning(f"處理逐時天氣預報時發生錯誤，但仍將繼續: {e}")
         all_weather_data["hourly_forecast"] = []
 
     # 3. 取得每日紫外線指數 (O-A0005-001)
-    station_id = get_uv_station_id(city_name)
-    raw_uv_data = get_today_uvindex_data(CWA_API_KEY)
+    try:
+        station_id = get_uv_station_id(city_name)
+        raw_uv_data = get_today_uvindex_data(CWA_API_KEY)
 
-    parsed_uv_data = parse_uv_index(raw_uv_data, station_id)
-    all_weather_data["uv_data"] = parsed_uv_data
+        parsed_uv_data = parse_uv_index(raw_uv_data, station_id)
+        all_weather_data["uv_data"] = parsed_uv_data
+    except Exception as e:
+        logger.warning(f"處理紫外線指數時發生錯誤，但仍將繼續: {e}")
+        all_weather_data["uv_data"] = None
         
     return all_weather_data

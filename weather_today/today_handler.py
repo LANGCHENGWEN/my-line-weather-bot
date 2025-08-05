@@ -16,12 +16,12 @@ from utils.line_common_messaging import (
 )
 
 # 導入用戶數據管理器 (用於獲取用戶預設城市)
-from utils.user_data_manager import get_default_city
+from utils.user_data_manager import set_user_state, get_default_city
 
 # 導入我們新的數據聚合器
 from .today_weather_aggregator import get_today_all_weather_data
 
-from .today_weather_flex_messages import create_daily_weather_flex_message
+from .today_weather_flex_messages import build_daily_weather_flex_message
 
 logger = logging.getLogger(__name__)
     
@@ -39,15 +39,15 @@ def build_and_send_today_weather_message(api, reply_token: str, all_weather_data
         
     try:
         # 1. 直接建立 Line Bot SDK 的 FlexMessage 物件
-        flex_message_to_send = create_daily_weather_flex_message(
+        flex_message_to_send = build_daily_weather_flex_message(
             location=all_weather_data.get("locationName", city_name),
-            general_forecast=all_weather_data.get("general_forecast", {}),
-            hourly_forecast=all_weather_data.get("hourly_forecast", []),
-            uv_data=all_weather_data.get("uv_data", {})
+            parsed_weather=all_weather_data.get("general_forecast", {}),
+            parsed_data=all_weather_data.get("hourly_forecast", []),
+            parsed_uv_data=all_weather_data.get("uv_data", {})
         )
 
         if not isinstance(flex_message_to_send, FlexMessage):
-            raise ValueError("create_daily_weather_flex_message 未返回 FlexMessage 物件。")
+            raise ValueError("build_daily_weather_flex_message 未返回 FlexMessage 物件。")
         
         # 2. 發送回覆訊息
         send_line_reply_message(api, reply_token, [flex_message_to_send])
@@ -61,7 +61,9 @@ def build_and_send_today_weather_message(api, reply_token: str, all_weather_data
 
 def handle_today_message(api, event: MessageEvent) -> bool:
     """
-    處理「今日天氣」的訊息輸入。
+    處理「今日天氣」或城市名稱的訊息輸入。
+    - 若訊息包含「今日天氣」 ➜ 顯示預設城市天氣
+    - 若訊息為有效的城市名稱 ➜ 顯示該城市的天氣
     """
     user_id = event.source.user_id
     message_text = event.message.text
@@ -69,7 +71,7 @@ def handle_today_message(api, event: MessageEvent) -> bool:
 
     logger.info(f"收到來自用戶 {user_id} 的訊息: {message_text}")
 
-    # 檢查是否包含「今日天氣」關鍵字
+    # 情境一：輸入「今日天氣」關鍵字
     if "今日天氣" in message_text:
         logger.info(f"用戶 {user_id} 查詢今日天氣。")
 
@@ -85,18 +87,19 @@ def handle_today_message(api, event: MessageEvent) -> bool:
 
         # 2. 建構並發送訊息
         build_and_send_today_weather_message(api, reply_token, all_weather_data, user_city)
-        
-        return True
+
+        set_user_state(user_id, 'awaiting_today_city_input', data={'city': user_city})
+        logger.info(f"已為用戶 {user_id} 設定狀態為 'awaiting_today_city_input'。")
     
-    return False
+    return True
     
 # --- 通用回覆函式：今日天氣預報 (F-C0032-001 - 今明36小時) ---
-def reply_today_weather_of_city(api, reply_token: str, city_name: str) -> None:
+def reply_today_weather_of_city(api, reply_token: str, user_id: str, city_name: str) -> None:
     """
     直接根據 city_name 抓今日 (36小時) 天氣預報資料、組 Flex、回覆。
     """
     normalized_city_name = normalize_city_name(city_name)
-    logger.info(f"正在查詢 {normalized_city_name} 的今日天氣預報。")
+    logger.info(f"正在為用戶 {user_id} 查詢 {normalized_city_name} 的今日天氣預報。")
 
     # 1. 呼叫數據聚合器，一口氣取得所有資料
     all_weather_data = get_today_all_weather_data(normalized_city_name)

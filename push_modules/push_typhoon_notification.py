@@ -5,7 +5,7 @@ from linebot.v3.messaging.models import TextMessage, FlexMessage
 from config import CWA_API_KEY
 
 from utils.line_common_messaging import send_line_push_message
-from utils.user_data_manager import get_users_with_push_enabled, set_user_metadata, get_user_metadata
+from utils.user_data_manager import get_user_push_settings, get_system_metadata, set_system_metadata
 
 # 導入你已經準備好的模組
 # 這裡我們只導入 TyphoonLogic，因為它封裝了所有後續步驟
@@ -55,7 +55,7 @@ def check_and_push_typhoon_notification(line_bot_api_instance):
     # 為了範例，我們假設你有一個這樣的函式
 
     # 將 typhoon_id 與資料庫中的記錄比對，以判斷是否需要推播
-    last_pushed_typhoon_id = get_user_metadata(SYSTEM_USER_ID, LAST_TYPHOON_ID_KEY, None)
+    last_pushed_typhoon_id = get_system_metadata(LAST_TYPHOON_ID_KEY, None)
     if typhoon_id == last_pushed_typhoon_id:
         logger.info(f"颱風警報 ID {typhoon_id} 已推播過，不重複發送。")
         return
@@ -63,11 +63,11 @@ def check_and_push_typhoon_notification(line_bot_api_instance):
     logger.info(f"發現新的颱風警報：{typhoon_name} (ID: {typhoon_id})，開始推播。")
     
     # 從資料庫獲取所有已開啟颱風通知的用戶
-    enabled_users = get_users_with_push_enabled(FEATURE_ID)
+    enabled_users = get_user_push_settings(FEATURE_ID)
     if not enabled_users:
         logger.warning("沒有用戶開啟颱風通知，任務結束。")
         # 即使沒有用戶，我們也應該記錄這次警報，以防下次推播
-        set_user_metadata(SYSTEM_USER_ID, **{LAST_TYPHOON_ID_KEY: typhoon_id})
+        set_system_metadata(**{LAST_TYPHOON_ID_KEY: typhoon_id})
         return
         
     try:
@@ -81,7 +81,7 @@ def check_and_push_typhoon_notification(line_bot_api_instance):
             )
 
         # 推播完成後，更新資料庫中的紀錄
-        set_user_metadata(SYSTEM_USER_ID, **{LAST_TYPHOON_ID_KEY: typhoon_id})
+        set_system_metadata(**{LAST_TYPHOON_ID_KEY: typhoon_id})
         logger.info("颱風通知推播任務執行完畢。")
 
     except Exception as e:
