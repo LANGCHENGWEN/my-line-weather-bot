@@ -1,5 +1,4 @@
 # solar_terms/solar_terms_calculator.py
-import pytz
 import logging
 from datetime import datetime, date, timedelta
 import lunarcalendar
