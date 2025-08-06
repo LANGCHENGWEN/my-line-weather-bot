@@ -26,7 +26,7 @@ def make_kv_row(label: str, value: str) -> FlexBox:
                 flex=0
             ),
             FlexText(
-                text=str(value) if value is not None else "N/A",
+                text=str(value) if value is not None else "無資料",
                 wrap=True,
                 color="#8A2BE2",
                 size="md",
@@ -164,15 +164,15 @@ def create_typhoon_flex_message(parsed_typhoon_data: Dict[str, Any]) -> FlexMess
         # 獲取七級風暴風半徑的數據
         radius_7knots_display = f"{forecast_data.get('radiusOf7knots')} 公里" \
                                 if forecast_data.get('radiusOf7knots') and \
-                                   forecast_data.get('radiusOf7knots').upper() != 'N/A' \
-                                else "N/A"
+                                   forecast_data.get('radiusOf7knots').upper() != '無資料' \
+                                else "無資料"
         
         return FlexBox(
             layout="vertical",
             spacing="xs",
             contents=[
                 FlexText(
-                    text=f"{label} ({forecast_data.get('forecastTime', 'N/A')})",
+                    text=f"{label} ({forecast_data.get('forecastTime')})",
                     weight="bold",
                     size="md",
                     margin="sm"
@@ -213,7 +213,7 @@ def create_typhoon_flex_message(parsed_typhoon_data: Dict[str, Any]) -> FlexMess
                     color="#1A64D3"
                 ),
                 FlexText(
-                    text=f"觀測時間：{current_status.get('dataTime', 'N/A')}",
+                    text=f"觀測時間：{current_status.get('dataTime')}",
                     size="sm",
                     align="center",
                     color="#888888",

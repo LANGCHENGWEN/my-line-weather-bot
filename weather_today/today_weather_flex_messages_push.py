@@ -83,6 +83,7 @@ def create_daily_weather_flex_message(
         direction="ltr",
         body=FlexBox(
             layout="vertical",
+            backgroundColor="#e0f7fa",
             contents=[
                 FlexText(
                     text=f"📍 {location} 今日天氣",

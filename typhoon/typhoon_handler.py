@@ -84,7 +84,7 @@ class TyphoonLogic:
         獲取並處理颱風數據，返回包含解析數據和 Flex Message 的元組。
         """
         # 呼叫私有方法來獲取解析後的數據
-        parsed_data = self._fetch_and_parse_typhoon_data()
+        parsed_data = self.fetch_and_parse_typhoon_data()
         if not parsed_data:
             return None
 

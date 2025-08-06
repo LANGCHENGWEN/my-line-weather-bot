@@ -110,19 +110,27 @@ class TyphoonParser:
 
     def _parse_current_status(self, typhoon_info: Dict[str, Any]) -> Dict[str, Any]:
         """解析颱風現況數據並格式化。"""
+        # 從 JSON 資料中提取 year 和 typhoonName
+        year = typhoon_info.get("year")
+        typhoon_eng_name = typhoon_info.get("typhoonName")
+
+        # 組合年份和英文名，創建一個唯一的颱風 ID
+        typhoon_id = f"{year}_{typhoon_eng_name}" if year and typhoon_eng_name else "無資料"
+
         current_status = {
-            "typhoonName": typhoon_info.get("cwaTyphoonName", "N/A"), # 中文颱風名
-            "typhoonEngName": typhoon_info.get("typhoonName", "N/A"), # 英文颱風名
-            "tdNo": typhoon_info.get("cwaTdNo", "N/A"), # 國際編號
-            "dataTime": "N/A", # 觀測時間
-            "longitude": "N/A",
-            "latitude": "N/A",
-            "maxWindSpeed": "N/A",
-            "maxGustSpeed": "N/A",
-            "pressure": "N/A",
-            "movingSpeed": "N/A",
-            "movingDirection": "N/A",
-            "radiusOf7knots": "N/A",
+            "typhoon_id": typhoon_id,
+            "typhoonName": typhoon_info.get("cwaTyphoonName", "無資料"), # 中文颱風名
+            "typhoonEngName": typhoon_info.get("typhoonName", "無資料"), # 英文颱風名
+            "tdNo": typhoon_info.get("cwaTdNo", "無資料"), # 國際編號
+            "dataTime": "未知日期", # 觀測時間
+            "longitude": "無資料",
+            "latitude": "無資料",
+            "maxWindSpeed": "無資料",
+            "maxGustSpeed": "無資料",
+            "pressure": "無資料",
+            "movingSpeed": "無資料",
+            "movingDirection": "無資料",
+            "radiusOf7knots": "無資料",
             "radiusOf7knotsDetailFormatted": ["", "", "", ""] # 預先初始化為列表，確保有四個空字串
         }
 
@@ -149,7 +157,7 @@ class TyphoonParser:
                     current_status["dataTime"] = dt_object.strftime("%Y年%m月%d日 %H:%M") 
                 except ValueError:
                     logger.warning(f"解析 fixTime '{raw_fix_time}' 失敗。", exc_info=True)
-                    current_status["dataTime"] = "N/A"
+                    current_status["dataTime"] = "未知日期"
 
             # 現況細節資訊 - 直接從 latest_fix 提取，因為 JSON 結構是扁平的
             # 座標
@@ -163,23 +171,23 @@ class TyphoonParser:
                 else:
                     logger.warning(f"現況座標字串格式不符預期: {coordinate_str}")
             
-            current_status["maxWindSpeed"] = latest_fix.get("maxWindSpeed", "N/A")
-            current_status["maxGustSpeed"] = latest_fix.get("maxGustSpeed", "N/A")
-            current_status["pressure"] = latest_fix.get("pressure", "N/A")
+            current_status["maxWindSpeed"] = latest_fix.get("maxWindSpeed", "無資料")
+            current_status["maxGustSpeed"] = latest_fix.get("maxGustSpeed", "無資料")
+            current_status["pressure"] = latest_fix.get("pressure", "無資料")
 
             # 移動方向和速度
-            current_status["movingSpeed"] = latest_fix.get("movingSpeed", "N/A")
+            current_status["movingSpeed"] = latest_fix.get("movingSpeed", "無資料")
 
             # --- 新增的修改：轉換移動方向為中文 ---
             raw_moving_direction = latest_fix.get("movingDirection")
             if raw_moving_direction and raw_moving_direction in DIRECTION_MAP:
                 current_status["movingDirection"] = DIRECTION_MAP[raw_moving_direction]
             else:
-                current_status["movingDirection"] = raw_moving_direction if raw_moving_direction else "N/A"
+                current_status["movingDirection"] = raw_moving_direction if raw_moving_direction else "無資料"
             
             # 七級風暴風半徑
             radius_7knots_data = latest_fix.get("circleOf15Ms", {})
-            current_status["radiusOf7knots"] = radius_7knots_data.get("radius", "N/A") # 七級風暴風半徑 (總範圍)
+            current_status["radiusOf7knots"] = radius_7knots_data.get("radius", "無資料") # 七級風暴風半徑 (總範圍)
             
             # 處理暴風半徑詳細方向 (例如 東北100km, 西南80km)
             # 假設 current_detail.circleOf15Ms.radiusOfDirection 存在且為列表
@@ -202,7 +210,7 @@ class TyphoonParser:
             current_status["radiusOf7knotsDetailFormatted"] = self._format_radius_detail_cht(detail_str_for_formatting)
 
         else:
-            logger.warning("未找到任何颱風實測 (fix) 數據，現況資訊將為 N/A。")
+            logger.warning("未找到任何颱風實測 (fix) 數據，現況資訊將為 無資料。")
             # 如果沒資料，設定為空字串列表，而不是單一空字串
             current_status["radiusOf7knotsDetailFormatted"] = ["", "", "", ""]
         
@@ -225,7 +233,7 @@ class TyphoonParser:
             # 計算預報時間
             # CWA 的 dataTime 是 UTC+8，tau 是小時數
             raw_init_time = forecast_point.get("initTime")
-            forecast_time_formatted = "N/A"
+            forecast_time_formatted = "無資料"
 
             if raw_init_time:
                 try:
@@ -239,8 +247,8 @@ class TyphoonParser:
 
             # 處理經緯度格式
             coordinate_str_forecast = forecast_point.get("coordinate")
-            longitude_forecast = "N/A"
-            latitude_forecast = "N/A"
+            longitude_forecast = "無資料"
+            latitude_forecast = "無資料"
             
             if coordinate_str_forecast and isinstance(coordinate_str_forecast, str):
                 coords_forecast = coordinate_str_forecast.split(',')
@@ -251,17 +259,17 @@ class TyphoonParser:
                     logger.warning(f"預報點座標格式不符預期: {coordinate_str_forecast}")
 
             # 預報風速、氣壓
-            max_wind_speed_forecast = forecast_point.get("maxWindSpeed", "N/A")
-            max_gust_speed_forecast = forecast_point.get("maxGustSpeed", "N/A")
-            pressure_forecast = forecast_point.get("pressure", "N/A")
+            max_wind_speed_forecast = forecast_point.get("maxWindSpeed", "無資料")
+            max_gust_speed_forecast = forecast_point.get("maxGustSpeed", "無資料")
+            pressure_forecast = forecast_point.get("pressure", "無資料")
 
             # 七級風暴風半徑 (預報點)
             radius_7knots_forecast_data = forecast_point.get("circleOf15Ms", {})
-            radius_7knots_forecast = radius_7knots_forecast_data.get("radius", "N/A")
+            radius_7knots_forecast = radius_7knots_forecast_data.get("radius", "無資料")
 
             # 70% 機率半徑 (預報點)
             # 您提供的 JSON 中，radiusOf70PercentProbability 是一個直接的鍵，值是字串
-            radius_70_percent_prob_forecast = forecast_point.get("radiusOf70PercentProbability", "N/A")
+            radius_70_percent_prob_forecast = forecast_point.get("radiusOf70PercentProbability", "無資料")
 
             parsed_forecasts.append({
                 "tau": tau_hours_int,

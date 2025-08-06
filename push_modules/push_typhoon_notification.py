@@ -1,15 +1,20 @@
 # push_modules/push_typhoon_notification.py
 import logging
+from datetime import datetime, timedelta
 from linebot.v3.messaging.models import TextMessage, FlexMessage
 
 from config import CWA_API_KEY
 
 from utils.line_common_messaging import send_line_push_message
-from utils.user_data_manager import get_user_push_settings, get_system_metadata, set_system_metadata
+from utils.user_data_manager import get_user_push_settings, get_system_metadata, set_system_metadata, get_users_with_push_enabled
 
 # 導入你已經準備好的模組
 # 這裡我們只導入 TyphoonLogic，因為它封裝了所有後續步驟
+# 在非測試模式下使用
 from typhoon.typhoon_handler import TyphoonLogic
+
+# 用於測試模式
+from typhoon.typhoon_flex_message import create_typhoon_flex_message
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +22,11 @@ logger = logging.getLogger(__name__)
 FEATURE_ID = "typhoon_notification_push"
 # 用於儲存上一次推播的颱風警報編號，避免重複推播
 LAST_TYPHOON_ID_KEY = "last_typhoon_id"
-# 定義一個特殊的 user_id 來儲存系統級的元數據
-SYSTEM_USER_ID = "system"
 
 def check_and_push_typhoon_notification(line_bot_api_instance):
     """
     檢查是否有新的颱風警報，並推播給所有已開啟此功能的用戶。
+    這是用於生產環境的正式版本，沒有測試模式。
     """
     logger.info("開始檢查颱風警報...")
 
@@ -63,7 +67,7 @@ def check_and_push_typhoon_notification(line_bot_api_instance):
     logger.info(f"發現新的颱風警報：{typhoon_name} (ID: {typhoon_id})，開始推播。")
     
     # 從資料庫獲取所有已開啟颱風通知的用戶
-    enabled_users = get_user_push_settings(FEATURE_ID)
+    enabled_users = get_users_with_push_enabled(FEATURE_ID)
     if not enabled_users:
         logger.warning("沒有用戶開啟颱風通知，任務結束。")
         # 即使沒有用戶，我們也應該記錄這次警報，以防下次推播

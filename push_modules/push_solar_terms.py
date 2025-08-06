@@ -22,6 +22,7 @@ def push_solar_terms_notification(line_bot_api_instance):
     """
     # 呼叫你實際的函式來判斷今天是否為節氣日，並獲取完整的資訊
     today = datetime.now().date()
+    # today = datetime(2025, 8, 7).date() ***在本機測試用，日期為節氣的日期
     solar_term_data = get_today_solar_term_info(check_date=today)
     if not solar_term_data:
         logger.info("今天不是節氣日，節氣小知識推播任務跳過。")

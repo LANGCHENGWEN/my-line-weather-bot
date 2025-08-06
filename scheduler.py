@@ -34,7 +34,7 @@ def main():
         line_bot_api_instance=line_bot_api
     ).tag('daily_weather')
 
-    # 🌟 新增颱風通知排程：每小時檢查一次 🌟
+    # 🌟 新增颱風通知排程：每小時檢查一次 🌟 ***完成測試，成功推播
     schedule.every(1).hour.do(
         check_and_push_typhoon_notification,
         line_bot_api_instance=line_bot_api
@@ -46,7 +46,7 @@ def main():
         line_bot_api_instance=line_bot_api
     ).tag('weekend_weather')
 
-    # 節氣小知識：每天早上 7:30，但任務會自行檢查是否為節氣日 07:30
+    # 節氣小知識：每天早上 7:30，但任務會自行檢查是否為節氣日 ***完成測試，成功推播
     schedule.every().day.at("07:30").do(
         push_solar_terms_notification,
         line_bot_api_instance=line_bot_api

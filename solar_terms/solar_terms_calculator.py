@@ -68,7 +68,7 @@ def get_solar_terms_for_year(year: int) -> list[dict]:
     return solar_terms
 
 # 範例：取得 2025 年的所有節氣
-all_terms_2025 = get_solar_terms_for_year(2025)
+# all_terms_2025 = get_solar_terms_for_year(2025)
 
 """
 for term in all_terms_2025:
@@ -99,7 +99,7 @@ def get_today_solar_term_info(check_date: date = None) -> dict | None:
     # 合併並過濾出與今天日期匹配的節氣
     all_relevant_solar_terms = []
     for term in solar_terms_this_year + solar_terms_next_year:
-        if term["date"].date() == check_date: # 比較日期部分
+        if term["date"] == check_date: # 比較日期部分
             all_relevant_solar_terms.append(term)
             
     # 通常一天只有一個節氣。如果有，返回時間最早的那個
@@ -113,6 +113,8 @@ def get_today_solar_term_info(check_date: date = None) -> dict | None:
         final_term_info = all_relevant_solar_terms[0].copy()
         final_term_info.update(term_details)
         # --- 這裡結束合併詳細資訊 ---
+
+        final_term_info['formatted_date'] = format_date_with_weekday(final_term_info['date'])
 
         logger.info(f"日期 {check_date} 是節氣 【{final_term_info['name']}】 的開始日，精確時間：{final_term_info['date']}.")
         return final_term_info
