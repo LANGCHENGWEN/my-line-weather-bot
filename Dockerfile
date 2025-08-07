@@ -1,3 +1,4 @@
+# Dockerfile
 # 選擇一個官方的 Python 基礎映像檔，這裡我們用 3.10 版本
 FROM python:3.10-slim
 
@@ -15,5 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 定義容器啟動時執行的指令
-# 這會啟動你的 Flask 應用程式
-CMD ["python", "main.py"]
+# 這會使用 gunicorn 來啟動你的 Flask 應用程式
+# 0.0.0.0:8080 是 Cloud Run 服務必須監聽的埠號
+# main:app 代表在 main.py 檔案中找到一個名為 app 的 Flask 應用程式實例
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "main:app"]
