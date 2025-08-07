@@ -34,6 +34,11 @@ logger = logging.getLogger(__name__)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 app = Flask(__name__)
 
+# 新增健康檢查路由
+@app.route("/health")
+def health_check():
+    return "OK", 200
+
 # --- 綁定事件 ---
 @handler.add(MessageEvent, message=TextMessageContent)
 def on_text(event):
