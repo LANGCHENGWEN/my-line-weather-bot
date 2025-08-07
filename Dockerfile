@@ -1,6 +1,7 @@
 # Dockerfile
-# 選擇一個官方的 Python 基礎映像檔，這裡我們用 3.10 版本
-FROM python:3.10-slim
+# 第一階段：建置環境
+# 使用一個更完整的 Python 映像檔來安裝依賴，確保所有套件都能正確編譯
+FROM python:3.10 as builder
 
 # 設定容器內的工作目錄
 WORKDIR /app
@@ -11,6 +12,16 @@ COPY requirements.txt .
 
 # 安裝所有 Python 依賴套件
 RUN pip install --no-cache-dir -r requirements.txt
+
+# 第二階段：最終執行環境
+# 使用一個更小的映像檔來運行你的應用程式，這可以讓容器更輕量、啟動更快
+FROM python:3.10-slim
+
+# 設定最終容器的工作目錄
+WORKDIR /app
+
+# 從建置環境中，將安裝好的依賴複製過來
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 
 # 將你的應用程式程式碼（main.py）複製到容器中
 COPY . .
