@@ -1,0 +1,6 @@
+__pycache__/
+my_env/
+.env
+*.log*
+ngrok.exe
+user_data.db
