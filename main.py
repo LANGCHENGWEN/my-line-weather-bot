@@ -1,6 +1,7 @@
 # main.py －－ Flask + LINE Webhook 入口
 # 這是整個 Line Bot 的入口檔案
 # main.py  —— 入口＋Adapter（Flask + LINE SDK）
+import os
 import logging
 import traceback
 from flask import Flask, request, abort
@@ -89,4 +90,5 @@ initialize(
 
 # --- 啟動 Flask ---
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))  # 先從環境變數讀 PORT，沒設定就用 5000
+    app.run(port=port, debug=True)
