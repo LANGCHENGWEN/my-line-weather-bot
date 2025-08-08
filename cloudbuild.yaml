@@ -11,8 +11,6 @@ steps:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID'
-      - '--build-arg'
-      - 'LINE_ACCESS_TOKEN=${_LINE_CHANNEL_ACCESS_TOKEN}'
       - '.'
     secretEnv: ['_LINE_CHANNEL_ACCESS_TOKEN'] # <-- 告訴 Cloud Build 需要這個環境變數
 
@@ -35,6 +33,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-secrets'
+      - 'LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest'
 
 availableSecrets:
   secretManager:
