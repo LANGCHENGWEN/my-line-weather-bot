@@ -8,6 +8,8 @@ import json
 import logging
 from linebot.v3.messaging import MessagingApi, MessagingApiBlob
 
+from config import IS_DEBUG_MODE
+
 from utils.api_helper import get_line_bot_apis
 
 from rich_menu_manager.rich_menu_configs import MAIN_MENU_ALIAS, ALL_RICH_MENU_CONFIGS
