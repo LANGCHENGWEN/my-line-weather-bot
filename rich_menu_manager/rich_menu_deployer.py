@@ -1,5 +1,9 @@
 # rich_menu_manager/rich_menu_deployer.py
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import json
 import logging
 from linebot.v3.messaging import MessagingApi, MessagingApiBlob
