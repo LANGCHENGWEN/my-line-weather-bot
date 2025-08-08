@@ -10,6 +10,8 @@ steps:
     args: 
       - 'build'
       - '--no-cache'   # <--- 關鍵！強制不要用 cache
+      - '-f'
+      - 'Dockerfile'
       - '-t'
       - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID'
       - '.'
