@@ -128,5 +128,3 @@ if __name__ == "__main__":
     )
 
     logging.info("Rich Menu 部署腳本執行完成。")
-
-    
