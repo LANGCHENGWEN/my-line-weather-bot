@@ -34,7 +34,7 @@ ENV LINE_CHANNEL_ACCESS_TOKEN=${LINE_ACCESS_TOKEN}
 
 # 執行 Rich Menu 部署腳本，這會生成 rich_menu_ids.json
 # 注意：這裡會呼叫 LINE API，所以建置時間會稍微延長
-RUN python rich_menu_manager/rich_menu_deployer.py
+RUN python -m rich_menu_manager.rich_menu_deployer
 
 # 定義容器啟動時執行的指令
 # 這會使用 gunicorn 來啟動你的 Flask 應用程式
