@@ -8,8 +8,6 @@ import json
 import logging
 from linebot.v3.messaging import MessagingApi, MessagingApiBlob
 
-from config import IS_DEBUG_MODE, LINE_CHANNEL_ACCESS_TOKEN
-
 from utils.api_helper import get_line_bot_apis
 
 from rich_menu_manager.rich_menu_configs import MAIN_MENU_ALIAS, ALL_RICH_MENU_CONFIGS
@@ -113,7 +111,7 @@ def setup_all_rich_menus(
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
-    line_bot_api, line_blob_api = get_line_bot_apis(LINE_CHANNEL_ACCESS_TOKEN)
+    line_bot_api, line_blob_api = get_line_bot_apis()
 
     # 呼叫 Rich Menu 部署器來設定所有 Rich Menu
     # 注意：rich_menu_deployer.setup_all_rich_menus 需要的參數也要傳遞進來
