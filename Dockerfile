@@ -26,6 +26,7 @@ COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/pytho
 # 將你的應用程式程式碼（main.py）複製到容器中
 COPY . .
 
+# 這行環境變數是正確的，但我們改用更可靠的模組執行方式來確保它能正常運作
 ENV PYTHONPATH=/app
 
 # --- 新增的步驟：在建置時執行 Rich Menu 部署腳本 ---
@@ -36,7 +37,7 @@ ENV LINE_CHANNEL_ACCESS_TOKEN=${LINE_ACCESS_TOKEN}
 
 # 執行 Rich Menu 部署腳本，這會生成 rich_menu_ids.json
 # 注意：這裡會呼叫 LINE API，所以建置時間會稍微延長
-RUN python rich_menu_manager/rich_menu_deployer.py
+RUN python -m rich_menu_manager.rich_menu_deployer
 
 # 定義容器啟動時執行的指令
 # 這會使用 gunicorn 來啟動你的 Flask 應用程式
