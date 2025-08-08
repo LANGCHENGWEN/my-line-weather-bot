@@ -1,5 +1,6 @@
 # rich_menu_manager/rich_menu_configs.py
 # 所有 Rich Menu 設定的中央配置中心
+# 中央配置中心，儲存所有 Rich Menu 的靜態配置，例如別名常數、圖片路徑、以及 Rich Menu 物件的生成函數
 from .rich_menu_definitions import (
     get_main_menu_rich_menu, get_weather_query_rich_menu,
     get_typhoon_zone_rich_menu, get_lifestyle_reminders_rich_menu, get_settings_rich_menu

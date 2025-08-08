@@ -1,4 +1,5 @@
 # rich_menu_manager/rich_menu_api_client.py
+# 封裝所有與 LINE Rich Menu API 互動的底層邏輯，例如創建、上傳圖片、設定別名等
 import os
 import logging
 # import requests

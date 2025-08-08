@@ -1,4 +1,5 @@
 # menu_handlers/menu_switcher.py
+# 主要負責在用戶互動時，根據特定指令（例如 Postback 數據或文字訊息）來動態切換用戶的 Rich Menu
 import logging
 from typing import Optional
 from linebot.v3.messaging import MessagingApi

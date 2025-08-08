@@ -1,10 +1,12 @@
 # main_initializer.py
+import os
+import json
 import logging
 from linebot.v3.messaging import MessagingApi, MessagingApiBlob
 
 from menu_handlers import menu_switcher
 from utils.api_helper import get_line_bot_apis
-from rich_menu_manager import rich_menu_deployer
+# from rich_menu_manager import rich_menu_deployer
 # 導入我們自己的排程器模組
 # from scheduler import main as run_scheduler
 
@@ -15,9 +17,8 @@ def initialize(
     app_config: dict, is_debug_mode: bool, enable_daily_notifications: bool):
     """
     應用程式啟動時的所有初始化服務。
-    包括 Rich Menu 部署、排程器啟動等。
     """
-    logger.info("在應用程式啟動時初始化 Rich Menu 和其他服務...")
+    logger.info("在應用程式啟動時初始化服務...")
     
     # 初始化 menu_switcher 中的別名
     # 從 app_config 中獲取所有別名常數
@@ -38,17 +39,17 @@ def initialize(
     else:
         logger.info("推播排程器已禁用。")
 
-    # 呼叫 Rich Menu 部署器來設定所有 Rich Menu
-    # 注意：rich_menu_deployer.setup_all_rich_menus 需要的參數也要傳遞進來
-    # 這裡我們將返回的實際 rich menu ID 更新到 app_config 中
-    actual_ids = rich_menu_deployer.setup_all_rich_menus(
-        line_bot_api=line_bot_api,
-        line_blob_api=line_blob_api,
-        is_debug_mode=is_debug_mode,
-        all_rich_menu_configs=app_config.get("ALL_RICH_MENU_CONFIGS"), # 這些也應該來自 app_config 或 config
-        main_menu_alias=app_config["MAIN_MENU_ALIAS"]
-    )
-    app_config["RICH_MENU_ALIAS_MAP"].update(actual_ids) # 更新到 app_config 中的實際 ID 映射
+    # --- 新增的邏輯：從檔案載入 Rich Menu ID ---
+    try:
+        file_path = os.path.join("rich_menu_manager", "rich_menu_ids.json")
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                app_config["RICH_MENU_ALIAS_MAP"].update(json.load(f))
+            logger.info("已成功從 rich_menu_ids.json 檔案載入 Rich Menu ID 映射。")
+        else:
+            logger.warning("rich_menu_ids.json 檔案不存在。請先手動執行部署腳本。")
+    except Exception as e:
+        logger.error(f"讀取 rich_menu_ids.json 檔案時發生錯誤: {e}")
 
-    logger.info("Rich Menu 部署和服務初始化已完成。")
-    logger.info(f"實際部署的 Rich Menu ID 映射: {app_config['RICH_MENU_ALIAS_MAP']}")
+    logger.info("服務初始化已完成。")
+    logger.info(f"載入的 Rich Menu ID 映射: {app_config.get('RICH_MENU_ALIAS_MAP')}")
