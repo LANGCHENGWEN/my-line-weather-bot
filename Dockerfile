@@ -23,8 +23,11 @@ WORKDIR /app
 # 從建置環境中，將安裝好的依賴複製過來
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 
+# 複製 pip 安裝的執行檔，通常在 /usr/local/bin
+COPY --from=builder /usr/local/bin /usr/local/bin
+
 # 再安裝 gunicorn，確保執行檔在 PATH
-RUN pip install --no-cache-dir gunicorn
+# RUN pip install --no-cache-dir gunicorn
 
 # 將你的應用程式程式碼（main.py）複製到容器中
 COPY . .
