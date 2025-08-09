@@ -28,6 +28,12 @@ from rich_menu_manager.rich_menu_configs import (
 
 from main_initializer import initialize
 
+from push_modules.push_daily_weather import push_daily_weather_notification
+from push_modules.push_weekend_weather import push_weekend_weather_notification
+from push_modules.push_solar_terms import push_solar_terms_notification
+# 颱風通知模組需要一個定時檢查機制，在下面會解釋
+from push_modules.push_typhoon_notification import check_and_push_typhoon_notification
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -115,7 +121,64 @@ except Exception as e:
     logger.error("執行 initialize() 函式時發生錯誤。", exc_info=True)
     exit(1)
 
+@app.route("/push_daily_weather", methods=["GET"])
+def push_daily_weather():
+    try:
+        # 這裡放置你的排程任務邏輯
+        # 例如，從資料庫取出所有使用者，並推播每日天氣預報
+        logger.info("Cloud Scheduler 觸發每日天氣推播任務。")
+        
+        push_daily_weather_notification(line_bot_api=line_bot_api_instance)
+        
+        return "每日天氣推播成功。", 200
+    except Exception as e:
+        logger.error("每日天氣推播任務執行失敗。", exc_info=True)
+        return f"每日天氣推播出現錯誤: {str(e)}", 500
+    
+@app.route("/push_solar_terms", methods=["GET"])
+def push_solar_terms():
+    try:
+        # 這裡放置你的排程任務邏輯
+        # 例如，從資料庫取出所有使用者，並推播每日天氣預報
+        logger.info("Cloud Scheduler 觸發節氣推播任務。")
+        
+        push_solar_terms_notification(line_bot_api=line_bot_api_instance)
+        
+        return "節氣推播成功。", 200
+    except Exception as e:
+        logger.error("節氣推播任務執行失敗。", exc_info=True)
+        return f"節氣推播出現錯誤: {str(e)}", 500
+    
+@app.route("/push_typhoon_notification", methods=["GET"])
+def push_typhoon_notification():
+    try:
+        # 這裡放置你的排程任務邏輯
+        # 例如，從資料庫取出所有使用者，並推播每日天氣預報
+        logger.info("Cloud Scheduler 觸發颱風推播任務。")
+        
+        check_and_push_typhoon_notification(line_bot_api=line_bot_api_instance)
+        
+        return "颱風推播成功。", 200
+    except Exception as e:
+        logger.error("颱風推播任務執行失敗。", exc_info=True)
+        return f"颱風推播出現錯誤: {str(e)}", 500
+    
+@app.route("/push_weekend_weather", methods=["GET"])
+def push_weekend_weather():
+    try:
+        # 這裡放置你的排程任務邏輯
+        # 例如，從資料庫取出所有使用者，並推播每日天氣預報
+        logger.info("Cloud Scheduler 觸發週末天氣推播任務。")
+
+        push_weekend_weather_notification(line_bot_api=line_bot_api_instance)
+        
+        return "週末天氣推播成功。", 200
+    except Exception as e:
+        logger.error("週末天氣推播任務執行失敗。", exc_info=True)
+        return f"週末天氣推播出現錯誤: {str(e)}", 500
+
 # --- 啟動 Flask ---
+# 本機測試才用 Flask，部署到雲端用 gunicorn 伺服器
 """
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # 先從環境變數讀 PORT，沒設定就用 5000
