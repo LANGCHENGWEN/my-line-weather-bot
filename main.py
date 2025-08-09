@@ -128,7 +128,7 @@ def push_daily_weather():
         # 例如，從資料庫取出所有使用者，並推播每日天氣預報
         logger.info("Cloud Scheduler 觸發每日天氣推播任務。")
         
-        push_daily_weather_notification(line_bot_api=line_bot_api_instance)
+        push_daily_weather_notification(line_bot_api_instance=line_bot_api_instance)
         
         return "每日天氣推播成功。", 200
     except Exception as e:
@@ -142,7 +142,7 @@ def push_solar_terms():
         # 例如，從資料庫取出所有使用者，並推播每日天氣預報
         logger.info("Cloud Scheduler 觸發節氣推播任務。")
         
-        push_solar_terms_notification(line_bot_api=line_bot_api_instance)
+        push_solar_terms_notification(line_bot_api_instance=line_bot_api_instance)
         
         return "節氣推播成功。", 200
     except Exception as e:
@@ -156,7 +156,7 @@ def push_typhoon_notification():
         # 例如，從資料庫取出所有使用者，並推播每日天氣預報
         logger.info("Cloud Scheduler 觸發颱風推播任務。")
         
-        check_and_push_typhoon_notification(line_bot_api=line_bot_api_instance)
+        check_and_push_typhoon_notification(line_bot_api_instance=line_bot_api_instance)
         
         return "颱風推播成功。", 200
     except Exception as e:
@@ -170,7 +170,7 @@ def push_weekend_weather():
         # 例如，從資料庫取出所有使用者，並推播每日天氣預報
         logger.info("Cloud Scheduler 觸發週末天氣推播任務。")
 
-        push_weekend_weather_notification(line_bot_api=line_bot_api_instance)
+        push_weekend_weather_notification(line_bot_api_instance=line_bot_api_instance)
         
         return "週末天氣推播成功。", 200
     except Exception as e:
