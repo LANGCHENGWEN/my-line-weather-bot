@@ -20,7 +20,7 @@ from utils.text_processing import normalize_city_name
 from utils.line_common_messaging import send_line_reply_message
 
 # 載入使用者狀態管理器
-from utils.user_data_manager import (
+from utils.firestore_manager import (
     set_user_state, get_user_state,
     is_valid_city, get_default_city, clear_user_state
 )

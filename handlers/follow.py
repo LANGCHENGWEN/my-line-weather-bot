@@ -5,7 +5,7 @@ import logging
 
 from rich_menu_manager.rich_menu_helper import get_rich_menu_id
 
-from utils.user_data_manager import set_user_state
+from utils.firestore_manager import set_user_state
 from utils.api_helper import get_messaging_api # 用來拿 MessagingApi instance
 from utils.line_common_messaging import send_hello_message
 

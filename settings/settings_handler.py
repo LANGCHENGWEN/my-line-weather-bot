@@ -3,7 +3,7 @@ import logging
 from linebot.v3.messaging.models import TextMessage, FlexMessage, FlexBubble
 from linebot.v3.webhooks.models import PostbackEvent
 from utils.line_common_messaging import send_line_reply_message
-from utils.user_data_manager import get_user_push_settings, update_user_push_setting
+from utils.firestore_manager import get_user_push_settings, update_user_push_setting
 from .create_push_setting_flex_message import create_push_setting_flex_message
 
 

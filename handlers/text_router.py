@@ -7,7 +7,7 @@ from linebot.v3.messaging.models import TextMessage
 
 from utils.api_helper import get_messaging_api
 from utils.line_common_messaging import send_line_reply_message # 引入共用訊息發送函式
-from utils.user_data_manager import get_user_state, clear_user_state
+from utils.firestore_manager import get_user_state, clear_user_state
 # from menu_handlers.menu_switcher import handle_menu_switching as switch
 
 logger = logging.getLogger(__name__)

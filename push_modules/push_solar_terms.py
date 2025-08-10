@@ -4,7 +4,7 @@ from datetime import datetime
 from linebot.v3.messaging.models import TextMessage, FlexMessage
 
 from utils.line_common_messaging import send_line_push_message
-from utils.user_data_manager import get_users_with_push_enabled
+from utils.firestore_manager import get_users_with_push_enabled
 
 # 導入你已經準備好的模組
 from solar_terms.solar_terms_calculator import get_today_solar_term_info

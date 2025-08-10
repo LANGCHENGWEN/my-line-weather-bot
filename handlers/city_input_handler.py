@@ -10,7 +10,7 @@ from utils.api_helper import get_messaging_api
 from utils.major_stations import ALL_TAIWAN_COUNTIES
 from utils.text_processing import normalize_city_name
 from utils.line_common_messaging import send_line_reply_message
-from utils.user_data_manager import (
+from utils.firestore_manager import (
     is_valid_city,          # 判定縣市是否合法
     save_default_city,      # 儲存到 DB / 檔案
     clear_user_state,       # 清空 state
@@ -64,7 +64,7 @@ def handle_awaiting_default_city_input(api: ApiClient, event: MessageEvent) -> b
     else:
         send_line_reply_message(api, reply_token, [TextMessage(text="請輸入有效的台灣縣市名稱，例如：台中市 或 台北市")])
         logger.info(f"用戶 {user_id} 輸入無效城市：{user_input_city}，提示用戶重新輸入。")
-        return False # 無效輸入，提示用戶重試，但讓 text_router 停止
+        return True # 在這裡改成 True，表示已回覆，讓 Text Router 停止s
     
 # ---------- 處理用戶輸入城市並查詢今日天氣 ----------
 def handle_awaiting_today_city_input(api: ApiClient, event: MessageEvent) -> bool:

@@ -10,7 +10,7 @@ from utils.text_processing import normalize_city_name
 from utils.line_common_messaging import send_line_reply_message # 假設您有這個實用工具
 
 # 載入使用者狀態管理器
-from utils.user_data_manager import set_user_state, get_default_city
+from utils.firestore_manager import set_user_state, get_default_city
 
 logger = logging.getLogger(__name__)
 

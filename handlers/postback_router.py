@@ -7,7 +7,7 @@ from linebot.v3.webhooks.models import PostbackEvent
 
 from urllib.parse import parse_qs
 from utils.api_helper import get_messaging_api
-from utils.user_data_manager import set_user_state, get_default_city
+from utils.firestore_manager import set_user_state, get_default_city
 from utils.line_common_messaging import send_line_reply_message
 
 from menu_handlers.menu_switcher import switch_to_alias

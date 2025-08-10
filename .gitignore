@@ -2,6 +2,7 @@ __pycache__/
 my_env/
 rich_menu_manager/rich_menu_ids.json
 .env
+firebase-adminsdk.json
 *.log*
 ngrok.exe
 user_data.db

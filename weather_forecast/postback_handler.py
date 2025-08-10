@@ -19,7 +19,7 @@ from .line_forecast_messaging import build_forecast_weather_flex
 # from .welcome_flex import create_welcome_flex_message
 
 # 載入使用者狀態管理器
-from utils.user_data_manager import set_user_state, clear_user_state
+from utils.firestore_manager import set_user_state, clear_user_state
 
 # from utils.debug_tools import debug_parsed_weather
 

@@ -5,7 +5,7 @@ from linebot.v3.messaging.models import TextMessage, FlexMessage
 from config import CWA_API_KEY
 from utils.line_common_messaging import send_line_push_message
 # 導入你更完善的資料庫管理模組
-from utils.user_data_manager import get_users_by_city, get_user_push_settings
+from utils.firestore_manager import get_users_by_city, get_user_push_settings
 
 # 導入我們新的數據聚合器
 from weather_today.today_weather_aggregator import get_today_all_weather_data

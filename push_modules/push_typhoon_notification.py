@@ -6,7 +6,7 @@ from linebot.v3.messaging.models import TextMessage, FlexMessage
 from config import CWA_API_KEY
 
 from utils.line_common_messaging import send_line_push_message
-from utils.user_data_manager import get_user_push_settings, get_system_metadata, set_system_metadata, get_users_with_push_enabled
+from utils.firestore_manager import get_user_push_settings, get_system_metadata, set_system_metadata, get_users_with_push_enabled
 
 # 導入你已經準備好的模組
 # 這裡我們只導入 TyphoonLogic，因為它封裝了所有後續步驟

@@ -10,7 +10,7 @@ from config import CWA_API_KEY
 # 引入必要的工具函數和轉換器
 from utils.api_helper import get_messaging_api
 from utils.text_processing import normalize_city_name
-from utils.user_data_manager import get_user_state, get_default_city
+from utils.firestore_manager import get_user_state, get_default_city
 from utils.line_common_messaging import send_line_reply_message, send_api_error_message
 
 from weather_forecast.cwa_forecast_api import get_cwa_forecast_data

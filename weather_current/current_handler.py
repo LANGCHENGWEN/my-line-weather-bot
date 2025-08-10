@@ -14,7 +14,7 @@ from .weather_flex_message import build_weather_flex
 from .weather_current_parser import parse_current_weather
 
 # 導入用戶數據管理器 (用於獲取用戶預設城市)
-from utils.user_data_manager import get_default_city # 確保已導入
+from utils.firestore_manager import get_default_city # 確保已導入
 
 # 需要導入這個來將 Flex Message 字典轉換為 FlexMessage 物件
 from utils.message_builder import format_flex_message

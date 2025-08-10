@@ -8,7 +8,7 @@ from linebot.v3.webhooks.models import PostbackEvent
 
 from config import CWA_API_KEY
 
-from utils.user_data_manager import get_default_city, clear_user_state
+from utils.firestore_manager import get_default_city, clear_user_state
 from utils.text_processing import normalize_city_name
 # 導入訊息建構工具 (用於將 Flex JSON 轉換為 Line SDK 物件)
 from utils.message_builder import format_flex_message

@@ -16,7 +16,7 @@ from utils.line_common_messaging import (
 )
 
 # 導入用戶數據管理器 (用於獲取用戶預設城市)
-from utils.user_data_manager import set_user_state, get_default_city
+from utils.firestore_manager import set_user_state, get_default_city
 
 # 導入我們新的數據聚合器
 from .today_weather_aggregator import get_today_all_weather_data

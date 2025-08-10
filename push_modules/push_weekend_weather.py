@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from utils.line_common_messaging import send_line_push_message
-from utils.user_data_manager import get_users_by_city, get_user_push_settings
+from utils.firestore_manager import get_users_by_city, get_user_push_settings
 
 # 直接從 weekend_handler 模組中導入我們封裝好的函式
 from weekend_weather.weekend_handler import create_weekend_weather_message
