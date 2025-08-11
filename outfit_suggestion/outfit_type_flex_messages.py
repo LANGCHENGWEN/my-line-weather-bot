@@ -74,7 +74,7 @@ def build_outfit_suggestions_flex(target_query_city: str, default_city_display: 
                     wrap=True
                 ),
                 FlexText(
-                    text="請選擇您想查詢的穿搭時間：",
+                    text="請選擇您想查詢的穿搭時段：",
                     size="sm",
                     color="#999999",
                     align="center",

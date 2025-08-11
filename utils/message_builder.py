@@ -16,6 +16,7 @@ def format_text_message(text: str) -> TextMessage:
     """
     return TextMessage(text=text)
 
+# 已經把所有 Flex Message 改成 Flex SDK 了，所以目前這個專案沒用到
 def format_flex_message(alt_text: str, flex_content_dict: dict) -> Union[FlexMessage, TextMessage]:
     """
     將 Flex Message 的字典內容轉換為 Line Bot SDK 的 FlexMessage 物件。

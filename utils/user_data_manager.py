@@ -1,4 +1,6 @@
 # user_data_manager.py
+# 本機測試時使用的資料庫
+# 部署到雲端之後不使用這個檔案，而是在雲端自己建立資料庫
 import json
 import logging
 import sqlite3

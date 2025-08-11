@@ -1,4 +1,6 @@
 # scheduler.py
+# 本機測試時使用的排程器
+# 部署到雲端之後不使用這個檔案，而是在雲端自己設定排程器
 import os
 import time
 import logging

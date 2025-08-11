@@ -54,7 +54,7 @@ def push_daily_weather_notification(line_bot_api_instance):
             # 3. 針對每個用戶，檢查推播設定並發送訊息
             for user_id in user_ids:
                 try:
-                    user_settings = get_user_push_settings(user_id)
+                    user_settings = get_user_push_settings(user_id) # 在發送推播前，會為每個用戶單獨查詢，確認他們是否開啟了 daily_reminder_push
                     if user_settings.get(FEATURE_ID):
                         logger.info(f"正在為用戶 {user_id[:8]}... 推播 {city} 的每日天氣。")
 

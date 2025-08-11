@@ -70,6 +70,8 @@ def get_users_by_city() -> Dict[str, List[str]]:
     """
     獲取一個字典，鍵為城市名稱，值為該城市所有用戶 ID 的列表。
     改為使用 Firestore 的高效查詢，以城市作為篩選條件。
+
+    查詢所有用戶的 default_city。
     """
     city_users = {}
 
@@ -157,7 +159,10 @@ def is_valid_city(city_name: str) -> bool:
     return city_name in ALL_TAIWAN_COUNTIES
 
 def get_user_push_settings(user_id: str) -> Dict[str, bool]:
-    """獲取指定用戶的推播設定。"""
+    """
+    獲取指定用戶的推播設定。
+    在發送推播前，會為每個用戶單獨查詢，確認他們是否開啟了 FEATURE_ID (推播功能名稱)。
+    """
     return get_user_metadata(user_id, "push_settings", {})
 
 def update_user_push_setting(user_id: str, feature_id: str, is_enabled: bool):
@@ -170,9 +175,9 @@ def update_user_push_setting(user_id: str, feature_id: str, is_enabled: bool):
 def get_users_with_push_enabled(feature_id: str) -> List[str]:
     """
     獲取所有開啟特定推播功能的用戶 ID。
+    Firestore 查詢，尋找 meta_json.push_settings.feature_id 為 true 的用戶。
     """
     enabled_users = []
-    # Firestore 查詢，尋找 meta_json.push_settings.feature_id 為 true 的文件
     # 注意：這需要你在 Firestore 中建立對應的索引。
 
     # 使用 Firestore 的 .where() 查詢，效率更高
@@ -185,10 +190,10 @@ def get_users_with_push_enabled(feature_id: str) -> List[str]:
 
 SYSTEM_USER_ID = "system_metadata" 
 
-def get_system_metadata(key: str, default: Any = None) -> Any:
+def get_system_metadata(key: str, default: Any = None) -> Any: # 讀取上次推播的颱風 ID
     """獲取系統級的元數據。"""
     return get_user_metadata(SYSTEM_USER_ID, key, default)
 
-def set_system_metadata(**kwargs: Any) -> None:
+def set_system_metadata(**kwargs: Any) -> None: # 寫入這次推播的颱風 ID
     """設定系統級的元數據。"""
     set_user_metadata(SYSTEM_USER_ID, **kwargs)

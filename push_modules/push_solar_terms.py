@@ -32,7 +32,7 @@ def push_solar_terms_notification(line_bot_api_instance):
     logger.info(f"今天是節氣日：{term_name}，開始執行推播...")
 
     # 從資料庫獲取所有已開啟節氣推播的用戶
-    enabled_users = get_users_with_push_enabled(FEATURE_ID)
+    enabled_users = get_users_with_push_enabled(FEATURE_ID) # 直接查詢所有 meta_json.push_settings.solar_terms_push == True 的用戶，然後返回一個用戶 ID 列表
     if not enabled_users:
         logger.warning("沒有用戶開啟節氣推播，任務結束。")
         return
