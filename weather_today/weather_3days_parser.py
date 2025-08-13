@@ -7,10 +7,10 @@ logger = logging.getLogger(__name__)
 
 def parse_3days_weather(data: dict, location_name: str) -> list | None:
     """
-    解析從中央氣象局 API 獲取到的原始 JSON 數據，提取指定地點的逐小時天氣元素
+    解析從中央氣象署 API 獲取到的原始 JSON 數據，提取指定地點的逐小時天氣元素
     （體感溫度、相對濕度、風向、風速）。
 
-    :param data: 從中央氣象局 API 獲取到的原始 JSON 數據（字典形式）。
+    :param data: 從中央氣象署 API 獲取到的原始 JSON 數據（字典形式）。
     :param location_name: 要解析的地點名稱。
     :return: 包含逐小時天氣數據的字典 (以 DataTime 為鍵)，如果數據不存在或地點未找到則返回 None。
     """

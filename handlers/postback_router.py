@@ -9,7 +9,7 @@
 3. 導向到不同的模組與函式，以處理特定的業務功能。
 """
 import logging
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs # 用於解析 Postback data
 from importlib import import_module
 from linebot.v3.messaging.models import TextMessage
 
@@ -19,7 +19,7 @@ from utils.firestore_manager import set_user_state, get_default_city
 
 from menu_handlers.menu_switcher import switch_to_alias
 
-# 導入主選單別名，用於回上一頁
+# 導入主選單別名，用於回首頁
 from rich_menu_manager.rich_menu_configs import MAIN_MENU_ALIAS
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,8 @@ ACTION_TO_ALIAS = {
     "settings"            : "settings_alias"       # 設定母選單
 }
 
+# --- 所有 action 與「子 handler 模組路徑」的對照 (Rich Menu 子選單) ---
 """
-所有 action 與「子 handler 模組路徑」的對照 (Rich Menu 子選單)
 定義所有 Postback 的 `action` 到其對應處理函式的映射。
 透過一個中央字典來映射 `action` 和處理函式的「模組路徑」與「函式名稱」，可以避免在單一函式中寫冗長的 `if/elif` 判斷式。
 當新增一個功能時，只需要在字典中加入一個新的映射關係即可，而不需要修改核心的路由器邏輯。
@@ -52,7 +52,7 @@ ACTION_DISPATCH_HANDLERS = {
     "set_status"          : ("settings.settings_handler", "handle_settings_postback"),  # 推播狀態設定
 
     # 通用模組處理
-    "return_to_main_menu"       : ("handlers.postback_router", "handle_return_to_main_menu"),                   # 點擊「回上一頁」Postback，切換回母選單
+    "return_to_main_menu"       : ("handlers.postback_router", "handle_return_to_main_menu"),             # 點擊「回首頁」Postback，切換回母選單
     "forecast_days"             : ("weather_forecast.postback_handler", "handle_forecast_postback"),      # 未來預報的天數選單
     "outfit_advisor"            : ("outfit_suggestion.outfit_handler", "handle_outfit_advisor"),          # 穿搭建議子選單
     "outfit_query"              : ("outfit_suggestion.outfit_handler", "handle_outfit_query"),            # 穿搭建議時段的 flex message 選單
@@ -64,9 +64,9 @@ ACTION_DISPATCH_HANDLERS = {
     "solar_terms_push"          : ("settings.settings_handler", "handle_settings_postback")               # 節氣小知識推播
 }
 
+# --- 通用輔助函式：設定使用者狀態、發送回覆並記錄日誌 ---
 def _set_state_and_reply(api, event, action: str, state_name: str, reply_text: str):
     """
-    通用輔助函式：設定使用者狀態、發送回覆並記錄日誌。
     這是為了避免在多個函式中重複相同的「設定狀態 -> 回覆訊息 -> 記錄日誌」這三個步驟。
     """
     user_id = event.source.user_id
@@ -129,13 +129,13 @@ def handle_change_default_city(api, event):
         reply_text=combined_text
     )
 
+# --- 處理「回首頁」的 Postback 事件 ---
 def handle_return_to_main_menu(api, event):
     """
-    處理「回上一頁」的 Postback 事件。
-    它的目的只有一個：切換回母選單。
+    此函式的目的只有一個：切換回母選單。
     """
     user_id = event.source.user_id
-    logger.info(f"[PostbackRouter] 用戶 {user_id} 點擊「回上一頁」Postback，切換回母選單。")
+    logger.info(f"[PostbackRouter] 用戶 {user_id} 點擊「回首頁」Postback，切換回母選單。")
     return switch_to_alias(api, user_id, MAIN_MENU_ALIAS)
 
 # --- 通用函式：安全的從指定模組中調用指定的處理函式 ---

@@ -41,20 +41,20 @@ DISPATCH_STATE = {
 """
 # --- 關鍵字 → handler ---
 DISPATCH_KEYWORD = {
-    "即時天氣":"weather_current.current_handler",
-    "未來預報":"weather_forecast.forecast_handler",
-    "颱風現況":"typhoon.typhoon_handler",
-    "地區影響預警":"typhoon.area_hazard_handler",
-    "今日天氣":"weather_today.today_handler"
+    "即時天氣" : "weather_current.current_handler",
+    "未來預報" : "weather_forecast.forecast_handler",
+    "颱風現況" : "typhoon.typhoon_handler",
+    "地區影響預警" : "typhoon.area_hazard_handler",
+    "今日天氣" : "weather_today.today_handler"
 }
 
 # --- 關鍵字 → 處理函式名稱 ---
 DISPATCH_KEYWORD_HANDLERS = { # 這裡的處理函式名稱需和各個 handler.py 檔案中的函式名稱保持一致
-    "即時天氣": "handle_current_message",
-    "未來預報": "handle_forecast_message",
-    "颱風現況": "handle_typhoon_message",
-    "地區影響預警": "handle_area_hazard_message",
-    "今日天氣": "handle_today_message"
+    "即時天氣" : "handle_current_message",
+    "未來預報" : "handle_forecast_message",
+    "颱風現況" : "handle_typhoon_message",
+    "地區影響預警" : "handle_area_hazard_message",
+    "今日天氣" : "handle_today_message"
 }
 
 # --- 忽略 Postback 文字的列表 ---

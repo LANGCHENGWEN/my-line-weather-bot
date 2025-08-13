@@ -1,5 +1,8 @@
 # menu_handlers/menu_switcher.py
-# 主要負責在用戶互動時，根據特定指令（例如 Postback 數據或文字訊息）來動態切換用戶的 Rich Menu
+"""
+這個檔案的核心職責是管理和執行 LINE Bot 的 Rich Menu（圖文選單）切換。
+根據使用者傳送的特定指令（通常是文字訊息或 Postback 事件），動態將使用者目前的 Rich Menu 變更為另一個預設好的選單。
+"""
 import logging
 from typing import Optional
 from linebot.v3.messaging import MessagingApi
@@ -10,48 +13,56 @@ from .menu_reply import build_text_reply
 from rich_menu_manager.rich_menu_helper import get_rich_menu_id
 
 # 從 rich_menu_configs.py 匯入 Rich Menu 別名常數
-from rich_menu_manager.rich_menu_configs import ( # 確保路徑正確
+from rich_menu_manager.rich_menu_configs import (
     MAIN_MENU_ALIAS, WEATHER_QUERY_ALIAS,
     TYPHOON_ZONE_ALIAS, LIFE_REMINDER_ALIAS, SETTINGS_ALIAS
 )
 
 logger = logging.getLogger(__name__)
 
-# ---------- 可注入的別名表 ---------- #
+# --- 可注入的別名表 ---
+"""
+這個全域變數用來儲存 Rich Menu 別名與其對應的實際 ID。
+使用字典儲存映射關係，可以讓程式碼更具彈性。
+函式 `init_menu_aliases` 可以在程式啟動時，從設定檔或 LINE API 取得最新的 Rich Menu ID。
+之後整個模組都可以透過這個字典來查找和使用這些 ID，而不需要將 ID 硬編碼在程式中，方便未來的維護和更新。
+"""
 _alias_map = {
-    "main":      MAIN_MENU_ALIAS,
-    "weather":   WEATHER_QUERY_ALIAS,
-    "typhoon":   TYPHOON_ZONE_ALIAS,
-    "life":      LIFE_REMINDER_ALIAS,
-    "settings":  SETTINGS_ALIAS,
+    "main"     : MAIN_MENU_ALIAS,
+    "weather"  : WEATHER_QUERY_ALIAS,
+    "typhoon"  : TYPHOON_ZONE_ALIAS,
+    "life"     : LIFE_REMINDER_ALIAS,
+    "settings" : SETTINGS_ALIAS
 }
 
-def init_menu_aliases(main_alias, weather_alias, typhoon_alias,
-                      life_alias, settings_alias):
+# --- 初始化 Rich Menu 別名映射表的函式 ---
+def init_menu_aliases(main_alias, weather_alias, typhoon_alias, life_alias, settings_alias):
     """
-    啟動時呼叫一次，將實際 Rich‑Menu alias/ID
-    注入本模組，供 handle_menu_switching() 使用。
+    在應用程式啟動時，將外部設定的 Rich Menu 別名，注入到本模組的 `_alias_map` 字典中，供後續的 handle_menu_switching 選單切換函式使用。
     """
     global _alias_map
     _alias_map = {
-        "main":      main_alias,
-        "weather":   weather_alias,
-        "typhoon":   typhoon_alias,
-        "life":      life_alias,
-        "settings":  settings_alias,
+        "main"     : main_alias,
+        "weather"  : weather_alias,
+        "typhoon"  : typhoon_alias,
+        "life"     : life_alias,
+        "settings" : settings_alias
     }
     logger.info(f"menu_switcher: _alias_map 已初始化 → {_alias_map}")
 
+# --- 私有輔助函式：用於根據 Rich Menu 的別名來獲取 ID 並將選單綁定給指定的使用者 ---
 def _link_rich_menu_by_alias(line_bot_api: MessagingApi, user_id: str, alias_id: str) -> bool:
     """
-    輔助函式：透過 Rich Menu 別名獲取 ID 並綁定給用戶。
-    輔助函式：先用 JSON (get_rich_menu_id) 取 ID；若取不到再呼叫 LINE API。
+    此函式會先嘗試從本地的 JSON 檔案中獲取 Rich Menu ID，如果找不到，才會呼叫 LINE API 獲取。
+    這種設計可以減少對 LINE API 的頻繁呼叫，提高效率。
+    函式也包含了錯誤處理機制，確保即使綁定失敗，也不會導致程式崩潰。
     """
     try:
         # 1. 先嘗試從本地 JSON 取得 ID
+        # 先檢查本地的 `rich_menu_ids.json` 檔案是否有 Rich Menu ID，如果有，就直接使用，避免不必要的 API 呼叫
         rich_menu_id = get_rich_menu_id(alias_id)
 
-        # 2. 若 JSON 取不到，再呼叫 LINE API 要 ID（避免第一次啟動沒有 JSON）
+        # 2. 若 JSON 取不到，再呼叫 LINE API 來獲取 ID（避免第一次啟動沒有 JSON）
         if not rich_menu_id:
             alias_info = line_bot_api.get_rich_menu_alias(alias_id)
             rich_menu_id = alias_info.rich_menu_id
@@ -68,63 +79,65 @@ def _link_rich_menu_by_alias(line_bot_api: MessagingApi, user_id: str, alias_id:
         logger.error(f"未知錯誤：綁定 '{alias_id}' 失敗 -> {e}", exc_info=True)
         return False
 
-# 這支才是給「postback」用的
+# --- 供 Postback 路由器使用的公開函式，用於直接根據 Rich Menu 別名來切換選單 ---
 def switch_to_alias(api, user_id: str, alias: Optional[str]) -> bool:
     """
-    直接用 alias 幫 user 切 Rich‑menu
-    回傳 True/False 代表有沒有真的發生切換。
-    這個函式本身就不會發送回覆訊息。
+    Postback 事件通常只負責切換 Rich Menu，而不需要額外發送回覆訊息。
+    這個函式將切換選單的邏輯與回覆訊息的邏輯分離，使程式碼更清晰。
     """
     if not alias:
         logger.warning("switch_to_alias：alias 是空的")
-        return False
+        return False # 如果別名是空的，直接返回 False
+    
     ok = _link_rich_menu_by_alias(api, user_id, alias)
     if ok:
         logger.info(f"[RichMenu] user {user_id} → {alias}")
     return ok
 
+# --- 文字訊息的選單切換處理函式，用於根據使用者輸入的文字來切換 Rich Menu ---
 def handle_menu_switching(event: MessageEvent, line_bot_api: MessagingApi) -> bool:
     """
-    根據用戶發送的訊息文本，嘗試切換用戶的 Rich Menu。
-    :param event: LINE Webhook 事件對象
-    :param line_bot_api: MessagingApi 客戶端實例
-    :return: 如果成功處理了 Rich Menu 切換，則返回 True；否則返回 False。
+    提供使用者另一種方式來導航選單，除了點擊按鈕之外，也可以直接輸入文字指令。
+    處理流程：檢查訊息類型 -> 檢查是否有匹配的選單文字 -> 切換選單 -> 回覆確認訊息。
     """
+    # 1. 檢查訊息類型
     if not hasattr(event, 'message') or not hasattr(event.message, 'text'):
-        # 如果不是文本訊息，不處理選單切換
-        return False
+        return False # 如果不是文字訊息，不處理選單切換
 
     text = event.message.text
     user_id = event.source.user_id
     reply_token = event.reply_token
 
     menu_switch_map = {
-        "天氣查詢": _alias_map.get("weather"),
-        "颱風專區": _alias_map.get("typhoon"),
-        "生活提醒": _alias_map.get("life"),
-        "設定": _alias_map.get("settings"),
-        # "回上一頁": _alias_map.get("main")  # 假設「回上一頁」就是回到主選單
+        "天氣查詢" : _alias_map.get("weather"),
+        "颱風專區" : _alias_map.get("typhoon"),
+        "生活提醒" : _alias_map.get("life"),
+        "設定" : _alias_map.get("settings")
     }
 
+    # 檢查事件是否為文字訊息，然後根據 `menu_switch_map` 字典將文字訊息（例如「天氣查詢」）對應到 Rich Menu 的別名
     if text in menu_switch_map:
+        # 2. 檢查是否有匹配的選單文字
         target_alias = menu_switch_map[text]
         logger.info(f"嘗試切換到 '{text}' 選單 (別名: {target_alias})，用戶: {user_id}")
 
         if _link_rich_menu_by_alias(line_bot_api, user_id, target_alias):
-            # 可選：回覆用戶確認切換
+            # 3. 切換選單
             reply_text =f"已切換至 {text} 選單。"
+
             try:
+                # 4. 回覆確認訊息
                 reply_req = build_text_reply(reply_text, reply_token)
                 line_bot_api.reply_message(reply_req)
                 logger.info(f"成功回覆用戶 '{user_id}' 訊息：{reply_text}")
-                return True
+                return True # 成功切換後，會發送一則回覆訊息確認切換成功
             except Exception as e:
                 logger.error(f"回覆用戶訊息失敗: {e}", exc_info=True)
                 # 如果回覆失敗，這裡不應該再嘗試回覆，避免無限循環或再次報錯
         else:
             # 切換選單失敗時的回覆
             try:
-                error_req = build_text_reply("切換選單失敗，請稍後再試。", reply_token)
+                error_req = build_text_reply("切換選單失敗，請稍候再試。", reply_token)
                 line_bot_api.reply_message(error_req)
                 logger.info(f"成功回覆用戶 '{user_id}' 錯誤訊息：{error_req}")
             except Exception as e:
@@ -133,97 +146,3 @@ def handle_menu_switching(event: MessageEvent, line_bot_api: MessagingApi) -> bo
 
     # 如果沒有匹配任何選單切換指令，則返回 False
     return False
-
-'''
-    # 確保別名已初始化
-    if not _MAIN_MENU_ALIAS:
-        logger.error("Rich Menu 別名未初始化！請先呼叫 init_menu_aliases。")
-        return False
-
-    if text == "天氣查詢":
-        logger.info(f"切換到天氣查詢選單，用戶: {user_id}")
-        try:
-            line_bot_api.link_rich_menu_alias_to_user(
-                rich_menu_alias_id=_WEATHER_QUERY_ALIAS, # 別名 ID
-                user_id=user_id                          # 用戶 ID
-            )
-            line_bot_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text="已切換至天氣查詢子選單。")]
-                )
-            )
-            return True
-        except Exception as e:
-            logger.error(f"無法切換 Rich Menu 別名 '{_WEATHER_QUERY_ALIAS}' 給用戶 {user_id}: {e}", exc_info=True)
-            return False
-    elif text == "颱風專區":
-        logger.info(f"切換到颱風專區選單，用戶: {user_id}")
-        try:
-            line_bot_api.link_rich_menu_alias_to_user(
-                rich_menu_alias_id=_TYPHOON_ZONE_ALIAS, # 別名 ID
-                user_id=user_id                          # 用戶 ID
-            )
-            line_bot_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text="已切換至颱風專區子選單。")]
-                )
-            )
-            return True
-        except Exception as e:
-            logger.error(f"無法切換 Rich Menu 別名 '{_TYPHOON_ZONE_ALIAS}' 給用戶 {user_id}: {e}", exc_info=True)
-            return False
-    elif text == "生活提醒":
-        logger.info(f"切換到生活提醒選單，用戶: {user_id}")
-        try:
-            line_bot_api.link_rich_menu_alias_to_user(
-                rich_menu_alias_id=_LIFE_REMINDER_ALIAS, # 別名 ID
-                user_id=user_id                          # 用戶 ID
-            )
-            line_bot_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text="已切換至生活提醒子選單。")]
-                )
-            )
-            return True
-        except Exception as e:
-            logger.error(f"無法切換 Rich Menu 別名 '{_LIFE_REMINDER_ALIAS}' 給用戶 {user_id}: {e}", exc_info=True)
-            return False
-    elif text == "設定":
-        logger.info(f"切換到設定選單，用戶: {user_id}")
-        try:
-            line_bot_api.link_rich_menu_alias_to_user(
-                rich_menu_alias_id=_SETTINGS_ALIAS, # 別名 ID
-                user_id=user_id                          # 用戶 ID
-            )
-            line_bot_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text="已切換至設定子選單。")]
-                )
-            )
-            return True
-        except Exception as e:
-            logger.error(f"無法切換 Rich Menu 別名 '{_SETTINGS_ALIAS}' 給用戶 {user_id}: {e}", exc_info=True)
-            return False
-    elif text == "回上一頁":
-        logger.info(f"切換到回上一頁選單，用戶: {user_id}")
-        try:
-            line_bot_api.link_rich_menu_alias_to_user(
-                rich_menu_alias_id=_MAIN_MENU_ALIAS, # 別名 ID
-                user_id=user_id                          # 用戶 ID
-            )
-            line_bot_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text="已回主選單。")]
-                )
-            )
-            return True
-        except Exception as e:
-            logger.error(f"無法切換 Rich Menu 別名 '{_MAIN_MENU_ALIAS}' 給用戶 {user_id}: {e}", exc_info=True)
-            return False
-    return False # 如果不是選單切換指令，返回 False
-'''

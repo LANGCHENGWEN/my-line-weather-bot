@@ -12,9 +12,9 @@ from linebot.v3.webhooks.models import MessageEvent
 from utils.text_processing import normalize_city_name
 from utils.line_common_messaging import send_line_reply_message
 from utils.firestore_manager import (
-    is_valid_city,          # 判定縣市是否合法
-    clear_user_state,       # 清空狀態
-    save_default_city       # 儲存到雲端資料庫
+    is_valid_city,    # 判定縣市是否合法
+    clear_user_state, # 清空狀態
+    save_default_city # 儲存到雲端資料庫
     
 )
 

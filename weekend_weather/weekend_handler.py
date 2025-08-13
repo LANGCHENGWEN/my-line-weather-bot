@@ -28,7 +28,7 @@ def create_weekend_weather_message(county_name: str) -> Optional[List[Message]]:
     try:
         normalized_location_name = normalize_city_name(county_name)
 
-        # 1. 從中央氣象局 API 獲取天氣預報數據
+        # 1. 從中央氣象署 API 獲取天氣預報數據
         cwa_data = get_cwa_forecast_data(CWA_API_KEY, normalized_location_name)
         if not cwa_data or not cwa_data.get("records"): # 檢查 cwa_data 是否為空或沒有 'records' 鍵
             logger.warning(f"無法取得 {county_name} 的天氣預報資訊。API 返回空數據或無效格式。")

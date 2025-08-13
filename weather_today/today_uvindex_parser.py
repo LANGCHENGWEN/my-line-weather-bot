@@ -29,10 +29,10 @@ def get_uv_level_description(uv_index: int) -> str:
 
 def parse_uv_index(data: dict, target_station_id: str) -> dict | None:
     """
-    解析從中央氣象局 O-A0005-001 API 獲取到的原始 JSON 資料，
+    解析從中央氣象署 O-A0005-001 API 獲取到的原始 JSON 資料，
     提取指定測站的每日紫外線指數最大值。
 
-    :param data: 從中央氣象局 API 獲取到的原始 JSON 資料 (字典形式)。
+    :param data: 從中央氣象署 API 獲取到的原始 JSON 資料 (字典形式)。
     :param target_station_id: 要解析的目標測站 ID。
     :return: 包含指定測站紫外線指數的字典。如果資料不存在或測站未找到，
              則返回包含預設值的字典。

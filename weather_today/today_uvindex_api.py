@@ -11,7 +11,7 @@ def get_today_uvindex_data(api_key: str, params: dict = None) -> dict | None:
     """
     執行對 CWB API 的通用請求。
 
-    :param api_key: 您的中央氣象局開放資料平台授權碼。
+    :param api_key: 您的中央氣象署開放資料平台授權碼。
     :param params: 額外的查詢參數 (字典形式)。
     :return: API 返回的 JSON 資料 (字典形式)，如果請求失敗則返回 None。
     """
