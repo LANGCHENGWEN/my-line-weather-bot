@@ -34,18 +34,21 @@ def get_outfit_suggestion_for_current_weather(current_weather_data: dict) -> dic
     """
     根據即時天氣數據 (來自 weather_current_parser.py 的輸出格式) 提供穿搭建議。
     接收一個包含即時天氣數據的字典，並根據多個天氣指標（如體感溫度、降雨、濕度等），動態生成一份綜合性的穿搭建議文字，同時選取一張最合適的圖片，最後將整理好的資訊封裝成一個字典回傳。
-    current_weather_data (dict)：
-        'weather_description' (天氣現象，如晴、陰、雨)
-        'current_temp_value' (當前溫度，數值)
-        'sensation_temp_value' (體感溫度，數值)
-        'humidity_value' (相對濕度，數值)
-        'precipitation_value' (降雨量，數值)
-        'beaufort_scale_int' (蒲福風級數字，用於判斷)
-        'wind_speed_beaufort_display' (組合的蒲福風級顯示字串)
-        'uv_index_value' (紫外線指數，數值，用於判斷)
-        'uv_index' (組合的紫外線指數顯示字串)
-    Returns：
-        dict：包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
+    
+    Args:
+        current_weather_data (dict):
+            'weather_description' (天氣現象，如晴、陰、雨)
+            'current_temp_value' (當前溫度，數值)
+            'sensation_temp_value' (體感溫度，數值)
+            'humidity_value' (相對濕度，數值)
+            'precipitation_value' (降雨量，數值)
+            'beaufort_scale_int' (蒲福風級數字，用於判斷)
+            'wind_speed_beaufort_display' (組合的蒲福風級顯示字串)
+            'uv_index_value' (紫外線指數，數值，用於判斷)
+            'uv_index' (組合的紫外線指數顯示字串)
+
+    Returns:
+        dict:包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
     """
     # --- 從傳入的 `current_weather_data` 字典中安全的提取所需的數值和字串 ---
     # 使用 `.get()` 方法並提供預設值（如 `None` 或 `0`），可以避免因字典中缺少某些鍵而導致的 `KeyError`，從而提高程式的健壯性。

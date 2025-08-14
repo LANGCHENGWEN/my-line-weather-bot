@@ -1,11 +1,11 @@
 # handlers/text_router.py
 """
 這個檔案是 LINE Bot 處理所有文字訊息的核心路由器。
-它的主要職責是接收使用者傳來的文字訊息，並根據預先定義的優先級規則，將訊息分發給正確的處理函式。
+它的主要職責是接收用戶傳來的文字訊息，並根據預先定義的優先級規則，將訊息分發給正確的處理函式。
 路由的優先順序：
 1. 忽略 Postback 副作用文字，避免重複處理。
 2. 檢查訊息是否為精確匹配的「全局關鍵字」。
-3. 檢查使用者是否處於特定的「狀態」（例如：正在等待城市輸入）。
+3. 檢查用戶是否處於特定的「狀態」（例如：正在等待城市輸入）。
 4. 如果以上規則皆不匹配，則交由「預設處理器」處理。
 這種層級分明的設計確保了每個訊息都能被正確且唯一的處理，避免邏輯混亂。
 """
@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 # --- 狀態 → handler ---
 """
-定義使用者處於特定狀態時，應該將訊息導向哪個模組進行處理。
+定義用戶處於特定狀態時，應該將訊息導向哪個模組進行處理。
 這是一種「狀態機」模式的實現。
-當使用者點擊「查詢其他縣市」的按鈕，會將其狀態標記為 "awaiting_city_input"。
-接下來使用者輸入的任何文字，都會被這個路由器優先導向到 `city_input_handler` 處理，而不是被其他關鍵字匹配所干擾，直到這個流程結束為止。
+當用戶點擊「查詢其他縣市」的按鈕，會將其狀態標記為 "awaiting_city_input"。
+接下來用戶輸入的任何文字，都會被這個路由器優先導向到 `city_input_handler` 處理，而不是被其他關鍵字匹配所干擾，直到這個流程結束為止。
 """
 DISPATCH_STATE = {
     "awaiting_default_city_input"  : "handlers.city_input_handler", # 等待輸入預設城市
@@ -35,9 +35,9 @@ DISPATCH_STATE = {
 }
 
 """
-這兩個字典定義了當使用者輸入精確的關鍵字時，應該將訊息導向到哪個模組和哪個函式進行處理。
-允許機器人直接響應使用者輸入的特定指令。
-這種模式是 `postback_router` 的文字版，提供使用者透過文字指令來觸發功能，並將關鍵字與處理邏輯分離，使程式碼更易於維護。
+這兩個字典定義了當用戶輸入精確的關鍵字時，應該將訊息導向到哪個模組和哪個函式進行處理。
+允許機器人直接響應用戶輸入的特定指令。
+這種模式是 `postback_router` 的文字版，提供用戶透過文字指令來觸發功能，並將關鍵字與處理邏輯分離，使程式碼更易於維護。
 """
 # --- 關鍵字 → handler ---
 DISPATCH_KEYWORD = {
@@ -59,7 +59,7 @@ DISPATCH_KEYWORD_HANDLERS = { # 這裡的處理函式名稱需和各個 handler.
 
 # --- 忽略 Postback 文字的列表 ---
 """
-LINE 的行為是當使用者點擊 Postback 按鈕時，Bot 會同時收到一個 PostbackEvent 和一個包含按鈕顯示文字的 MessageEvent。
+LINE 的行為是當用戶點擊 Postback 按鈕時，Bot 會同時收到一個 PostbackEvent 和一個包含按鈕顯示文字的 MessageEvent。
 為了避免機器人對同一個動作發送兩次回覆，這裡會列出所有 Rich Menu Postback 按鈕上的文字，並在收到這些文字訊息時，直接忽略不處理。
 """
 POSTBACK_RELATED_TEXTS_TO_IGNORE = [
@@ -99,7 +99,7 @@ def handle(event):
     按照預定義的優先級，將文字訊息分發給對應的處理模組。
     """
     user_id = event.source.user_id
-    message_text = event.message.text # 取得使用者輸入的文字
+    message_text = event.message.text # 取得用戶輸入的文字
     api = get_messaging_api()
 
     # 明確處理輸入縣市的情境
@@ -112,7 +112,7 @@ def handle(event):
     # --- 路由優先級邏輯 ---
     # 優先級 1：忽略 Postback 文字，避免重複回覆
     """
-    當使用者點擊 Rich Menu 按鈕時，LINE 會發送一個 Postback 事件和一個文字訊息事件（文字內容就是按鈕上的文字）。
+    當用戶點擊 Rich Menu 按鈕時，LINE 會發送一個 Postback 事件和一個文字訊息事件（文字內容就是按鈕上的文字）。
     Postback 事件會被 `postback_router` 處理，為了防止 `text_router` 再次處理這個文字訊息並發送重複的回覆，會在這裡檢查訊息內容，如果它與任何 Postback 按鈕的文字相同，就直接終止處理。
     """
     if message_text in POSTBACK_RELATED_TEXTS_TO_IGNORE:
@@ -121,9 +121,9 @@ def handle(event):
     
     # 優先級 2：處理精確匹配的「全局關鍵字」
     """
-    處理使用者直接輸入的關鍵字指令，例如「即時天氣」。
+    處理用戶直接輸入的關鍵字指令，例如「即時天氣」。
     這裡會根據 `DISPATCH_KEYWORD` 和 `DISPATCH_KEYWORD_HANDLERS` 字典，找到對應的模組和函式名稱，並使用 `_call_handler` 來動態執行。
-    這種設計可以讓使用者直接跳過 Rich Menu，快速達到目的。
+    這種設計可以讓用戶直接跳過 Rich Menu，快速達到目的。
     """
     if message_text in DISPATCH_KEYWORD:
         module_path = DISPATCH_KEYWORD[message_text]
@@ -138,10 +138,10 @@ def handle(event):
             _call_handler("handlers.default", "handle", api, event)
             return
 
-    # 優先級 3：優先處理使用者處於特定「狀態」下的輸入
+    # 優先級 3：優先處理用戶處於特定「狀態」下的輸入
     """
     這是處理 `Postback` 之後的「文字輸入」的核心邏輯。
-    確保當使用者處於特定狀態時（例如被要求輸入城市名稱），機器人的反應會按照預期的流程進行，而不會被其他的關鍵字或預設處理器干擾。
+    確保當用戶處於特定狀態時（例如被要求輸入城市名稱），機器人的反應會按照預期的流程進行，而不會被其他的關鍵字或預設處理器干擾。
     這種狀態優先的設計，使得 Bot 的對話流程能夠更加清晰和可控。
     """
     if state in DISPATCH_STATE:

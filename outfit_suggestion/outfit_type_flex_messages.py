@@ -1,7 +1,7 @@
 # outfit_suggestion/outfit_type_flex_messages.py
 """
 生成一個 LINE Flex Message，作為穿搭建議功能的主選單。
-根據使用者指定的城市動態創建一個包含多個選項的卡片，選項包括「今日穿搭建議」、「即時穿搭建議」和「未來穿搭建議」，以及一個「查詢其他縣市」的按鈕。
+根據用戶指定的城市動態創建一個包含多個選項的卡片，選項包括「今日穿搭建議」、「即時穿搭建議」和「未來穿搭建議」，以及一個「查詢其他縣市」的按鈕。
 將 UI 呈現邏輯與後端處理邏輯分離，提高程式碼的可讀性和可維護性。
 """
 from linebot.v3.messaging.models import (
@@ -12,9 +12,9 @@ from linebot.v3.messaging.models import (
 def build_outfit_suggestions_flex(target_query_city: str, default_city_display: str) -> FlexMessage:
     """
     生成一個單一 Flex Message 卡片選單，包含今日、即時、未來穿搭建議選項。
-    將使用者當前查詢的城市名稱 (target_query_city) 嵌入到每個按鈕的 Postback data 中，這樣在使用者點擊按鈕後，後端處理器就能準確知道要查詢哪個城市的資訊。
-    target_query_city：使用者當前查詢的城市名稱 (用於 Postback data)。
-    default_city_display：使用者預設城市（用於顯示，如果沒有則為「未設定」）。
+    將用戶當前查詢的城市名稱 (target_query_city) 嵌入到每個按鈕的 Postback data 中，這樣在用戶點擊按鈕後，後端處理器就能準確知道要查詢哪個城市的資訊。
+    target_query_city：用戶當前查詢的城市名稱 (用於 Postback data)。
+    default_city_display：用戶預設城市（用於顯示，如果沒有則為「未設定」）。
     """
     # --- 輔助函式：用於生成穿搭建議按鈕 ---
     def _outfit_button(label: str, data_type: str) -> FlexButton:
@@ -86,7 +86,7 @@ def build_outfit_suggestions_flex(target_query_city: str, default_city_display: 
                     margin="md"
                 ),
                 FlexText(
-                    text=f"您的預設城市：{default_city_display}", # 顯示使用者預設城市
+                    text=f"您的預設城市：{default_city_display}", # 顯示用戶預設城市
                     size="sm",
                     color="#666666",
                     align="center",

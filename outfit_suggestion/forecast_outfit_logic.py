@@ -33,19 +33,22 @@ def get_outfit_suggestion_for_forecast_weather(processed_data_for_outfit_logic: 
     根據未來預報的已處理和聚合的數據提供綜合穿搭建議。
     將多種天氣因素（如溫度、降雨、濕度、風速、紫外線等）結合起來，產生一套精準、多面向的穿搭文字建議，並選擇一張最能代表當天情境的圖片。
     此函式只負責判斷穿搭建議文字和圖片，不進行數據解析和轉換。
-    processed_data_for_outfit_logic (dict)：
-        'weather_phenomena' (天氣現象，如晴、陰、雨，集合)
-        'max_feels_like_temp' (當天最高體感溫度，數值)
-        'min_feels_like_temp' (當天最低體感溫度，數值)
-        'temp_range_diff' (當天體感溫差，數值)
-        'avg_humidity' (當天平均濕度，數值)
-        'pop' (當天最高降雨機率，數值)
-        'wind_speed' (當天最高風速 (蒲福風級)，數值)
-        'comfort_max_desc' (白天或整體最高舒適度描述，字串)
-        'comfort_min_desc' (夜間或整體最低舒適度描述，字串)
-        'uvi' (當天最高紫外線指數，數值)
-    Returns：
-        dict：包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
+    
+    Args:
+        processed_data_for_outfit_logic (dict):
+            'weather_phenomena' (天氣現象，如晴、陰、雨，集合)
+            'max_feels_like_temp' (當天最高體感溫度，數值)
+            'min_feels_like_temp' (當天最低體感溫度，數值)
+            'temp_range_diff' (當天體感溫差，數值)
+            'avg_humidity' (當天平均濕度，數值)
+            'pop' (當天最高降雨機率，數值)
+            'wind_speed' (當天最高風速 (蒲福風級)，數值)
+            'comfort_max_desc' (白天或整體最高舒適度描述，字串)
+            'comfort_min_desc' (夜間或整體最低舒適度描述，字串)
+            'uvi' (當天最高紫外線指數，數值)
+
+    Returns:
+        dict: 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
     """
 
     # --- 從傳入的字典中，安全的提取所有用於判斷穿搭建議的數據 ---
@@ -196,7 +199,7 @@ def get_outfit_suggestion_for_forecast_weather(processed_data_for_outfit_logic: 
     """
     在多個條件判斷中，可能會產生重複或相似的建議。
     這裡使用 `dict.fromkeys` 的技巧可以高效的去除重複項目，同時保持建議的原始順序。
-    確保最終呈現給使用者的建議列表是乾淨、精簡且邏輯連貫的。
+    確保最終呈現給用戶的建議列表是乾淨、精簡且邏輯連貫的。
     """
     final_suggestions = list(dict.fromkeys(final_suggestions)) # 利用字典的特性去重並保持順序
 

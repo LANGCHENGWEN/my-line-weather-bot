@@ -2,7 +2,7 @@
 """
 這個檔案是訊息路由器的最後一道防線，主要負責處理所有未被其他特定規則（例如指令、狀態處理函式）匹配到的文字訊息。
 它的主要職責是回覆通用的問候語、感謝語，以及針對無法識別的訊息提供一個友善的「不明白」回覆，以避免訊息沒有任何回應。
-這個機制確保了無論使用者輸入什麼，都能得到一個基本的、不會讓對話中斷的回應。
+這個機制確保了無論用戶輸入什麼，都能得到一個基本的、不會讓對話中斷的回應。
 """
 import logging
 from linebot.v3.messaging.models import TextMessage
@@ -25,7 +25,7 @@ def handle(event):
     logger.info(f"[DefaultHandler] 處理通用/未識別訊息來自用戶 {user_id}: '{text}'")
 
     # --- 處理問候語 ---
-    # 偵測使用者是否輸入了通用的問候語，例如「你好」或「哈囉」
+    # 偵測用戶是否輸入了通用的問候語，例如「你好」或「哈囉」
     if "你好" in text or "哈囉" in text:
         messages = [
             TextMessage(text="🤗哈囉！您好～我是暖心天氣語"),
@@ -36,7 +36,7 @@ def handle(event):
         return True # 表示訊息已成功處理，阻止訊息路由器繼續執行後續的處理函式
 
     # --- 處理感謝語 ---
-    # 偵測使用者是否輸入了感謝語，例如「謝謝」
+    # 偵測用戶是否輸入了感謝語，例如「謝謝」
     elif "謝謝" in text:
         send_line_reply_message(api, reply_token, [TextMessage(text="不客氣！很高興為您服務 ～🙏")])
         logger.info(f"[DefaultHandler] 已回覆感謝語給用戶 {user_id}。")

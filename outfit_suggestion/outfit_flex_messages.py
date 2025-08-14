@@ -12,15 +12,16 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
     """
     生成今日穿搭建議的 Flex Message 卡片，包含穿搭圖片、天氣概況和建議文字。
     將綜合性的今日天氣預報數據，以及根據這些數據生成的穿搭建議，轉換成一個結構化的 LINE Flex Message 物件。
-    outfit_info (dict)：包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
-                        包含 'outfit_suggestion_text', 'suggestion_image_url',
-                            'date_full_formatted', 'weather_phenomenon', 'feels_like',
-                            'formatted_temp_range', 'pop', 'wind_speed', 'uv_index'
-        
-    location_name (str)：縣市名稱。
+    
+    Args:
+        outfit_info (dict): 包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
+                            包含 'outfit_suggestion_text', 'suggestion_image_url',
+                                'date_full_formatted', 'weather_phenomenon', 'feels_like',
+                                'formatted_temp_range', 'pop', 'wind_speed', 'uv_index'
+        location_name (str): 縣市名稱。
 
-    Returns：
-        FlexBubble：LINE Flex Message 的 Bubble 物件。
+    Returns:
+        FlexBubble: LINE Flex Message 的 Bubble 物件。
     """
 
     # --- 從傳入的 `outfit_info` 字典中，安全的獲取穿搭建議文字和圖片 URL ---
@@ -124,14 +125,16 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
     """
     生成即時穿搭建議的 Flex Message 卡片，包含穿搭圖片、天氣概況和建議文字。
     作用與 `build_today_outfit_flex` 類似，但使用的是即時天氣觀測數據。
-    outfit_info (dict)：包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
-                        包含 'suggestion_text', 'suggestion_image_url',
-                            'observation_time', 'weather_condition', 'feels_like',
-                            'humidity', 'precipitation', 'wind_speed_beaufort_display', 'uv_index'
-    location_name (str)：縣市名稱。
+    
+    Args:
+        outfit_info (dict): 包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
+                            包含 'suggestion_text', 'suggestion_image_url',
+                                'observation_time', 'weather_condition', 'feels_like',
+                                'humidity', 'precipitation', 'wind_speed_beaufort_display', 'uv_index'
+        location_name (str): 縣市名稱。
 
-    Returns：
-        FlexBubble：LINE Flex Message 的 Bubble 物件。
+    Returns:
+        FlexBubble: LINE Flex Message 的 Bubble 物件。
     """
 
     # --- 從傳入的 `outfit_info` 字典中，安全的獲取穿搭建議文字和圖片 URL ---

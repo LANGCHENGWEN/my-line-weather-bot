@@ -15,15 +15,17 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
     根據提供的穿搭資訊和已經格式化好的天氣數據，來構建一個單天的 Flex Message 卡片。
     將後端處理好的資料，轉換成 LINE Bot 前端能夠顯示的視覺化元件（FlexBubble 物件）。
     將資料邏輯與 UI 呈現邏輯分離，讓開發者可以專注於建立美觀的卡片，而不必擔心資料處理的細節。
-    outfit_info (dict)：包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
-                        包含 'suggestion_text', 'suggestion_image_url',
+    
+    Args:
+        outfit_info (dict): 包含穿搭建議和已經格式化好的天氣顯示資訊的字典。
+                            包含 'suggestion_text', 'suggestion_image_url',
                             'obs_time', 'display_weather_desc', 'display_feels_like_temp',
                             'display_humidity', 'display_pop', 'display_uv_index'
-    location_name (str)：縣市名稱。
-    day_offset (int)：從今天開始的天數偏移 (0=今天, 1=明天)。
+        location_name (str): 縣市名稱。
+        day_offset (int): 從今天開始的天數偏移 (0=今天, 1=明天)。
 
-    Returns：
-        FlexBubble：LINE Flex Message 的 Bubble 物件。
+    Returns:
+        FlexBubble: LINE Flex Message 的 Bubble 物件。
     """
 
     # --- 從傳入的 `outfit_info` 字典中，安全的獲取穿搭建議文字和圖片 URL ---
@@ -37,7 +39,7 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
     display_day_index = outfit_info.get("day_index", day_offset + 1) # 如果 outfit_info 沒有，再使用 day_offset 計算（作為備用）
 
     # --- 組合主標題：使用 day_index 動態顯示「未來第 X 天」---
-    # 結合縣市名稱和動態的日期偏移量（未來第幾天），讓使用者能清楚知道這張卡片顯示的是哪一個縣市、哪一天的資訊
+    # 結合縣市名稱和動態的日期偏移量（未來第幾天），讓用戶能清楚知道這張卡片顯示的是哪一個縣市、哪一天的資訊
     title_text = f"📍 {location_name} 未來第 {display_day_index} 天穿搭建議"
 
     # --- 組合副標題 (日期和星期) ---

@@ -2,8 +2,8 @@
 """
 穿搭建議功能的核心處理器。
 處理來自 LINE Bot 與穿搭建議相關的 Postback 事件。
-`handle_outfit_advisor` 用於處理使用者進入穿搭功能時的入口點。
-`handle_outfit_query` 根據使用者選擇的時段（如今日、即時、未來預報）來提供相應的穿搭建議。
+`handle_outfit_advisor` 用於處理用戶進入穿搭功能時的入口點。
+`handle_outfit_query` 根據用戶選擇的時段（如今日、即時、未來預報）來提供相應的穿搭建議。
 這個處理器將數據獲取、穿搭建議邏輯判斷和最終的訊息呈現三個步驟串連起來，實現一個完整且模組化的穿搭建議服務。
 """
 import logging
@@ -38,16 +38,16 @@ logger = logging.getLogger(__name__)
 def handle_outfit_advisor(api, event: PostbackEvent) -> bool:
     """
     處理來自 Rich Menu 或其他入口的 "outfit_advisor" Postback。
-    此函式是進入穿搭建議功能的第一步，會檢查使用者是否已設定預設城市。
-    如果有，直接回覆一個穿搭建議時段 Flex Message；如果沒有，則會提示使用者先設定城市。
+    此函式是進入穿搭建議功能的第一步，會檢查用戶是否已設定預設城市。
+    如果有，直接回覆一個穿搭建議時段 Flex Message；如果沒有，則會提示用戶先設定城市。
     """
     user_id = event.source.user_id
     reply_token = event.reply_token
     logger.info(f"[OutfitHandler] 用戶 {user_id} 請求穿搭建議主選單。")
 
-    # --- 檢查使用者是否已經設定了預設城市 ---
+    # --- 檢查用戶是否已經設定了預設城市 ---
     # 所有與天氣相關的功能都需要一個指定的城市
-    # 通過在功能入口處就進行檢查，可以避免後續在沒有城市資訊的情況下處理邏輯，減少不必要的 API 請求和錯誤，並引導使用者完成必要的設定
+    # 通過在功能入口處就進行檢查，可以避免後續在沒有城市資訊的情況下處理邏輯，減少不必要的 API 請求和錯誤，並引導用戶完成必要的設定
     default_user_city = get_default_city(user_id)
     if default_user_city:
         default_city = normalize_city_name(default_user_city)
@@ -61,8 +61,8 @@ def handle_outfit_advisor(api, event: PostbackEvent) -> bool:
 def handle_outfit_query(api, event: PostbackEvent) -> bool:
     """
     處理更具體的 "outfit_query" Postback 動作 (例如：今日、即時、未來穿搭建議)。
-    此函式會解析 Postback data 中的參數，並根據使用者的選擇調用對應的數據獲取和邏輯處理函式。
-    最終將生成的 Flex Message 回覆給使用者，這個函式是整個穿搭建議功能的執行核心。
+    此函式會解析 Postback data 中的參數，並根據用戶的選擇調用對應的數據獲取和邏輯處理函式。
+    最終將生成的 Flex Message 回覆給用戶，這個函式是整個穿搭建議功能的執行核心。
     """
     user_id = event.source.user_id
     reply_token = event.reply_token
@@ -78,7 +78,7 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
     """
     這是一個必要的防呆機制。
     如果 Postback data 中沒有包含城市資訊，後續所有邏輯都無法執行。
-    提早返回並給予錯誤訊息，可以防止程式因 `None` 值而崩潰，並引導使用者重新操作。
+    提早返回並給予錯誤訊息，可以防止程式因 `None` 值而崩潰，並引導用戶重新操作。
     """
     if not target_query_city:
         logger.error(f"[OutfitHandler] 無法從 Postback data 中獲取查詢城市。")
@@ -90,11 +90,11 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
         # --- 處理今日穿搭建議的邏輯區塊 ---
         if query_type == "today":
             """
-            這段程式碼專門處理使用者選擇「今日穿搭建議」的情況。
+            這段程式碼專門處理用戶選擇「今日穿搭建議」的情況。
             程式碼流程：
             1. 數據獲取：首先呼叫 `get_today_all_weather_data` 聚合器來獲取所需的全部天氣數據。
             2. 邏輯處理：然後將這些數據傳遞給 `get_outfit_suggestion_for_today_weather` 函式，進行穿搭判斷並生成文字和圖片。
-            3. 訊息呈現：最後，調用 `build_today_outfit_flex` 函式將處理後的資訊組合成一個 Flex Message，並發送給使用者。
+            3. 訊息呈現：最後，調用 `build_today_outfit_flex` 函式將處理後的資訊組合成一個 Flex Message，並發送給用戶。
             這種分層設計讓每個函式各司其職，易於維護和測試。
             """
             # 1. 使用數據聚合器取得該城市所有天氣預報數據
@@ -153,7 +153,7 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
             程式碼流程：
             1. 數據獲取：首先呼叫 `fetch_and_parse_weather_data` 來獲取即時天氣觀測數據。
             2. 邏輯處理：然後將即時數據傳遞給 `get_outfit_suggestion_for_current_weather` 進行穿搭邏輯判斷。
-            3. 訊息呈現：最後，使用 `build_current_outfit_flex` 來構建 Flex Message 卡片，並回覆給使用者。
+            3. 訊息呈現：最後，使用 `build_current_outfit_flex` 來構建 Flex Message 卡片，並回覆給用戶。
             這種流程確保即時數據能夠被正確處理和呈現。
             """
             # 1. 取得與解析該城市的即時天氣數據
@@ -196,7 +196,7 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
             2. 邏輯處理：將預報數據傳遞給 `get_outfit_suggestion_for_forecast_weather` 進行穿搭建議邏輯判斷。
             3. 訊息呈現：這裡採用了更複雜的 `FlexCarousel` 結構，通過 `convert_forecast_to_bubbles` 函式，生成包含每日天氣預報和穿搭建議的 `FlexBubble` 列表。
             4. 發送訊息：最後將這些 `FlexBubble` 包裝成 `FlexCarousel` 並發送。
-            這樣可以讓使用者在一則訊息中，橫向滑動查看未來多天的穿搭建議，提供視覺化體驗。
+            這樣可以讓用戶在一則訊息中，橫向滑動查看未來多天的穿搭建議，提供視覺化體驗。
             """
             # 預設為查詢未來 7 天的預報
             days = 7
@@ -250,7 +250,7 @@ def handle_outfit_query(api, event: PostbackEvent) -> bool:
             
         # --- 未知的查詢類型 ---
         # 這段程式碼處理了所有不符合上述 `if/elif` 條件的 `query_type`
-        # 捕獲未預期的 `query_type` 值，避免程式繼續執行無效的邏輯，並向使用者發送一個友善的錯誤訊息，告知他們當前無法處理該請求
+        # 捕獲未預期的 `query_type` 值，避免程式繼續執行無效的邏輯，並向用戶發送一個友善的錯誤訊息，告知他們當前無法處理該請求
         else:
             logger.warning(f"[OutfitHandler] 未知的穿搭查詢類型: {query_type}")
             send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法識別的穿搭建議類型。")])

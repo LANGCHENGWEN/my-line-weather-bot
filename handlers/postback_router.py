@@ -1,11 +1,11 @@
 # handlers/postback_router.py
 """
-中央控制台，接收所有來自使用者點擊按鈕的 Postback 事件。
+中央控制台，接收所有來自用戶點擊按鈕的 Postback 事件。
 這個檔案是 LINE Bot 處理 Postback 事件的核心路由器。
-它的主要職責是解析使用者點擊 Rich Menu 或 Flex Message 按鈕後傳來的 `postback.data`，並根據其中的 `action` 參數，執行對應的邏輯。
+它的主要職責是解析用戶點擊 Rich Menu 或 Flex Message 按鈕後傳來的 `postback.data`，並根據其中的 `action` 參數，執行對應的邏輯。
 這些邏輯包含：
 1. 切換 Rich Menu (圖文選單)。
-2. 設定特定的使用者狀態，以引導後續的文字輸入。
+2. 設定特定的用戶狀態，以引導後續的文字輸入。
 3. 導向到不同的模組與函式，以處理特定的業務功能。
 """
 import logging
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 """
 定義從 Postback 的 `action` 到 Rich Menu 別名 (alias) 的映射關係。
 alias 需與 rich_menu_manager/rich_menu_configs.py 的別名一致 (Rich Menu 母選單)。
-當使用者點擊 Rich Menu 上的某個母選單功能按鈕時，Rich Menu 介面也能跟著切換到對應的子選單。
+當用戶點擊 Rich Menu 上的某個母選單功能按鈕時，Rich Menu 介面也能跟著切換到對應的子選單。
 """
 ACTION_TO_ALIAS = {
     "weather_query"       : "weather_query_alias", # 天氣查詢母選單
@@ -45,10 +45,10 @@ ACTION_TO_ALIAS = {
 """
 ACTION_DISPATCH_HANDLERS = {
     # 專門處理設定狀態的 action
-    "change_city"         : ("handlers.postback_router", "handle_change_city"),         # 查詢即時天氣其他縣市時，等待使用者輸入
-    "forecast_other_city" : ("handlers.postback_router", "handle_forecast_other_city"), # 查詢未來預報其他縣市時，等待使用者輸入
-    "outfit_other_city"   : ("handlers.postback_router", "handle_outfit_other_city"),   # 查詢穿搭建議其他縣市時，等待使用者輸入
-    "change_default_city" : ("handlers.postback_router", "handle_change_default_city"), # 切換預設城市時，等待使用者輸入
+    "change_city"         : ("handlers.postback_router", "handle_change_city"),         # 查詢即時天氣其他縣市時，等待用戶輸入
+    "forecast_other_city" : ("handlers.postback_router", "handle_forecast_other_city"), # 查詢未來預報其他縣市時，等待用戶輸入
+    "outfit_other_city"   : ("handlers.postback_router", "handle_outfit_other_city"),   # 查詢穿搭建議其他縣市時，等待用戶輸入
+    "change_default_city" : ("handlers.postback_router", "handle_change_default_city"), # 切換預設城市時，等待用戶輸入
     "set_status"          : ("settings.settings_handler", "handle_settings_postback"),  # 推播狀態設定
 
     # 通用模組處理
@@ -64,7 +64,7 @@ ACTION_DISPATCH_HANDLERS = {
     "solar_terms_push"          : ("settings.settings_handler", "handle_settings_postback")               # 節氣小知識推播
 }
 
-# --- 通用輔助函式：設定使用者狀態、發送回覆並記錄日誌 ---
+# --- 通用輔助函式：設定用戶狀態、發送回覆並記錄日誌 ---
 def _set_state_and_reply(api, event, action: str, state_name: str, reply_text: str):
     """
     這是為了避免在多個函式中重複相同的「設定狀態 -> 回覆訊息 -> 記錄日誌」這三個步驟。
@@ -79,8 +79,8 @@ def _set_state_and_reply(api, event, action: str, state_name: str, reply_text: s
     return True
 
 """
-以下的 4 個函式都是為了回應使用者點擊「查詢其他縣市」或「切換預設城市」的按鈕。
-這些按鈕的主要目的不是立即回覆資訊，而是將使用者帶入一個特定的狀態，讓 bot 準備好接收使用者接下來的文字輸入（即縣市名稱）。
+以下的 4 個函式都是為了回應用戶點擊「查詢其他縣市」或「切換預設城市」的按鈕。
+這些按鈕的主要目的不是立即回覆資訊，而是將用戶帶入一個特定的狀態，讓 bot 準備好接收用戶接下來的文字輸入（即縣市名稱）。
 透過呼叫通用的 `_set_state_and_reply` 輔助函式，可以精簡程式碼，並確保設定狀態和發送提示訊息的邏輯一致。
 """
 def handle_change_city(api, event):
@@ -110,18 +110,18 @@ def handle_outfit_other_city(api, event):
 def handle_change_default_city(api, event):
     user_id = event.source.user_id
 
-    # 1. 取得使用者目前的預設城市
+    # 1. 取得用戶目前的預設城市
     current_default_city = get_default_city(user_id)
     if not current_default_city:
         current_default_city = "未設定預設城市" # 如果找不到預設城市，顯示「未設定預設城市」
 
-    # 2. 顯示使用者目前的預設城市
+    # 2. 顯示用戶目前的預設城市
     combined_text = (
         f"您目前的預設城市是：{current_default_city}\n\n"
         "請輸入您想設定的預設城市名稱，例如：台中市 或 台北市"
     )
 
-    # 3. 設定狀態並等待使用者輸入城市名稱
+    # 3. 設定狀態並等待用戶輸入城市名稱
     return _set_state_and_reply(
         api, event,
         action="切換預設城市",
@@ -189,7 +189,7 @@ def handle(event):
     """
     這是路由器的第一步。
     檢查 Postback 的 `action` 是否與 `ACTION_TO_ALIAS` 字典中的 Rich Menu 別名有對應關係。
-    立即處理 Rich Menu 切換，可以確保使用者介面（Rich Menu）能夠即時更新，提供流暢的互動體驗。
+    立即處理 Rich Menu 切換，可以確保用戶介面（Rich Menu）能夠即時更新，提供流暢的互動體驗。
     處理完畢後，會直接回傳 `True` 來終止後續的處理，因為這個 Postback 的主要目的已經達成。
     """
     alias = ACTION_TO_ALIAS.get(action)
@@ -215,7 +215,7 @@ def handle(event):
     # 3. 若沒有對應 action ，也沒有導向模組
     """
     這是路由器的最後一道防線。
-    如果一個 Postback 的 `action` 既沒有對應的 Rich Menu 別名，也沒有對應的處理函式，為了避免 bot 保持沉默或出錯，會發送一個通用的錯誤回覆給使用者，並記錄警告日誌。
+    如果一個 Postback 的 `action` 既沒有對應的 Rich Menu 別名，也沒有對應的處理函式，為了避免 bot 保持沉默或出錯，會發送一個通用的錯誤回覆給用戶，並記錄警告日誌。
     回傳 `True` 確保事件被標記為已處理，防止其他地方嘗試再次處理這個未知的 Postback。
     """
     logger.warning(f"[PostbackRouter] 未知的 postback action: {action}")

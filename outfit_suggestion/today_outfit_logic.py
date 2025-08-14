@@ -1,6 +1,6 @@
 # outfit_suggestion/today_outfit_logic.py
 """
-根據多個氣象數據來源，為使用者生成一個全面的「今日穿搭建議」。
+根據多個氣象數據來源，為用戶生成一個全面的「今日穿搭建議」。
 整合了逐時預報、整體天氣概況和紫外線指數等資訊，並根據這些數據中的體感溫度、濕度、降雨機率、風速與紫外線指數等關鍵因子，動態產生穿搭文字建議和對應的圖片連結。
 """
 import logging
@@ -34,27 +34,30 @@ def get_outfit_suggestion_for_today_weather(
     uv_data: Dict[str, Any] | None
 ) -> Dict[str, Any]:
     """
-    根據綜合天氣數據，為使用者生成每日穿搭建議。
+    根據綜合天氣數據，為用戶生成每日穿搭建議。
     接收地點、逐時預報、整體天氣概況和紫外線指數等多種數據，依據這些資訊中的體感溫度、濕度、降雨機率、風速和紫外線指數，邏輯性的判斷並組合成一個包含多個層次的穿搭建議文本，並挑選出最能代表今日天氣狀況的圖片 URL。
     最後將所有相關數據打包成一個字典返回，供上層的 Flex Message 建立器使用。
-    general_forecast (dict)：F-C0032-001 整體天氣狀況數據字典。
-        'weather_phenomenon' (天氣現象，如晴、陰、雨)
-        'max_temp_raw' (最高溫度，數值，用於判斷)
-        'min_temp_raw' (最低溫度，數值，用於判斷)
-        'formatted_temp_range' (組合的溫度區間顯示字串)
-        'pop_raw' (降雨機率，數值，用於判斷)
-        'pop_formatted' (組合的降雨機率顯示字串)
-    hourly_forecast (list)：F-D0047-089 逐小時天氣數據列表。
-        'apparent_temp_raw' (體感溫度，數值，用於判斷)
-        'apparent_temp_formatted' (組合的體感溫度顯示字串)
-        'humidity_raw' (濕度，數值，用於判斷)
-        'wind_scale_raw' (蒲福風級數字，用於判斷)
-        'wind_scale_formatted' (組合的蒲福風級顯示字串)
-    uv_data (dict)：O-A0005-001 紫外線指數數據字典。
-        'UVIndexRaw' (紫外線指數，數值，用於判斷)
-        'UVIndexFormatted' (組合的紫外線指數顯示字串)
-    Returns：
-        dict：包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
+    
+    Args:
+        general_forecast (dict): F-C0032-001 整體天氣狀況數據字典。
+            'weather_phenomenon' (天氣現象，如晴、陰、雨)
+            'max_temp_raw' (最高溫度，數值，用於判斷)
+            'min_temp_raw' (最低溫度，數值，用於判斷)
+            'formatted_temp_range' (組合的溫度區間顯示字串)
+            'pop_raw' (降雨機率，數值，用於判斷)
+            'pop_formatted' (組合的降雨機率顯示字串)
+        hourly_forecast (list): F-D0047-089 逐小時天氣數據列表。
+            'apparent_temp_raw' (體感溫度，數值，用於判斷)
+            'apparent_temp_formatted' (組合的體感溫度顯示字串)
+            'humidity_raw' (濕度，數值，用於判斷)
+            'wind_scale_raw' (蒲福風級數字，用於判斷)
+            'wind_scale_formatted' (組合的蒲福風級顯示字串)
+        uv_data (dict): O-A0005-001 紫外線指數數據字典。
+            'UVIndexRaw' (紫外線指數，數值，用於判斷)
+            'UVIndexFormatted' (組合的紫外線指數顯示字串)
+
+    Returns:
+        dict: 包含 'suggestion_text' 和 'suggestion_image_url' 的字典。
     """
     logger.debug(f"[OutfitLogic] 正在為 {location} 產生穿搭建議。")
 
@@ -253,7 +256,7 @@ def get_outfit_suggestion_for_today_weather(
         suggestion_text.append("• 紫外線指數資訊不完整。")
 
     # --- 如果沒有特定建議，給出預設文字 ---
-    # 這是一個最終的 fallback 邏輯，確保即使所有天氣數據都缺失，使用者也能收到一個預設的訊息
+    # 這是一個最終的 fallback 邏輯，確保即使所有天氣數據都缺失，用戶也能收到一個預設的訊息
     if not suggestion_text:
         suggestion_text.append("• 今天天氣狀況良好，穿著舒適即可。")
         if suggestion_image_url == IMAGE_URLS["DEFAULT"]: # 如果前面沒有圖，給個預設

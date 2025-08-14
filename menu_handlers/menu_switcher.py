@@ -1,7 +1,7 @@
 # menu_handlers/menu_switcher.py
 """
 這個檔案的核心職責是管理和執行 LINE Bot 的 Rich Menu（圖文選單）切換。
-根據使用者傳送的特定指令（通常是文字訊息或 Postback 事件），動態將使用者目前的 Rich Menu 變更為另一個預設好的選單。
+根據用戶傳送的特定指令（通常是文字訊息或 Postback 事件），動態將用戶目前的 Rich Menu 變更為另一個預設好的選單。
 """
 import logging
 from typing import Optional
@@ -50,7 +50,7 @@ def init_menu_aliases(main_alias, weather_alias, typhoon_alias, life_alias, sett
     }
     logger.info(f"menu_switcher: _alias_map 已初始化 → {_alias_map}")
 
-# --- 私有輔助函式：用於根據 Rich Menu 的別名來獲取 ID 並將選單綁定給指定的使用者 ---
+# --- 私有輔助函式：用於根據 Rich Menu 的別名來獲取 ID 並將選單綁定給指定的用戶 ---
 def _link_rich_menu_by_alias(line_bot_api: MessagingApi, user_id: str, alias_id: str) -> bool:
     """
     此函式會先嘗試從本地的 JSON 檔案中獲取 Rich Menu ID，如果找不到，才會呼叫 LINE API 獲取。
@@ -94,10 +94,10 @@ def switch_to_alias(api, user_id: str, alias: Optional[str]) -> bool:
         logger.info(f"[RichMenu] user {user_id} → {alias}")
     return ok
 
-# --- 文字訊息的選單切換處理函式，用於根據使用者輸入的文字來切換 Rich Menu ---
+# --- 文字訊息的選單切換處理函式，用於根據用戶輸入的文字來切換 Rich Menu ---
 def handle_menu_switching(event: MessageEvent, line_bot_api: MessagingApi) -> bool:
     """
-    提供使用者另一種方式來導航選單，除了點擊按鈕之外，也可以直接輸入文字指令。
+    提供用戶另一種方式來導航選單，除了點擊按鈕之外，也可以直接輸入文字指令。
     處理流程：檢查訊息類型 -> 檢查是否有匹配的選單文字 -> 切換選單 -> 回覆確認訊息。
     """
     # 1. 檢查訊息類型
