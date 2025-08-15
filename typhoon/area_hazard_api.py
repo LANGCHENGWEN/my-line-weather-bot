@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # --- 中央氣象署地區影響預警 API 客戶端，用於取得 W-C0033-002 天氣現象預警資料 ---
 class AreaHazardApiClient:
-    # --- 初始化 AreaHazardApiClient ---
+    # --- 初始化 AreaHazardApiClient 類別 ---
     def __init__(self, authorization_code: str):
         """ 
         Args:

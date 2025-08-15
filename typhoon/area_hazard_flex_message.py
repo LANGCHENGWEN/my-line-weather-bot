@@ -16,7 +16,7 @@ from linebot.v3.messaging.models import (
 
 logger = logging.getLogger(__name__)
 
-# --- 小工具：用於創建一個包含「標籤（Key）」和「值（Value）」的水平佈局 FlexBox ---
+# --- 小工具：用於創建一個包含「標籤（label）」和「值（Value）」的水平佈局 FlexBox ---
 def make_kv_row_area_hazard(label: str, value: str) -> FlexBox:
     """
     避免在主函式中重複撰寫相同的 FlexBox 結構，讓程式碼更簡潔、更易於維護。
@@ -53,9 +53,7 @@ def make_kv_row_area_hazard(label: str, value: str) -> FlexBox:
     )
 
 # --- 根據一個包含多個預警資訊的列表，動態建構 Flex Message ---
-def create_area_hazard_flex_message(
-    warnings: List[Dict[str, Any]], target_city: Optional[str] = None
-) -> Optional[Message]:
+def create_area_hazard_flex_message(warnings: List[Dict[str, Any]]) -> Optional[Message]:
     """
     1. 遍歷每一個預警，並為每個預警建立一個獨立的 Flex Bubble。
     2. 每個 Bubble 都會根據預警的標題、時間、地區和說明等資訊進行排版。
@@ -63,7 +61,6 @@ def create_area_hazard_flex_message(
 
     Args:
         warnings (List[Dict[str, Any]]): 包含解析和格式化後預警資訊的字典列表。
-        target_city (Optional[str]): 用戶查詢的目標城市，用於 alt_text 顯示。
      
     Returns:
         Optional[Message]: 構建好的 FlexMessage (可能是 FlexBubble 或 FlexCarousel)；如果沒有預警，返回 None。
@@ -159,11 +156,11 @@ def create_area_hazard_flex_message(
     """
     if len(bubbles) == 1:
         return FlexMessage(
-            alt_text=f"{target_city}地區影響預警" if target_city else "全台地區影響預警",
+            alt_text="全台地區影響預警",
             contents=bubbles[0]
         )
     else:
         return FlexMessage(
-            alt_text=f"{target_city}地區影響預警" if target_city else "全台地區影響預警",
+            alt_text="全台地區影響預警",
             contents=FlexCarousel(contents=bubbles)
         )
