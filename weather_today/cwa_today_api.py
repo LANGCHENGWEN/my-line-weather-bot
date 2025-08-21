@@ -34,16 +34,19 @@ def get_cwa_today_data(api_key: str, location_name: str) -> dict | None:
 
     try:
         logger.info(f"正在從中央氣象署 API ({CWA_FORECAST_36HR_API}) 取得 {location_name} 的今日天氣資料..")
+        # 發送 HTTP GET 請求
+        # `timeout=10` 設置超時時間，防止程式因網路延遲而卡住
         response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()  # 如果狀態碼不是 200，則拋出 HTTPError
+        response.raise_for_status()  # 這是 `requests` 函式庫的一個功能；如果 HTTP 響應狀態碼不是 2xx，會自動拋出一個 `HTTPError`
 
         logger.debug(f"中央氣象署 API 原始回應文字 (當 elementName 啟用時):\n{response.text}")
 
-        data = response.json()
+        data = response.json() # 把一個 HTTP 回應（response）物件的內容，解析成 Python 的字典或列表等資料結構
         # 確保這一行存在，並且它的日誌級別是 DEBUG
         logger.debug(f"接收到的 CWA API 原始資料: {data}")
 
         # 檢查 'success' 字段是否為 "true"
+        # 驗證 API 回應的成功狀態
         if data.get("success") != "true":
             logger.warning(f"CWA API 回應 'success' 為 False，未能成功取得資料。回應內容: {data.get('message', '無訊息')}")
             return None

@@ -1,101 +1,97 @@
-# forecast_handler.py
-# 主要處理天氣預報用戶輸入的回覆邏輯 (文字訊息邏輯)
-# 負責開啟和引導天氣預報的對話
+# weather_forecast/forecast_handler.py
+"""
+處理與天氣預報相關的用戶輸入和回覆邏輯。
+處理兩種主要情境：
+1. 當用戶輸入「未來預報」等關鍵字時，回覆一個 Flex Message 選單，讓用戶選擇預報天數，並將用戶狀態設定為等待選擇。
+2. 當其他模組（例如 `city_input_handler`）處理完用戶輸入的縣市名稱後，這個模組會被調用，根據用戶輸入的城市，再次回覆一個天數選擇選單，但這次的查詢目標城市會是用戶指定的城市。
+"""
 import logging
-from datetime import datetime
 from linebot.v3.messaging import ApiClient
-from linebot.v3.messaging.models import TextMessage, FlexMessage
-from linebot.v3.webhooks.models import MessageEvent, PostbackEvent
-# from linebot.v3.models import PostbackAction # 引入 PostbackAction
-
-# 載入預報天氣相關功能
-# from .welcome_flex import create_welcome_flex_message
-from .forecast_options_flex import create_forecast_options_flex_message
-# from .cwa_forecast_api import get_cwa_forecast_data
-# from .weather_forecast_parser import parse_forecast_weather
-# from .line_forecast_messaging import format_forecast_weather_message # 只導入 forecast 的格式化
+from linebot.v3.messaging.models import TextMessage
+from linebot.v3.webhooks.models import MessageEvent
 
 from utils.text_processing import normalize_city_name
-# 載入通用訊息發送功能 (如果新增了 line_common_messaging.py，這裡就從那裡導入)
 from utils.line_common_messaging import send_line_reply_message
+from utils.firestore_manager import set_user_state, get_default_city # 導入用戶數據管理器
 
-# 載入使用者狀態管理器
-from utils.firestore_manager import (
-    set_user_state, get_user_state,
-    is_valid_city, get_default_city, clear_user_state
-)
+from .forecast_options_flex import create_forecast_options_flex_message
 
 logger = logging.getLogger(__name__)
 
-# 在 handlers.py 裡面需要有 line_bot_api 的實例來發送訊息
-# 這個應該在 initialize_handlers 裡面傳入
-'''
-def initialize_handlers(line_bot_api_instance, handler_instance):
-    """
-    初始化 handlers 模組，傳遞 LineBotApiExt 和 WebhookHandler 實例。
-    """
-    global _line_bot_api, _handler
-    _line_bot_api = line_bot_api_instance
-    _handler = handler_instance
-    logger.info("Handlers 模組已初始化。")
-
-    _handler.add(MessageEvent, message=TextMessage)(handle_message)
-    logger.info("訊息事件處理器已註冊。")
-'''
-
+# --- 與天氣預報相關的文字訊息 ---
 def handle_forecast_message(messaging_api, event: MessageEvent) -> bool:
     """
-    處理與天氣預報相關的文字訊息。
-    根據使用者當前狀態或訊息內容，回覆第一個選單或處理鄉鎮市區輸入。
-    如果訊息被此 handler 處理，則返回 True，否則返回 False。
+    檢查用戶輸入是否為「未來預報」；如果是，則觸發天氣預報的對話流程。
+    根據用戶是否已設定預設城市來決定初始查詢的城市，並回覆一個天數選擇的 Flex Message。
+    如果訊息被此 handler 處理，則返回 True，否則返回 False，讓其他 handler 繼續處理。
     """
-    user_id = event.source.user_id # 獲取 user_id
+    user_id = event.source.user_id
     message_text = event.message.text
     reply_token = event.reply_token
-    # user_current_state = get_user_state(user_id)
 
-    # 1. 處理啟動天氣查詢的關鍵字 (例如使用者輸入 "未來預報" 或 "天氣")
+    # 處理啟動天氣查詢的關鍵字
     if message_text == "未來預報":
-        default_city = get_default_city(user_id) or "臺中市"
-        default_city = normalize_city_name(default_city)  # 字串轉換
+        """
+        先嘗試從資料庫取得用戶設定的預設城市；如果沒有設定，則使用「臺中市」作為預設值。
+        `normalize_city_name` 函式確保城市名稱格式統一，例如「臺中」和「台中」都會被處理成一致的名稱。
+        """
+        # 獲取用戶的預設城市，如果沒有則使用 "臺中市"
+        raw_default_city = get_default_city(user_id)
 
-        default_user_city = get_default_city(user_id)
-        if default_user_city is None:
-            default_user_city = "未設定" # 或者你希望的預設顯示文字
+        # 實際查詢用的城市名稱，進行正規化
+        target_query_city = normalize_city_name(raw_default_city or "臺中市")
+
+        # Flex Message 顯示用的城市名稱
+        default_display_city = normalize_city_name(raw_default_city) if raw_default_city else "未設定"
         
+        # 建立並發送 Flex Message
         flex_message = create_forecast_options_flex_message(
-            default_county=default_city,   # 用於顯示的預設城市
-            target_query_city=default_city # 用於實際查詢的目標城市
+            default_county=default_display_city, # 用於顯示的預設城市
+            target_query_city=target_query_city  # 用於實際查詢的目標城市
         )
-        # 修改這裡，傳入 user_id
         send_line_reply_message(messaging_api, reply_token, [flex_message])
         logger.info(f"用戶 {user_id} 請求未來預報，已回覆天數選單。")
 
-        set_user_state(user_id, "awaiting_forecast_selection", data={"city": default_city})
+        # 更新用戶狀態
+        """
+        在回覆選單後，程式會將用戶的狀態設定為 `awaiting_forecast_selection`。
+        為了追蹤對話流程，以便在用戶點擊選單上的按鈕時，主程式能夠知道這是一個天氣預報的選擇動作，並根據附帶的 `data`（包含目標城市）來進行下一步的查詢。
+        """
+        set_user_state(user_id, "awaiting_forecast_selection", data={"city": target_query_city})
         return True
     
-# **修改這裡：處理情境二：使用者輸入縣市名稱後，回覆該縣市的天數選單**
+# --- 用戶輸入城市名稱後，回覆該縣市的天數選單 ---
 def reply_forecast_weather_of_city(api: ApiClient, reply_token: str, user_id: str, target_city: str) -> bool:
     """
-    這個函式用於在用戶輸入特定城市後，回覆該城市的天數選擇 Flex Message。
-    它會被 city_input_handler.py 中的 handle_awaiting_forecast_city_input 調用。
+    在用戶輸入特定城市後，回覆該城市的天數選擇 Flex Message。
+    此函式會被 city_input_handler.py 中的 handle_awaiting_forecast_city_input 調用。
     """
-    logger.info(f"[ForecastHandler] 用戶 {user_id} 輸入縣市 {target_city}，準備回覆該城市的天數選單。")
+    logger.info(f"[ForecastHandler] 用戶 {user_id} 輸入縣市 {target_city}，準備回覆該縣市的天數選單。")
     city_normalized = normalize_city_name(target_city)
 
-    # 獲取用戶的預設城市，用於在 Flex Message 中顯示
+    # 從資料庫獲取用戶的預設城市，用於在 Flex Message 中顯示；如果沒有設定，則顯示「未設定」
     default_user_city = get_default_city(user_id)
     default_display_city = normalize_city_name(default_user_city) if default_user_city else "未設定"
 
-    # 🚀 新增這一行日誌來檢查 default_display_city 的值
+    # 檢查 default_display_city 的值
     logger.debug(f"[ForecastHandler] 用戶 {user_id} 的預設城市 (for display): {default_display_city}")
-    
-    # 這裡不再直接發送天氣預報，而是再次發送天數選單，但以用戶輸入的城市為主
+
+    # 建立並發送 Flex Message
+    """
+    根據傳入的 `target_city` 建立一個新的 Flex Message。
+    `target_query_city` 參數被設定為用戶剛剛輸入的城市，保證當用戶從這個選單中選擇天數時，後續的查詢會針對該城市進行。
+    """
     flex_message = create_forecast_options_flex_message(
         default_county=default_display_city, 
         target_query_city=city_normalized
-)
+    )
 
+    # 檢查 Flex Message 是否成功建立並發送
+    """
+    檢查 `create_forecast_options_flex_message` 的回傳值是否有效。
+    如果成功，就發送訊息並更新用戶狀態；如果失敗，則發送一個錯誤訊息，確保程式不會因 Flex Message 建立失敗而出錯。
+    `set_user_state` 將用戶狀態更新為 `awaiting_forecast_selection`，確保後續的對話流程可以正確進行。
+    """
     if flex_message:
         send_line_reply_message(api, reply_token, [flex_message])
         logger.info(f"[ForecastHandler] 成功回覆天數選單（針對指定城市 {city_normalized}）給 {user_id}。")
@@ -105,101 +101,4 @@ def reply_forecast_weather_of_city(api: ApiClient, reply_token: str, user_id: st
     else:
         logger.error(f"[ForecastHandler] create_forecast_options_flex_message 返回 None 或空。Flex Message 可能有問題。")
         send_line_reply_message(api, reply_token, [TextMessage(text="抱歉，無法載入該城市的天數選單，請稍候再試。")])
-        return True # Flex Message 建立失敗，返回 False
-    
-'''    
-def handle_township_input(messaging_api, event):
-    """處理「輸入鄉鎮市區 或 縣市+鄉鎮市區」兩種情況"""
-    user_id = event.source.user_id
-    reply_token = event.reply_token
-    message_text = event.message.text.strip()
-
-    state = get_user_state(user_id)
-    # 2. 處理使用者輸入鄉鎮市區 (在 "awaiting_township_input" 狀態下)
-    # 這是使用者看到第一個選單後，輸入鄉鎮市區名稱的環節
-    if state == "awaiting_township_input":
-        default_city = get_default_city(user_id) or "臺中市"
-        township = message_text
-
-        flex = create_forecast_options_flex_message(default_city, township)
-        send_line_reply_message(messaging_api, reply_token, [flex])
-
-        # 這裡可以加入鄉鎮市區的有效性檢查，例如查詢資料庫
-        # 為了簡潔，這裡直接使用輸入的鄉鎮市區
-        clear_user_state(user_id)
-        logger.info(f"{user_id} 查詢 {default_city}{township} 預報，已回覆天數選單")
-        return True # 表示此 handler 已處理此訊息
-    
-    # 3. 處理使用者直接輸入「縣市+鄉鎮市區」的邏輯 (如果「查詢其他縣市+鄉鎮市區」按鈕被點擊過，且用戶直接輸入)
-    elif state == "awaiting_full_location":
-        default_city, township = _parse_full_location(message_text)
-
-        if default_city and township and is_valid_city(default_city):
-            flex = create_forecast_options_flex_message(default_city, township)
-            send_line_reply_message(messaging_api, reply_token, [flex])
-
-            clear_user_state(user_id)
-            logger.info(f"{user_id} 查詢 {default_city}{township} 預報，已回覆天數選單")
-        else:
-            send_line_reply_message(
-                messaging_api,
-                reply_token,
-                [TextMessage(text="請用「縣市+鄉鎮市區」格式，例如：台北市信義區")],
-            )
-            logger.warning(f"{user_id} 輸入格式不對：{message_text}")
         return True
-    
-    # 其他狀況不處理
-    return False
-'''
-'''
-# 小工具：從「臺中市北區」解析出 (縣市, 鄉鎮市區)
-def _parse_full_location(message: str) -> tuple[str | None, str | None]:
-    for token in ("市", "縣"):
-        if token in message:
-            default_city, township = message.split(token, 1)
-            default_city += token
-            township = township.strip()
-            return default_city, township or None
-    return None, None
-'''
-
-'''
-        # 嘗試解析 "縣市+鄉鎮市區" 格式
-        parsed_county = None
-        parsed_township = None
-        
-        # 簡易解析：假設格式為 "臺北市信義區" 或 "高雄市鼓山區"
-        # 這是一個非常基礎的解析器，實際應用中建議使用更強健的地理編碼或預定義地點列表。
-        if "市" in message_text:
-            parts = message_text.split("市", 1)
-            parsed_county = parts[0] + "市"
-            if len(parts) > 1:
-                parsed_township = parts[1]
-        elif "縣" in message_text:
-            parts = message_text.split("縣", 1)
-            parsed_county = parts[0] + "縣"
-            if len(parts) > 1:
-                parsed_township = parts[1]
-
-        if parsed_county and parsed_township:
-            clear_user_state(user_id) # 清除狀態
-            # 直接回覆天數選擇選單
-            flex_message = create_forecast_options_flex_message(parsed_county, parsed_township)
-            send_line_reply_message(messaging_api, reply_token, [flex_message])
-            logger.info(f"用戶 {user_id} 直接輸入完整地點 '{parsed_county}{parsed_township}'，已回覆天數選單。")
-            return True
-        else:
-            send_line_reply_message(
-                messaging_api, reply_token, 
-                [TextMessage(text="抱歉，無法識別您輸入的縣市+鄉鎮市區格式，請重新輸入，例如：臺北市信義區。")]
-            )
-            logger.warning(f"用戶 {user_id} 輸入的完整地點格式不正確: '{message_text}'")
-            return True # 雖然格式不對，但我們處理了這個意圖
-
-    # 如果沒有上述任何條件符合，則此 handler 不處理此訊息
-    logger.debug(f"forecast_handler 未處理訊息: '{message_text}'，將傳遞給下一個 handler。")
-    return False # 如果沒有上述任何條件符合，則此 handler 不處理此訊息
-
-logger.info("forecast_handler.py 模組已載入。")
-'''

@@ -52,8 +52,10 @@ class AreaHazardApiClient:
         try:
             # 向 CWA API 發送 HTTP GET 請求
             logger.info(f"嘗試從 CWA API ({self.base_url}) 獲取地區影響預警原始資料...")
+            # 發送 HTTP GET 請求
+            # `timeout=10` 設置超時時間，防止程式因網路延遲而卡住
             response = requests.get(self.base_url, params=params, timeout=10)
-            response.raise_for_status() # 收到 4xx 或 5xx 的 HTTP 狀態碼時自動拋出異常
+            response.raise_for_status() # 這是 `requests` 函式庫的一個功能；如果 HTTP 響應狀態碼不是 2xx，會自動拋出一個 `HTTPError`
 
             data = response.json() # 把一個 HTTP 回應（response）物件的內容，解析成 Python 的字典或列表等資料結構
 
@@ -71,21 +73,21 @@ class AreaHazardApiClient:
             logger.info(f"成功從 CWA 獲取 W-C0033-002 數據。Status: {response.status_code}")
             return data
               
-        except requests.exceptions.HTTPError as e: # 捕獲並處理 HTTP 狀態碼錯誤
+        except requests.exceptions.HTTPError as e:
             logger.error(f"HTTP 錯誤發生: {e.response.status_code} - {e.response.text}", exc_info=True)
             return None
-        except requests.exceptions.ConnectionError as e: # 捕獲並處理連線錯誤
+        except requests.exceptions.ConnectionError as e:
             logger.error(f"連線錯誤發生: {e}", exc_info=True)
             return None
-        except requests.exceptions.Timeout as e: # 捕獲並處理請求超時錯誤
+        except requests.exceptions.Timeout as e:
             logger.error(f"請求超時 (timeout=10秒): {e}", exc_info=True)
             return None
-        except requests.exceptions.RequestException as e: # 捕獲並處理所有其他 requests 庫的錯誤
+        except requests.exceptions.RequestException as e:
             logger.error(f"請求發生未知錯誤: {e}", exc_info=True)
             return None
-        except (KeyError, IndexError) as e: # 捕獲並處理數據解析錯誤
+        except (KeyError, IndexError) as e:
             logger.error(f"解析 CWA API 回應時發生錯誤，可能資料結構不符: {e}", exc_info=True)
             return None
-        except Exception as e: # 捕獲並處理所有未預期的錯誤
+        except Exception as e:
             logger.error(f"發生未預期的錯誤: {e}", exc_info=True)
             return None

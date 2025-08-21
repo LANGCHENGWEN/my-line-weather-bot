@@ -27,10 +27,13 @@ def get_today_uvindex_data(api_key: str, params: dict = None) -> dict | None:
 
     try:
         logger.info(f"正在向 CWB API 請求資料: {url} (Dataset ID: {url})")
+        # 發送 HTTP GET 請求
+        # `timeout=10` 設置超時時間，防止程式因網路延遲而卡住
         response = requests.get(url, params=default_params, timeout=10)
-        response.raise_for_status()  # 檢查 HTTP 請求是否成功
-        data = response.json()
+        response.raise_for_status()  # 這是 `requests` 函式庫的一個功能；如果 HTTP 響應狀態碼不是 2xx，會自動拋出一個 `HTTPError`
+        data = response.json() # 把一個 HTTP 回應（response）物件的內容，解析成 Python 的字典或列表等資料結構
 
+        # 驗證 API 回應的成功狀態
         if data.get("success") != "true":
             error_msg = data.get("message", "API 返回 'success' 為 false。")
             logger.error(f"CWB API 請求失敗 (Dataset ID: {url}): {error_msg}")
