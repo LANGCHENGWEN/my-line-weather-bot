@@ -16,22 +16,21 @@ def get_cwa_forecast_data(api_key: str, location_name: str) -> dict:
     這個函式會發送 HTTP GET 請求到指定的 API 端點，並帶上授權碼、查詢地點等參數。
     處理可能發生的網路錯誤或 JSON 解析錯誤，成功時回傳原始的 JSON 數據字典，失敗則回傳空字典。
     """
+    # --- 設置 API URL ---
     url = CWA_FORECAST_1WEEK_API
+
+    # --- 準備 API 請求參數 ---
     params = {
-        "Authorization": api_key,
-        "locationName": location_name,
-        "elementName": "Wx,MaxT,MinT,PoP6h,T,RH,CI,WS,Wd", # 天氣現象、最高溫、最低溫、6 小時降雨機率、平均溫度、相對濕度、舒適度指數、風速、風向
-        "format": "JSON"
+        "Authorization" : api_key,
+        "locationName"  : location_name,
+        "elementName"   : "Wx,MaxT,MinT,PoP6h,T,RH,CI,WS,Wd", # 天氣現象、最高溫、最低溫、6 小時降雨機率、平均溫度、相對濕度、舒適度指數、風速、風向
+        "format"        : "JSON"
     }
 
-    # API 請求和錯誤處理
-    """
-    使用 `requests` 函式庫來發送 GET 請求。
-    程式使用 `try...except` 區塊來捕獲可能發生的各種錯誤。
-    """
+    # --- 發送請求與錯誤處理 ---
     try:
         logger.info(f"正在從中央氣象署 API 取得 {location_name} 的天氣預報資料...")
-        # 發送 HTTP GET 請求
+        # 使用 `requests` 函式庫發送 HTTP GET 請求
         response = requests.get(url, params=params)
         # 打印 HTTP 狀態碼
         logger.debug(f"CWA API response status code: {response.status_code}")

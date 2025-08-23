@@ -70,7 +70,7 @@ def create_forecast_options_flex_message (default_county: str, target_query_city
                     text=f"您目前的預設城市是 {default_county}。",
                     weight="bold", # 粗體
                     size="md",
-                    wrap=True      # 允許文字換行
+                    wrap=True      # 確保文字在超出範圍時自動換行
                 ),
                 FlexText(
                     text="請選擇想查詢的天數：",

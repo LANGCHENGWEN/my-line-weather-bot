@@ -35,7 +35,7 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
     """
     將穿搭建議的文字列表 `suggestion_text` 轉換為一系列的 `FlexText` 物件。
     因為 Flex Message 的內容元件需要是特定的物件（如 `FlexText`）。
-    透過迴圈，我們可以為每一條建議文字都生成一個獨立的 `FlexText` 物件，並將其加入列表，以便後續的 `FlexBox` 佈局使用。
+    透過迴圈，為每一條建議文字都生成一個獨立的 `FlexText` 物件，並將其加入列表，以便後續的 `FlexBox` 佈局使用。
     """
     suggestion_text_contents = []
     for suggestion in suggestion_text:
@@ -44,7 +44,7 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
                 text=suggestion,
                 size="md",
                 color="#333333",
-                wrap=True,
+                wrap=True, # 確保文字在超出範圍時自動換行
                 margin="sm",
                 align="start"
             )
@@ -52,7 +52,7 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
 
     # --- 天氣資訊區塊內容 ---
     """
-    這裡使用一個輔助函式 `make_kv_row` 來生成天氣資訊的鍵值對佈局。
+    使用一個輔助函式 `make_kv_row` 生成天氣資訊的鍵值對佈局。
     這種方式將常見的鍵值對排版邏輯抽象成一個獨立的函式，讓主函式 `build_today_outfit_flex` 的程式碼更簡潔，並方便在其他地方重複使用相同的排版。
     直接使用 weather_today_parser.py、weather_3days_parser.py、today_uvindex_parser.py 預先處理好的顯示字串。
     """
@@ -148,7 +148,7 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
     """
     將穿搭建議的文字列表 `suggestion_text` 轉換為一系列的 `FlexText` 物件。
     因為 Flex Message 的內容元件需要是特定的物件（如 `FlexText`）。
-    透過迴圈，我們可以為每一條建議文字都生成一個獨立的 `FlexText` 物件，並將其加入列表，以便後續的 `FlexBox` 佈局使用。
+    透過迴圈，為每一條建議文字都生成一個獨立的 `FlexText` 物件，並將其加入列表，以便後續的 `FlexBox` 佈局使用。
     """
     suggestion_text_contents = []
     for suggestion in suggestion_text:
@@ -157,7 +157,7 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
                 text=suggestion,
                 size="md",
                 color="#333333",
-                wrap=True,
+                wrap=True, # 確保文字在超出範圍時自動換行
                 margin="sm",
                 align="start"
             )
@@ -165,7 +165,7 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
 
     # --- 天氣資訊區塊內容 ---
     """
-    這裡使用一個輔助函式 `make_kv_row` 來生成天氣資訊的鍵值對佈局。
+    使用一個輔助函式 `make_kv_row` 生成天氣資訊的鍵值對佈局。
     這種方式將常見的鍵值對排版邏輯抽象成一個獨立的函式，讓主函式 `build_current_outfit_flex` 的程式碼更簡潔，並方便在其他地方重複使用相同的排版。
     直接使用 weather_current_parser.py 預先處理好的顯示字串。
     """

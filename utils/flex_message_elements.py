@@ -29,7 +29,7 @@ def make_kv_row(label: str, value: Any) -> FlexBox:
             ),
             FlexText(
                 text=display_value, # 使用已轉換為字串的值
-                wrap=True,          # 確保當值太長時自動換行，避免超出顯示範圍
+                wrap=True,          # 確保文字在超出範圍時自動換行
                 color="#8A2BE2",  # 紫色
                 size="md",
                 flex=5              # 佔據較大的空間

@@ -49,7 +49,7 @@ def build_weekend_weather_flex(outfit_info: dict, day_data: Dict[str, Any], coun
                 text=suggestion,
                 size="md",
                 color="#333333",
-                wrap=True,
+                wrap=True, # 確保文字在超出範圍時自動換行
                 margin="sm",
                 align="start"
                 # 如果你希望每句話都粗體，可以在這裡加上 "weight": "bold"

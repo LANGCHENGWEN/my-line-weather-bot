@@ -44,7 +44,7 @@ def make_kv_row(label: str, value: str) -> FlexBox:
             ),
             FlexText(
                 text=str(value) if value is not None else "無資料",
-                wrap=True,
+                wrap=True, # 確保文字在超出範圍時自動換行
                 color="#8A2BE2",
                 size="md",
                 flex=1,

@@ -21,18 +21,18 @@ def get_cwa_current_data(api_key: str, location_name: str) -> dict | None:
     接收一個 API Key 和一個城市名稱，然後將城市名稱轉換為對應的測站名稱進行 API 查詢。
     如果請求成功並獲得有效數據，會返回一個字典；如果發生任何錯誤，則返回 None。
     """
-    # 1. 設置 API URL
+    # --- 設置 API URL ---
     url = CWA_CURRENT_WEATHER_API
 
-    # 2. 處理地點名稱
+    # --- 處理地點名稱 ---
     # 在進行映射前，先將用戶輸入的 location_name 進行標準化
     normalized_location_name = normalize_city_name(location_name)
     logger.debug(f"標準化後的 location_name: '{normalized_location_name}'")
 
     logger.debug(f"進入 get_cwa_current_data，收到的 location_name: '{location_name}'")
 
+    # --- 這段程式碼處理兩種可能的輸入情況：---
     """
-    這段程式碼處理兩種可能的輸入情況：
     1. 用戶輸入縣市名稱：例如「臺中市」，程式會在 `COUNTY_TO_STATION_MAP` 中查找對應的測站名稱（如「臺中」）。
     2. 用戶輸入測站名稱：例如「臺北」，如果輸入不在映射表中，程式會直接使用這個輸入作為查詢測站。
     這種邏輯增加函式的彈性，可以處理更多樣的用戶輸入。
@@ -40,8 +40,8 @@ def get_cwa_current_data(api_key: str, location_name: str) -> dict | None:
     station_to_query = COUNTY_TO_STATION_MAP.get(normalized_location_name, normalized_location_name)
     logger.debug(f"經過映射後，要查詢的測站名稱 station_to_query: '{station_to_query}'")
 
+    # --- 映射失敗時提供更精確的錯誤處理和日誌記錄 ---
     """
-    映射失敗時提供更精確的錯誤處理和日誌記錄。
     用戶輸入一個在 ALL_TAIWAN_COUNTIES 列表中的有效縣市名稱（例如 "新北市"）。
     但由於 major_stations.py 中的 COUNTY_TO_STATION_MAP 字典沒有為這個縣市定義對應的氣象站，導致 station_to_query 變數與原始的 normalized_location_name 相同。
     """
@@ -51,17 +51,17 @@ def get_cwa_current_data(api_key: str, location_name: str) -> dict | None:
             logger.warning(f"無法將縣市 '{location_name}' (標準化為 '{normalized_location_name}') 映射到已知的主要測站。請檢查 major_stations.py。")
             return None
 
-    # 3. 準備 API 請求參數
+    # --- 準備 API 請求參數 ---
     params = {
-        "Authorization": api_key,          # 自己的 API Key，用於身份驗證
-        "format": "JSON",                  # 指定返回資料的格式，這裡使用 JSON
-        "limit": 1,                        # 限制返回的記錄數量，`1` 表示只獲取最新的資料，提高效率
-        "StationName": [station_to_query], # 使用映射後得到的測站名稱來精確查詢，而不是獲取所有數據
-        "elementName": ["Weather", "AirTemperature", "RelativeHumidity", "Precipitation", "WindSpeed", "WindDirection", "AirPressure", "UVIndex"] # 明確指定需要哪些天氣元素，減少不必要的數據傳輸量
+        "Authorization" : api_key,          # 自己的 API Key，用於身份驗證
+        "format"        : "JSON",                  # 指定返回資料的格式，這裡使用 JSON
+        "limit"         : 1,                        # 限制返回的記錄數量，`1` 表示只獲取最新的資料，提高效率
+        "StationName"   : [station_to_query], # 使用映射後得到的測站名稱來精確查詢，而不是獲取所有數據
+        "elementName"   : ["Weather", "AirTemperature", "RelativeHumidity", "Precipitation", "WindSpeed", "WindDirection", "AirPressure", "UVIndex"] # 明確指定需要哪些天氣元素，減少不必要的數據傳輸量
     }
     logger.debug(f"向中央氣象署 API 發送請求的參數: {params}")
 
-    # 4. 發送請求與錯誤處理
+    # --- 發送請求與錯誤處理 ---
     try:
         logger.info(f"正在從中央氣象署 API ({CWA_CURRENT_WEATHER_API}) 取得 {location_name} 的即時觀測資料...")
         # 發送 HTTP GET 請求
@@ -82,7 +82,7 @@ def get_cwa_current_data(api_key: str, location_name: str) -> dict | None:
         else:
             # API 請求成功但數據內容不符合預期
             logger.warning(f"取得 {location_name} 的即時觀測資料成功，但數據為空或格式不符。回應: {data}")
-            return None # 數據無效，返回 None
+            return None
         
     except requests.exceptions.Timeout:
         logger.error(f"從中央氣象署 API 取得即時觀測資料時發生連線超時錯誤。")

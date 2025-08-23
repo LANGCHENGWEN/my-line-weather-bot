@@ -71,7 +71,7 @@ def build_weather_flex(data: dict) -> FlexBubble:
                     text="--- 資訊僅供參考，請以中央氣象署最新發布為準 ---",
                     size="md",
                     color="#808080",
-                    wrap=True, # 允許文字換行
+                    wrap=True, # 確保文字在超出範圍時自動換行
                     margin="md",
                     align="center"
                 ),

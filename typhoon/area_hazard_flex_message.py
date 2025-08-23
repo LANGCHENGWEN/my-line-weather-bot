@@ -42,7 +42,7 @@ def make_kv_row_area_hazard(label: str, value: str) -> FlexBox:
             ),
             FlexText(
                 text=str(value) if value is not None else "未知時間",
-                wrap=True,
+                wrap=True, # 確保文字在超出範圍時自動換行
                 color="#333333",
                 size="md",
                 flex=1,
@@ -91,8 +91,8 @@ def create_area_hazard_flex_message(warnings: List[Dict[str, Any]]) -> Optional[
             weight="bold",
             size="xl",
             color="#FF0000", # 預警類型用紅色
-            wrap=True,
-            align="center" # 標題置中
+            wrap=True,         # 確保文字在超出範圍時自動換行
+            align="center"     # 標題置中
         )
 
         time_info_box = FlexBox( # 時間資訊
