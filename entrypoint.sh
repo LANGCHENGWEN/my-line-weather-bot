@@ -1,4 +1,3 @@
-# entrypoint.sh
 #!/bin/bash
 # 這一行稱為 Shebang，它告訴作業系統這個腳本應該使用 /bin/bash 來執行
 
