@@ -2,7 +2,7 @@
 """
 統一管理和提供 LINE Messaging API 的客戶端實例。
 通過將 API 客戶端實例化為「全局單例」，避免在程式運作期間重複創建，提高效能和資源利用率。
-主要功能：
+主要職責：
 1. 單例模式：在檔案載入時就創建好 `ApiClient`, `MessagingApi`, `Configuration` 和 `MessagingApiBlob` 的實例。
 2. 依賴注入：提供簡單的函式 (`get_line_bot_apis`, `get_messaging_api`)，讓其他模組可以輕鬆獲取這些實例，而不需要自己處理實例化的細節和設定。
 3. 優化效能：避免每個請求都重新建立 API 連線，特別是在處理高流量時，能顯著減少延遲和資源消耗。

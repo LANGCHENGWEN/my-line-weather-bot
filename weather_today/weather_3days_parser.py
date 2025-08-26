@@ -40,13 +40,13 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
         logger.warning("天氣數據中 'records' 下的 'Locations' 列表為空或不存在。")
         return None
 
-    # 在多層嵌套的 JSON 結構中，找到與 `location_name` 相匹配的數據條目
+    # --- 在多層嵌套的 JSON 結構中，找到與 `location_name` 相匹配的數據 ---
     """
-    使用兩個嵌套的迴圈：外層迴圈遍歷 `Locations`，內層迴圈遍歷每個 `Locations` 條目下的 `Location`。
-    一旦找到匹配的 `'LocationName'`，就會將該數據條目賦值給 `target_location_data` 並立即跳出迴圈。
+    使用兩個嵌套的迴圈：外層迴圈遍歷 `Locations`，內層迴圈遍歷每個 `Locations` 下的 `Location`。
+    一旦找到匹配的 `'LocationName'`，就會將該數據賦值給 `target_location_data` 並立即跳出迴圈。
     """
     target_location_data = None
-    # 遍歷 `Locations` 列表，找到包含目標地點數據的條目
+    # 遍歷 `Locations` 列表，找到包含目標地點的數據
     for loc_entry in locations_entries:
         sub_locations = loc_entry.get("Location", []) # 獲取內層的 Location 列表
         # 遍歷 `Location` 列表
@@ -70,7 +70,7 @@ def parse_3days_weather(data: dict, location_name: str) -> list | None:
     
     relevant_elements = ["體感溫度", "相對濕度", "風速", "風向"] # 只處理想要的天氣元素
 
-    # 遍歷目標地點下的所有 `'WeatherElement'`
+    # --- 遍歷目標地點下的所有 `'WeatherElement'` ---
     for element in weather_elements:
         element_name = element.get("ElementName")
         if element_name in relevant_elements:

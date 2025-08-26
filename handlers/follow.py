@@ -1,7 +1,7 @@
 # handlers/follow.py
 """
 這個檔案主要負責處理用戶追蹤（follow）或解除封鎖（unblock）Line Bot 的事件。
-它的核心職責是為新加入或重新啟用的用戶提供一個順暢的首次互動體驗，包括發送歡迎訊息、引導他們設定預設城市，以及為他們綁定預設的 Rich Menu (圖文選單)。
+它的主要職責是為新加入或重新啟用的用戶提供一個順暢的首次互動體驗，包括發送歡迎訊息、引導他們設定預設城市，以及為他們綁定預設的 Rich Menu (圖文選單)。
 """
 import logging
 from utils.api_helper import get_messaging_api

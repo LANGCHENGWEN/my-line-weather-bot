@@ -25,8 +25,8 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
     """
 
     # --- 從傳入的 `outfit_info` 字典中，安全的獲取穿搭建議文字和圖片 URL ---
-    # 使用了 `.get()` 方法，並為每個鍵提供了預設值，這樣即使在 `outfit_info` 字典中缺少某些鍵，程式也不會報錯，而是會使用預設的圖片或文字
-    # 確保在任何情況下都能回傳一個有效的 Flex Message，提高了程式的穩定性
+    # 使用 `.get()` 方法，並為每個鍵提供預設值，這樣即使在 `outfit_info` 字典中缺少某些鍵，程式也不會報錯，而是會使用預設的圖片或文字
+    # 確保在任何情況下都能回傳一個有效的 Flex Message，提高程式的穩定性
     suggestion_text = outfit_info.get("outfit_suggestion_text", ["目前無法提供今日穿搭建議。"])
     suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
     date_display_string = outfit_info.get("date_full_formatted", "未知日期")
@@ -138,8 +138,8 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
     """
 
     # --- 從傳入的 `outfit_info` 字典中，安全的獲取穿搭建議文字和圖片 URL ---
-    # 使用了 `.get()` 方法，並為每個鍵提供了預設值，這樣即使在 `outfit_info` 字典中缺少某些鍵，程式也不會報錯，而是會使用預設的圖片或文字
-    # 確保在任何情況下都能回傳一個有效的 Flex Message，提高了程式的穩定性
+    # 使用 `.get()` 方法，並為每個鍵提供預設值，這樣即使在 `outfit_info` 字典中缺少某些鍵，程式也不會報錯，而是會使用預設的圖片或文字
+    # 確保在任何情況下都能回傳一個有效的 Flex Message，提高程式的穩定性
     suggestion_text = outfit_info.get("suggestion_text", ["目前無法提供即時穿搭建議。"])
     suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
     date_full_formatted = outfit_info.get("observation_time")

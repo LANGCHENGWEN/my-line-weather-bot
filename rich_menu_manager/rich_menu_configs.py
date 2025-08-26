@@ -63,28 +63,28 @@ DEFAULT_RICH_MENU_ALIAS = MAIN_MENU_ALIAS
 """
 ALL_RICH_MENU_CONFIGS = [
     {
-        'get_menu_obj_func': get_main_menu_rich_menu,
-        'image_path': 'rich_menu_manager/rich_menus/main_menu_image.png',
-        'alias': MAIN_MENU_ALIAS
+        'get_menu_obj_func' : get_main_menu_rich_menu,
+        'image_path'        : 'rich_menu_manager/rich_menus/main_menu_image.png',
+        'alias'             : MAIN_MENU_ALIAS
     },
     {
-        'get_menu_obj_func': get_weather_query_rich_menu,
-        'image_path': 'rich_menu_manager/rich_menus/weather_query_menu_image.png',
-        'alias': WEATHER_QUERY_ALIAS
+        'get_menu_obj_func' : get_weather_query_rich_menu,
+        'image_path'        : 'rich_menu_manager/rich_menus/weather_query_menu_image.png',
+        'alias'             : WEATHER_QUERY_ALIAS
     },
     {
-        'get_menu_obj_func': get_typhoon_zone_rich_menu,
-        'image_path': 'rich_menu_manager/rich_menus/typhoon_zone_menu_image.png',
-        'alias': TYPHOON_ZONE_ALIAS
+        'get_menu_obj_func' : get_typhoon_zone_rich_menu,
+        'image_path'        : 'rich_menu_manager/rich_menus/typhoon_zone_menu_image.png',
+        'alias'             : TYPHOON_ZONE_ALIAS
     },
     {
-        'get_menu_obj_func': get_lifestyle_reminders_rich_menu,
-        'image_path': 'rich_menu_manager/rich_menus/life_reminder_menu_image.png',
-        'alias': LIFE_REMINDER_ALIAS
+        'get_menu_obj_func' : get_lifestyle_reminders_rich_menu,
+        'image_path'        : 'rich_menu_manager/rich_menus/life_reminder_menu_image.png',
+        'alias'             : LIFE_REMINDER_ALIAS
     },
     {
-        'get_menu_obj_func': get_settings_rich_menu,
-        'image_path': 'rich_menu_manager/rich_menus/settings_menu_image.png',
-        'alias': SETTINGS_ALIAS
+        'get_menu_obj_func' : get_settings_rich_menu,
+        'image_path'        : 'rich_menu_manager/rich_menus/settings_menu_image.png',
+        'alias'             : SETTINGS_ALIAS
     }
 ]

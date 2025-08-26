@@ -2,7 +2,7 @@
 """
 計算和查詢農曆二十四節氣的相關資訊。
 整合 `lunarcalendar` 函式庫，並提供多個函式，讓其他模組能方便使用。
-主要功能：
+主要職責：
 1. `format_date_with_weekday`：將日期物件格式化為帶有星期幾的字串。
 2. `get_solar_terms_for_year`：獲取指定年份的所有節氣及精確日期。
 3. `get_today_solar_term_info`：檢查今天（或指定日期）是否為某個節氣的開始日，並返回詳細資訊。

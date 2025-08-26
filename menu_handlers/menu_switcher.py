@@ -1,6 +1,6 @@
 # menu_handlers/menu_switcher.py
 """
-這個檔案的核心職責是管理和執行 LINE Bot 的 Rich Menu（圖文選單）切換。
+這個檔案的主要職責是管理和執行 LINE Bot 的 Rich Menu（圖文選單）切換。
 根據用戶傳送的特定指令（通常是文字訊息或 Postback 事件），動態將用戶目前的 Rich Menu 變更為另一個預設好的選單。
 """
 import logging

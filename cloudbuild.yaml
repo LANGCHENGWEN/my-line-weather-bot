@@ -1,50 +1,64 @@
 # cloudbuild.yaml
+# --- 定義替代變數，可以在整個檔案中重複使用這些值 ---
 substitutions:
-  _SERVICE_NAME: line-weather-bot
-  _REGION: asia-east1
+  _SERVICE_NAME: line-weather-bot # 自訂的服務名稱，用於 Docker 映像檔標籤和 Cloud Run 服務名稱
+  _REGION: asia-east1             # Cloud Run 服務部署的區域，這裡的區域是台灣 (Taiwan)
 
+# --- 定義 Cloud Build 執行的一系列動作 ---
+# 這些步驟會按照順序依序執行
 steps:
-  # 步驟 1: 建置 Docker 映像檔
-  # gcr.io/cloud-builders/docker 是 Cloud Build 提供的 Docker 建置器
+  # 步驟 1：建置 Docker 映像檔
+  # `gcr.io/cloud-builders/docker` 是 Google Cloud 提供的官方 Docker 建置器
   - name: 'gcr.io/cloud-builders/docker'
     args: 
-      - 'build'
-      - '--no-cache'   # <--- 關鍵！強制不要用 cache
-      - '-f'
+      - 'build'      # Docker 的建置指令
+      - '--no-cache' # 強制建置時不使用快取，確保總是使用最新的程式碼和依賴
+      - '-f'         # 指定 Dockerfile 的路徑
       - 'Dockerfile'
-      - '-t'
+      - '-t'         # 指定 Docker 映像檔的標籤 (tag)
       - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID'
-      - '.'
-    secretEnv: ['_LINE_CHANNEL_ACCESS_TOKEN'] # <-- 告訴 Cloud Build 需要這個環境變數
+      # `gcr.io/$PROJECT_ID/` 是 Google Container Registry (Docker 映像檔儲存庫) 的標準路徑
+      # `$_SERVICE_NAME` 是在上面 substitutions 定義的變數
+      # `:$BUILD_ID` 是 Cloud Build 自動生成的唯一 ID，用於區分每次的建置版本
+      - '.' # 指定建置上下文 (「所有檔案和資料夾」的集合)，`.` 表示當前目錄
+    secretEnv: ['_LINE_CHANNEL_ACCESS_TOKEN'] # 告訴 Cloud Build 在建置時將指定名稱的密碼作為環境變數傳遞
 
-  # 步驟 2: 將建置好的 Docker 映像檔推送到 Google Container Registry (GCR)
-  # 這一步會自動將映像檔推送到 gcr.io/[你的專案ID]/my-python-app
+  # 步驟 2：將建置好的 Docker 映像檔推送到 Google Container Registry (GCR)
+  # 將映像檔儲存起來，供後續部署使用
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID']
 
-  # （選擇性）自動部署到 Cloud Run
+  # 步驟 3：自動部署到 Cloud Run
+  # `gcr.io/google.com/cloudsdktool/cloud-sdk` 是 Cloud Build 提供的 Cloud SDK 工具，用來執行 `gcloud` 指令
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    entrypoint: 'gcloud' # 指定執行 `gcloud` 指令
     args:
       - 'run'
-      - 'deploy'
-      - '$_SERVICE_NAME'
-      - '--image'
+      - 'deploy'                  # 部署 Cloud Run 服務
+      - '$_SERVICE_NAME'          # 指定要部署的服務名稱 (上面 substitutions 定義的變數)
+      - '--image'                 # 指定要使用的 Docker 映像檔
       - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID'
-      - '--region'
-      - '$_REGION'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--set-secrets'
+      - '--region'                # 指定部署區域
+      - '$_REGION'                # 上面 substitutions 定義的變數
+      - '--platform'              # 指定平台
+      - 'managed'                 # 使用全代管的 Cloud Run 服務 (Google Cloud 負責處理所有底層的基礎設施和運營細節，例如伺服器管理)
+      - '--allow-unauthenticated' # 允許未經驗證的呼叫 (這對 LINE Bot Webhook 是必要的)
+      - '--set-secrets'           # 設定在 Cloud Run 服務中使用的密碼
       - 'LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest'
+      # 將 Google Cloud 的 Secret Manager 中的密碼版本，設定為 Cloud Run 服務的環境變數
+      # 格式為 `環境變數名稱=Secret Manager 密碼名稱:版本`
 
+# --- 定義 Cloud Build 建置時可以存取的密碼 ---
+# 這些密碼來自已經在 Google Cloud 的 Secret Manager 設定過的
 availableSecrets:
   secretManager:
   - versionName: projects/$PROJECT_ID/secrets/LINE_CHANNEL_ACCESS_TOKEN/versions/latest
+  # `versionName` 指定密碼的完整路徑和版本號
     env: '_LINE_CHANNEL_ACCESS_TOKEN'
+    # `env` 指定該密碼在 Cloud Build 環境中對應的環境變數名稱
+    # 這是步驟 1 中的 `secretEnv` 會使用到的名稱
 
-# 選擇性: 儲存建置好的 Docker 映像檔
-# 這會讓 Cloud Build 自動將映像檔推送到 Artifact Registry
+# --- 指定建置完成後需要推送到 Artifact Registry (Docker 映像檔儲存庫) 的映像檔 ---
+# 自動執行推送動作
 images:
   - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID'

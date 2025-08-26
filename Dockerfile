@@ -1,54 +1,54 @@
 # Dockerfile
-# 第一階段：建置環境
-# 使用一個更完整的 Python 映像檔來安裝依賴，確保所有套件都能正確編譯
+# --- 第一階段：建置環境 (builder) ---
+# 用一個功能更完整的 Python 映像檔安裝所有依賴套件
+# 確保在編譯時不會缺少任何必要的系統函式庫，同時可以利用 Docker 快取
 FROM python:3.10 as builder
 
-# 設定容器內的工作目錄
+# 設定容器內的工作目錄為 /app
+# 之後的所有指令 (COPY, RUN) 都會在這個目錄下執行
 WORKDIR /app
 
-# 將 requirements.txt 複製到工作目錄
-# 這樣做可以利用 Docker 的快取機制，當檔案沒變動時，下次建置會更快
+# 將本地的 requirements.txt 檔案複製到容器的 /app 目錄
+# 複製這個檔案是為了利用 Docker 的快取
+# 如果 requirements.txt 沒有變動，接下來的 pip install 指令在下次建置時會直接使用快取結果，大幅加快建置速度
 COPY requirements.txt .
 
 # 安裝所有 Python 依賴套件
+# --no-cache-dir 參數可以防止 pip 儲存快取檔案，進一步減少最終映像檔的體積
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 第二階段：最終執行環境
-# 使用一個更小的映像檔來運行你的應用程式，這可以讓容器更輕量、啟動更快
+# --- 第二階段：最終執行環境 ---
+# 建立一個最小化的、只包含應用程式和必要依賴的映像檔
+# 使用 python:3.10-slim 映像檔，比完整版更小，可以讓容器更輕量、啟動更快
 FROM python:3.10-slim
 
 # 設定最終容器的工作目錄
 WORKDIR /app
 
-# 從建置環境中，將安裝好的依賴複製過來
+# 從第一階段 (builder) 將安裝好的 Python 依賴複製過來
+# 這麼做的好處是不需要在 final stage 重新安裝套件，並只複製「最終需要的檔案」，而非整個建置環境
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 
-# 複製 pip 安裝的執行檔，通常在 /usr/local/bin
+# 複製 pip 安裝的執行檔 (如 gunicorn)，確保這些指令在最終映像檔中可用
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# 再安裝 gunicorn，確保執行檔在 PATH
-# RUN pip install --no-cache-dir gunicorn
-
-# 將你的應用程式程式碼（main.py）複製到容器中
+# 複製專案程式碼（整個當前目錄）到容器中
 COPY . .
 
-# 這行環境變數是正確的，但我們改用更可靠的模組執行方式來確保它能正常運作
+# 設定 PYTHONPATH 環境變數，讓 Python 能夠在 /app 目錄中找到模組
+# 確保 `import` 語句能正確運作
 ENV PYTHONPATH=/app
 
-# --- 新增的步驟：在建置時執行 Rich Menu 部署腳本 ---
-# ARG 指令定義一個可以在建置時傳入的參數，我們稱之為 LINE_ACCESS_TOKEN
-# ARG LINE_ACCESS_TOKEN
-# ENV 指令將 ARG 的值設定為環境變數，這樣 Python 腳本就能透過 os.environ 讀取
-# ENV LINE_CHANNEL_ACCESS_TOKEN=${LINE_ACCESS_TOKEN}
+# --- 啟動腳本與執行指令 ---
+# 將 Rich Menu 的部署邏輯整合到容器啟動流程中
+# 確保在應用程式啟動前，Rich Menu 已經正確部署完成
 
-# 執行 Rich Menu 部署腳本，這會生成 rich_menu_ids.json
-# 注意：這裡會呼叫 LINE API，所以建置時間會稍微延長
-# 啟動腳本會先跑 rich_menu_deployer 再啟動主程式
+# 複製 entrypoint.sh 腳本到容器中
 COPY entrypoint.sh /app/entrypoint.sh
+# 賦予腳本執行權限
 RUN chmod +x /app/entrypoint.sh
 
 # 定義容器啟動時執行的指令
-# 這會使用 gunicorn 來啟動你的 Flask 應用程式
-# 0.0.0.0:8080 是 Cloud Run 服務必須監聽的埠號
-# main:app 代表在 main.py 檔案中找到一個名為 app 的 Flask 應用程式實例
+# 這裡不直接啟動 gunicorn，而是呼叫 entrypoint.sh 腳本
+# 這樣就可以在腳本中先執行 Rich Menu 的部署，再啟動主應用程式
 CMD ["/app/entrypoint.sh"]

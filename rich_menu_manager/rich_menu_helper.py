@@ -16,6 +16,7 @@ _JSON_PATH = Path(__file__).parent / "rich_menu_ids.json"
 
 def load_alias_map() -> dict:
     """
+    載入所有 Rich Menu ID。
     從 `rich_menu_ids.json` 檔案中讀取並解析 Rich Menu 別名與 ID 的對應關係。
     整個模組的數據存取層，所有對 alias-ID 映射數據的讀取操作都應該透過這個函式進行。
     成功時返回一個包含所有映射關係的字典；若檔案不存在或解析失敗，則返回一個空字典，確保函式在任何情況下都能安全的執行。
@@ -31,6 +32,7 @@ def load_alias_map() -> dict:
 
 def get_rich_menu_id(alias: str) -> str | None:
     """
+    查詢單一 Rich Menu ID。
     提供一個簡單的介面，讓其他模組能夠根據一個別名（alias）來獲取對應的 Rich Menu ID。
     呼叫 `load_alias_map()` 來獲取完整的映射字典，然後使用字典的 `.get()` 方法進行查詢。
     這種設計將「如何獲取數據」的細節（讀取 JSON 檔案）與「如何使用數據」的邏輯（查詢 ID）分開，使得程式碼更加清晰和解耦。
