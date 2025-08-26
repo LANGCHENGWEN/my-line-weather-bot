@@ -47,6 +47,8 @@ ENV PYTHONPATH=/app
 COPY entrypoint.sh /app/entrypoint.sh
 # 賦予腳本執行權限
 RUN chmod +x /app/entrypoint.sh
+# 使用 sed 將換行字元從 CRLF 轉換為 LF，可能因為換行格式不正確而導致部署失敗
+RUN sed -i 's/\r$//' /app/entrypoint.sh
 
 # 定義容器啟動時執行的指令
 # 這裡不直接啟動 gunicorn，而是呼叫 entrypoint.sh 腳本
