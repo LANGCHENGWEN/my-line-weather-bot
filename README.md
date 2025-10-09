@@ -1,6 +1,4 @@
-# my-line-weather-bot  
-
-**天氣預報 LINE Bot**  
+# 天氣預報 LINE Bot  
 
 一個可部署於雲端／本地的 LINE 聊天機器人，能回覆天氣資訊（如即時天氣、預報、颱風、節氣等）。  
 
