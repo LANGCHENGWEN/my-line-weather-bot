@@ -71,69 +71,6 @@
 
 ## 快速上手 / 安裝與執行  
 
-以下是建議的部署流程（可視你的環境做修改）：
-
-### 先決條件  
-
-- Python 版本（建議 3.9+）  
-- LINE Messaging API 金鑰  
-- 天氣資料 API（如中央氣象局、氣象局開放資料、颱風資料等）  
-- 若要使用 Docker / 容器部署，需有 Docker 環境  
-
-### 安裝步驟  
-
-1. 複製專案  
-   ```bash
-   git clone https://github.com/LANGCHENGWEN/my-line-weather-bot.git
-   cd my-line-weather-bot
-
-2. 建立虛擬環境並安裝依賴
-   ```bash
-  python -m venv venv
-  source venv/bin/activate  # Linux / macOS  
-  # 或 Windows: venv\Scripts\activate  
-  pip install -r requirements.txt
-
-
-3. 配置環境變數 / 秘密檔案
-
-專案內有 .env.example，你可以複製為 .env，並填上以下必要項：
-  ```bash
-  LINE_CHANNEL_SECRET=your_line_channel_secret
-  LINE_CHANNEL_ACCESS_TOKEN=your_line_access_token
-  WEATHER_API_KEY=your_weather_api_key
-  # .. 其餘根據 config.py 所需的變數
-  ```
-
-
-4. 執行專案
-   ```bash
-   python main.py
-   ```
-
-
-或透過 Docker 編排：
-   ```bash
-   docker build -t my-line-weather-bot .
-   docker run --env-file .env -p 80:80 my-line-weather-bot
-   ```
-
-
-5. 在 LINE 開發者後台設定 Webhook URL，連動 bot
-
-
-### 使用說明 / 範例
-
-用戶對話範例：
-
-使用者：/weather Taipei  
-Bot：臺北市目前天氣：晴，溫度 25°C，濕度 60%，風速 3.5 m/s  
-
-
-選單操作：用戶可透過永久選單（Rich Menu）點選「當日天氣」、「未來預報」、「颱風資訊」等快速查詢
-
-排程推播：你可設定每天早上 07:00 推播當日天氣至用戶
-
 
 ### 部署 / 雲端整合
 
@@ -146,17 +83,75 @@ cloudbuild.yaml 為 Google Cloud Build 的部署配置範例
 
 ### 技術棧 / 依賴
 
-Python
-
-LINE Messaging API / SDK
-
-各類天氣資料 API
-
 Docker
 
 排程模組（如 schedule / APScheduler）
 
-其他輔助套件（詳見 requirements.txt）
+---
+
+## 🔧 技術架構
+
+- 💻 後端框架 | Python + Flask
+- ☁️ 雲端部署 | Google Cloud Build
+- 💬 LINE SDK | LINE Messaging API (v3)
+- 🎨 訊息格式 | Flex Message（支援滑動選單與卡片）
+- 📡 氣象資料來源 | 交通部中央氣象署 Open Data 平台
+  - 即時天氣觀測（O-A0003-001）  
+  - 今明 36 小時預報（F-C0032-001）  
+  - 未來 3 日 / 7 日預報（F-D0047-089 / F-D0047-091）  
+  - 紫外線指數（O-A0005-001）  
+  - 熱帶氣旋與警特報（W-C0034-005 / W-C0033-002）  
+- 🌐 外部參考來源 | 國家災害防救科技中心（NCDR）颱風路徑圖
+
+---
+
+## 🔑 使用技術細節
+
+- **模組化架構設計**：依功能分為天氣查詢、颱風資訊、節氣、推播、設定等模組，方便維護與擴充
+- **氣象資料整合**：解析中央氣象署自訂格式的資料，並聚合多時段資料，確保預報完整一致
+- **智慧推播系統**：利用排程自動推播每日天氣、週末天氣、颱風速報與節氣提醒
+- **Flex Message 視覺化**：以圖文卡片呈現未來天氣、颱風動態與建議內容，提升使用者體驗
+- **使用者狀態管理**：記錄用戶查詢流程與設定（預設城市、推播開關），提供個人化互動
+- **Rich Menu 整合**：以圖像化選單操作查詢與設定功能，強化互動性與操作便利性
+- **自動化部署**：支援 Google Cloud Build 與 Docker 容器化，實現穩定持續整合與更新
+
+---
+
+## ⚙️ 開發與部署
+
+### 安裝環境
+
+```bash
+# 建立虛擬環境
+python -m venv my_env
+
+#（Windows）啟動虛擬環境 (Linux 或 macOS 用 source venv/bin/activate)
+my_env\Scripts\activate
+
+# 安裝所有依賴套件
+pip install -r requirements.txt
+```
+
+### 在專案根目錄建立環境變數 `.env` 檔案
+
+```env
+LINE_CHANNEL_SECRET=YOUR_CHANNEL_SECRET
+LINE_CHANNEL_ACCESS_TOKEN=YOUR_CHANNEL_ACCESS_TOKEN
+CWA_API_KEY=YOUR_CWA_API_KEY
+YOUR_LINE_USER_ID=YOUR_LINE_USER_ID
+LOG_LEVEL=DEBUG                  # 控制 log 顯示的詳細程度
+LOG_FILE=main.log                # 指定 log 儲存的檔名
+ENABLE_FILE_LOG=True             # 是否啟用檔案 log 輸出
+IS_DEBUG_MODE=True               # 是否啟用 debug 模式，部署到雲端，通常預設是 False
+ENABLE_DAILY_NOTIFICATIONS=False # 是否啟用每日推播
+FIREBASE_ADMIN_SDK=YOUR_FIREBASE_ADMIN_SDK # 私密金鑰，授權完整的管理權限，於 Firebase 專案後台取得
+```
+
+### 本地啟動
+
+```bash
+python main.py
+```
 
 ---
 
