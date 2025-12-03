@@ -74,25 +74,28 @@
 
 ### 部署 / 雲端整合
 
-可在 Heroku / Google Cloud / AWS / GCP 等平台部署
-
-使用 Docker 容器化，可簡化跨環境部署
-
-cloudbuild.yaml 為 Google Cloud Build 的部署配置範例
-
+本專案使用 Google Cloud Build + Cloud Run 進行 CI/CD：
+- 提交程式碼至 GitHub 後，Cloud Build 會依據 cloudbuild.yaml 自動：
+1. 建立 Docker 映像檔
+2. 推送至 Google Container Registry
+3. 部署至 Cloud Run 執行環境
 
 ### 技術棧 / 依賴
 
-Docker
-
-排程模組（如 schedule / APScheduler）
+- Docker：容器化應用程式
+- Google Cloud Run：無伺服器部署環境
+- Google Cloud Build：程式碼自動建置與部署（CI/CD）
+- cloudbuild.yaml：定義 Cloud Build 的自動化部署流程
+- Firebase Admin SDK：存取 Firestore，用於管理用戶設定與推播狀態
+- entrypoint.sh：容器啟動流程
+- Google Cloud Scheduler：定時觸發推播任務
 
 ---
 
 ## 🔧 技術架構
 
 - 💻 後端框架 | Python + Flask
-- ☁️ 雲端部署 | Google Cloud Build
+- ☁️ 雲端部署 | Google Cloud Build + Cloud Run
 - 💬 LINE SDK | LINE Messaging API (v3)
 - 🎨 訊息格式 | Flex Message（支援滑動選單與卡片）
 - 📡 氣象資料來源 | 交通部中央氣象署 Open Data 平台
