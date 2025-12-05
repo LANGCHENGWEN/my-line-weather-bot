@@ -32,7 +32,7 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
     # 使用 `.get()` 方法，並為每個鍵提供預設值，這樣即使在 `outfit_info` 字典中缺少某些鍵，程式也不會報錯，而是會使用預設的圖片或文字
     # 確保在任何情況下都能回傳一個有效的 Flex Message，提高程式的穩定性
     suggestion_text = outfit_info.get("suggestion_text", ["目前無法提供未來穿搭建議。"])
-    suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
+    suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.postimg.cc/T3qs1kMf/NO-DATA.png")
     date_full_formatted = outfit_info.get("obs_time", "未知日期") # 例如 "2025年07月23日 (三)"
 
     # 從 outfit_info 獲取 day_index，這個值在 forecast_flex_converter.py 中被設定為 i + 1

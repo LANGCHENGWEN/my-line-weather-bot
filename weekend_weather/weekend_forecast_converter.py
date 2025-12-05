@@ -74,7 +74,7 @@ def get_weekend_forecast_flex_messages(parsed_full_forecast_data: Dict) -> List[
         outfit_suggestion_data = get_outfit_suggestion_for_forecast_weather(day_data_for_bubble["raw_period_data_for_outfit"])
         current_outfit_info = {
         "suggestion_text": outfit_suggestion_data.get("suggestion_text", ["目前無法提供穿搭建議。"]),
-        "suggestion_image_url": outfit_suggestion_data.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
+        "suggestion_image_url": outfit_suggestion_data.get("suggestion_image_url", "https://i.postimg.cc/T3qs1kMf/NO_DATA.png")
     }
 
         # 將當日的天氣數據和穿搭建議整合，生成一個完整的 Flex Message 氣泡，並添加到 `weekend_weather_bubbles` 列表中

@@ -39,7 +39,7 @@ def build_weekend_weather_flex(outfit_info: dict, day_data: Dict[str, Any], coun
     # 使用 `.get()` 方法，並為每個鍵提供預設值，這樣即使在 `outfit_info` 字典中缺少某些鍵，程式也不會報錯，而是會使用預設的圖片或文字
     # 確保在任何情況下都能回傳一個有效的 Flex Message，提高程式的穩定性
     suggestion_text = outfit_info.get("suggestion_text", ["目前無法提供週末穿搭建議。"])
-    suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.imgur.com/default_forecast_outfit.png")
+    suggestion_image_url = outfit_info.get("suggestion_image_url", "https://i.postimg.cc/T3qs1kMf/NO_DATA.png")
 
     # --- 組合主標題 ---
     main_title = f"📍 {county_name} 週末天氣"

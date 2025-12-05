@@ -13,21 +13,21 @@ logger = logging.getLogger(__name__)
 # 將圖片 URL 集中管理在一個字典中，可以讓程式碼更清晰，也方便日後的圖片更換或新增
 # 函式可以直接透過鍵值 (key) 來存取對應的圖片，避免在邏輯判斷中硬編碼 URL
 IMAGE_URLS = {
-    "DEFAULT"       : "https://i.imgur.com/current_default.png",
-    "HOT"           : "https://i.imgur.com/hot_weather_outfit.png",
-    "WARM"          : "https://i.imgur.com/warm_weather_outfit.png",
-    "COOL"          : "https://i.imgur.com/cool_weather_outfit.png",
-    "CHILLY"        : "https://i.imgur.com/chilly_weather_outfit.png",
-    "COLD"          : "https://i.imgur.com/cold_weather_outfit.png",
-    "FREEZING"      : "https://i.imgur.com/freezing_weather_outfit.png",
-    "HEAVY_RAIN"    : "https://i.imgur.com/heavy_rain.png",
-    "RAINY_CURRENT" : "https://i.imgur.com/rainy_current.png",
-    "LIGHT_RAIN"    : "https://i.imgur.com/light_rain.png",
-    "HIGH_HUMIDITY" : "https://i.imgur.com/high_humidity.png",
-    "DRY_WEATHER"   : "https://i.imgur.com/dry_weather.png",
-    "WINDY"         : "https://i.imgur.com/windy_outfit.png",
-    "HIGH_UVI"      : "https://i.imgur.com/high_uvi.png",
-    "COMFORTABLE"   : "https://i.imgur.com/comfortable_weather.png"
+    "DEFAULT"       : "https://i.postimg.cc/N05xtLpR/DEFAULT.png",
+    "HOT"           : "https://i.postimg.cc/43qQxZ0k/HOT.png",
+    "WARM"          : "https://i.postimg.cc/mrJygR5J/WARM.png",
+    "COOL"          : "https://i.postimg.cc/N0SkjYzn/COOL.png",
+    "CHILLY"        : "https://i.postimg.cc/KYR5b40X/CHILLY.png",
+    "COLD"          : "https://i.postimg.cc/yNkTKWvM/COLD.png",
+    "FREEZING"      : "https://i.postimg.cc/5t6mJjsJ/FREEZING.png",
+    "HEAVY_RAIN"    : "https://i.postimg.cc/6QyhKTYj/HEAVY-RAIN.png",
+    "RAINY_CURRENT" : "https://i.postimg.cc/65WjS6JF/RAINY.png",
+    "LIGHT_RAIN"    : "https://i.postimg.cc/s2vJz1wn/LIGHT-RAIN.png",
+    "HIGH_HUMIDITY" : "https://i.postimg.cc/LsnVShND/HIGH-HUMIDITY.png",
+    "DRY_WEATHER"   : "https://i.postimg.cc/xdcPQqtR/DRY-WEATHER.png",
+    "WINDY"         : "https://i.postimg.cc/tgYzb72d/WINDY.png",
+    "HIGH_UVI"      : "https://i.postimg.cc/cLDcPfMX/HIGH-UVI.png",
+    "COMFORTABLE"   : "https://i.postimg.cc/HLVtmjB5/COMFORTABLE.png"
 }
 
 def get_outfit_suggestion_for_current_weather(current_weather_data: dict) -> dict:

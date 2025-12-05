@@ -68,7 +68,7 @@ def build_outfit_suggestions_flex(target_query_city: str, default_city_display: 
             layout="vertical",
             contents=[
                 FlexImage(
-                    url="https://i.imgur.com/your_outfit_menu_banner.png",
+                    url="https://i.postimg.cc/v8fkC8qK/Outfit-suggestions.jpg",
                     size="full",
                     aspectRatio="20:9",
                     aspectMode="cover"
