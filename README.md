@@ -173,7 +173,6 @@ LOG_FILE=main.log                # 指定 log 儲存的檔名
 ENABLE_FILE_LOG=True             # 是否啟用檔案 log 輸出
 IS_DEBUG_MODE=True               # 是否啟用 debug 模式，部署到雲端，通常預設是 False
 ENABLE_DAILY_NOTIFICATIONS=False # 是否啟用每日推播
-FIREBASE_ADMIN_SDK=YOUR_FIREBASE_ADMIN_SDK # 私密金鑰，授權完整的管理權限，於 Firebase 專案後台取得
 ```
 
 ### 本地啟動
