@@ -96,8 +96,8 @@ def create_typhoon_flex_message(parsed_typhoon_data: Dict[str, Any]) -> FlexMess
         make_kv_row("．中心氣壓：", f"{current_status.get('pressure')} hpa"),
         make_kv_row("．移動        ：", f"{current_status.get('movingDirection')}，時速 {current_status.get('movingSpeed')} 公里"),
         make_kv_row(
-            "．七級風暴風半徑：", 
-            f"{current_status.get('radiusOf7knots')} 公里"
+            "．七級風暴風半徑：",
+            f"{current_status.get('radiusOf7knots')}"
         )
     ]
 
@@ -235,13 +235,16 @@ def create_typhoon_flex_message(parsed_typhoon_data: Dict[str, Any]) -> FlexMess
     - 分層組合：遵循 LINE Flex Message 的標準層次結構：`FlexMessage` 包含一個 `FlexBubble`，`FlexBubble` 則由 `header`、`body` 和 `footer` 組成。
     - UI 結構化：使用 `FlexSeparator` 來創建視覺上的分隔線，使得不同區塊（如現況和預報）之間界限分明，提高訊息的可讀性。
     """
+    # 從 current_status 中取得格式化好的標題文字
+    header_text = current_status.get("headerText", "🌀 颱風/熱帶氣旋現況")
+
     bubble_content = FlexBubble(
         size="giga",
         body=FlexBox(
             layout="vertical",
             contents=[
                 FlexText(
-                    text=f"🌀 颱風 {current_status.get('typhoonName')} ({current_status.get('typhoonEngName')}) 現況",
+                    text=header_text,
                     weight="bold",
                     size="xl",
                     wrap=True,

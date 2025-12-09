@@ -9,7 +9,6 @@
 4. 系統級數據管理：新增處理系統級元數據的功能，例如儲存上次推播的颱風 ID，這對於自動化任務非常重要。
 """
 import os
-import json
 import logging
 from typing import Any, List, Dict, Optional
 from .major_stations import ALL_TAIWAN_COUNTIES
@@ -19,27 +18,24 @@ import firebase_admin
 from firebase_admin import firestore, credentials
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
 
+CREDENTIALS_FILE_NAME = "firebase-adminsdk.json"
+
 logger = logging.getLogger(__name__)
 
 # --- 初始化 Firebase Admin SDK ---
 def initialize_firebase():
     """
     建立與 Firebase Firestore 的連線。
-    從環境變數中讀取 JSON 格式的憑證，並轉換為 Python 可用的憑證物件，以安全的方式初始化 Firebase Admin SDK。
+    直接從 JSON 檔案讀取憑證，以安全且可靠的方式初始化 Firebase Admin SDK。
     """
     try:
-        # 從環境變數中讀取 JSON 憑證內容
-        cred_json = os.environ.get("FIREBASE_ADMIN_SDK")
-
-        # 檢查環境變數是否存在
-        if not cred_json:
-            raise ValueError("環境變數 'FIREBASE_ADMIN_SDK' 不存在。")
-        
-        # 將 JSON 字串轉換成字典
-        cred_dict = json.loads(cred_json)
+        # 建立憑證物件時，直接傳入檔案路徑
+        # 由於檔案在根目錄，直接使用檔案名即可
+        if not os.path.exists(CREDENTIALS_FILE_NAME):
+             raise FileNotFoundError(f"Firebase 憑證檔案未找到: {CREDENTIALS_FILE_NAME}")
 
         # 建立憑證物件並初始化應用程式
-        cred = credentials.Certificate(cred_dict)
+        cred = credentials.Certificate(CREDENTIALS_FILE_NAME)
         firebase_admin.initialize_app(cred)
         logger.info("Firebase Firestore 連線成功。")
     except Exception as e:

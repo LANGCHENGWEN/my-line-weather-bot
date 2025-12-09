@@ -84,7 +84,7 @@ def build_weekend_weather_flex(outfit_info: dict, day_data: Dict[str, Any], coun
                     url=suggestion_image_url, 
                     size="full",
                     aspectRatio="20:9",
-                    aspectMode="cover"
+                    aspectMode="fit"
                 )
             ]
         ),

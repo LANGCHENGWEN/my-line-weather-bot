@@ -205,7 +205,14 @@ class TyphoonParser:
             
             # 處理七級風暴風半徑
             radius_7knots_data = latest_fix.get("circleOf15Ms", {})
-            current_status["radiusOf7knots"] = radius_7knots_data.get("radius", "無資料")
+            raw_radius = radius_7knots_data.get("radius")
+
+            if raw_radius and raw_radius != "無資料":
+                # 如果有數值，則加上單位
+                current_status["radiusOf7knots"] = f"{raw_radius} 公里"
+            else:
+                # 如果是 None 或 "無資料"，則維持 "無資料"，不加單位
+                current_status["radiusOf7knots"] = "無資料"
             
             # 處理暴風半徑詳細方向 (例如：東北100公里, 西南80公里)
             """
@@ -229,9 +236,45 @@ class TyphoonParser:
             # 呼叫格式化函式，將結果儲存到 radiusOf7knotsDetailFormatted
             current_status["radiusOf7knotsDetailFormatted"] = self._format_radius_detail_cht(detail_str_for_formatting)
 
+            # 處理熱帶低氣壓 (TD) 的名稱顯示邏輯
+            # 如果颱風名稱為「無資料」，且最大風速滿足熱帶低氣壓的條件，則修正名稱
+            max_wind_speed = current_status["maxWindSpeed"]
+            
+            try:
+                # 確保 max_wind_speed 是數字，以便進行比較 (CWA 數據是字串)
+                max_wind_speed_float = float(max_wind_speed)
+                
+                # 判斷是否為「熱帶低氣壓」：風速低於 17.2 m/s (8 級風，輕度颱風門檻)，並且中文名稱為空（即該熱帶氣旋尚未被正式命名為颱風）
+                if current_status["typhoonName"] in ["無資料", None, ""] and max_wind_speed_float < 17.2:
+                    current_status["typhoonName"] = f"熱帶低氣壓 (TD{current_status['tdNo']})"
+
+            except (ValueError, TypeError):
+                # 如果 wind_speed 無法轉換，則保持原樣 (無資料)
+                logger.warning(f"最大風速值 '{max_wind_speed}' 無法轉換為數字進行判斷。")
+
         else:
             logger.warning("未找到任何颱風實測 (fix) 數據，現況資訊將為無資料。")
             current_status["radiusOf7knotsDetailFormatted"] = ["", "", "", ""]
+
+        typhoon_name = current_status.get('typhoonName', '無資料')
+        eng_name = current_status.get('typhoonEngName', '無資料')
+
+        # 檢查中文名稱是否以「熱帶低氣壓」開頭
+        is_tropical_depression = typhoon_name.startswith("熱帶低氣壓")
+
+        if is_tropical_depression:
+            # 情況 1: 熱帶低氣壓 (TD) - 只顯示中文名稱
+            header_text = f"🌀 {typhoon_name} 現況"
+        else:
+            # 情況 2: 颱風 - 顯示中文名稱和英文名稱
+            display_name = typhoon_name
+            if not typhoon_name.startswith(("颱風", "無資料")):
+                display_name = f"颱風 {typhoon_name}"
+             
+            header_text = f"🌀 {display_name} ({eng_name}) 現況"
+
+        # 將最終的標題文字儲存到 current_status 字典中，供 Flex Message 取用
+        current_status["headerText"] = header_text
         
         return current_status
 
@@ -283,7 +326,7 @@ class TyphoonParser:
                 coords_forecast = coordinate_str_forecast.split(',')
                 if len(coords_forecast) == 2:
                     longitude_forecast = coords_forecast[0].strip() # 經度在第一個
-                    latitude_forecast = coords_forecast[1].strip() # 緯度在第二個
+                    latitude_forecast = coords_forecast[1].strip()  # 緯度在第二個
                 else:
                     logger.warning(f"預報點座標格式不符預期: {coordinate_str_forecast}")
 

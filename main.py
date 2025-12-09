@@ -8,6 +8,7 @@
 3. 執行應用程式啟動時的初始化工作，例如載入 Rich Menu ID。
 4. 提供多個 API 端點，供外部排程器 (如 Cloud Scheduler) 呼叫，以執行定時推播任務。
 """
+import os
 import logging
 from flask import Flask, request, abort
 from importlib import import_module
@@ -103,6 +104,7 @@ LINE 會向這個 URL 發送所有用戶互動事件。
 def callback():
     sig  = request.headers.get("X-Line-Signature", "") # 從 HTTP Headers 獲取簽名
     body = request.get_data(as_text=True)              # 獲取請求主體，轉成文字格式
+    
     # 執行 handler 的 handle 函式來分發事件
     try:
         handler.handle(body, sig)
@@ -213,10 +215,9 @@ def push_weekend_weather():
 # 在本地環境中直接運行 Flask 應用程式
 # `if __name__ == "__main__":` 確保這段程式碼只在檔案被直接執行時才會運行，而不是在被其他模組導入時運行
 # 在雲端部署時，`gunicorn` 會負責啟動應用程式，所以這段程式碼不會被執行
-"""
+
 if __name__ == "__main__":
     # 先從環境變數讀 PORT，沒有設定就用預設的 5000
     port = int(os.environ.get("PORT", 5000))
     # 啟動應用程式，監聽所有網路接口 (0.0.0.0)
     app.run(host='0.0.0.0', port=port, debug=True)
-"""

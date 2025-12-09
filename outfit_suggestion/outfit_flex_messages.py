@@ -81,7 +81,7 @@ def build_today_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubble
                     url=suggestion_image_url, 
                     size="full",
                     aspectRatio="20:9",
-                    aspectMode="cover"
+                    aspectMode="fit"
                 )
             ]
         ),
@@ -194,7 +194,7 @@ def build_current_outfit_flex(outfit_info: dict, location_name: str) -> FlexBubb
                     url=suggestion_image_url, 
                     size="full",
                     aspectRatio="20:9",
-                    aspectMode="cover"
+                    aspectMode="fit"
                 )
             ]
         ),

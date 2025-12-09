@@ -96,7 +96,7 @@ def build_forecast_outfit_card(outfit_info: dict, location_name: str, day_offset
                     url=suggestion_image_url, 
                     size="full",
                     aspectRatio="20:9",
-                    aspectMode="cover"
+                    aspectMode="fit"
                 )
             ]
         ),
