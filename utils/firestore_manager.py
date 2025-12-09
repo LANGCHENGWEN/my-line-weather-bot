@@ -3,22 +3,20 @@
 中央化的數據庫管理模組，專門用於處理與 Google Cloud Firestore 的所有交互。
 將複雜的數據庫操作（如連線、查詢、更新、讀取）封裝在簡單易用的 Python 函式中，為應用程式的其他部分提供服務。
 主要職責：
-1. Firebase 初始化與連線管理：安全的從環境變數讀取憑證並初始化 Firebase 應用程式，確保連線只在程式啟動時執行一次。
+1. Firebase 初始化與連線管理：使用 Google Application Default Credentials (ADC) 機制安全的初始化 Firebase 應用程式，確保在部署環境中透過服務帳號 (Service Account) 取得權限，並確保連線只在程式啟動時執行一次。
 2. 基本 CRUD 操作：提供通用的函式來新增、讀取、更新和刪除用戶資料。
 3. 業務邏輯抽象：將與特定業務相關的數據庫操作（如設定用戶狀態、儲存預設城市、管理推播設定）封裝為高層次的函式，使呼叫這些函式的地方不需要知道 Firestore 的內部細節。
 4. 系統級數據管理：新增處理系統級元數據的功能，例如儲存上次推播的颱風 ID，這對於自動化任務非常重要。
 """
-import os
 import logging
 from typing import Any, List, Dict, Optional
 from .major_stations import ALL_TAIWAN_COUNTIES
 
 # 導入 Firebase Admin 函式庫
 import firebase_admin
-from firebase_admin import firestore, credentials
+from firebase_admin import firestore
+from firebase_admin.credentials import ApplicationDefault
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
-
-CREDENTIALS_FILE_NAME = "firebase-adminsdk.json"
 
 logger = logging.getLogger(__name__)
 
@@ -26,22 +24,19 @@ logger = logging.getLogger(__name__)
 def initialize_firebase():
     """
     建立與 Firebase Firestore 的連線。
-    直接從 JSON 檔案讀取憑證，以安全且可靠的方式初始化 Firebase Admin SDK。
+    使用 Google Application Default Credentials (ADC) 自動從部署環境 (如 Cloud Run 服務帳號) 取得憑證來初始化 Firebase Admin SDK。
     """
     try:
-        # 建立憑證物件時，直接傳入檔案路徑
-        # 由於檔案在根目錄，直接使用檔案名即可
-        if not os.path.exists(CREDENTIALS_FILE_NAME):
-             raise FileNotFoundError(f"Firebase 憑證檔案未找到: {CREDENTIALS_FILE_NAME}")
+        # 建立憑證物件時，使用 ApplicationDefault() 來自動取得憑證
+        cred = ApplicationDefault()
 
-        # 建立憑證物件並初始化應用程式
-        cred = credentials.Certificate(CREDENTIALS_FILE_NAME)
+        # 初始化應用程式
         firebase_admin.initialize_app(cred)
         logger.info("Firebase Firestore 連線成功。")
     except Exception as e:
         # 如果初始化過程中有任何錯誤（例如憑證格式不正確、環境變數不存在），會捕獲異常並記錄
-        # 接著拋出一個自訂的 RuntimeError，讓調用者知道連線失敗，並停止程式執行
         logger.error(f"Firebase 連線失敗: {e}", exc_info=True)
+        # 接著拋出一個自訂的 RuntimeError，讓調用者知道連線失敗，並停止程式執行
         raise RuntimeError("無法連線到 Firebase Firestore") from e
 
 # --- 確保在程式啟動時只初始化一次 ---
